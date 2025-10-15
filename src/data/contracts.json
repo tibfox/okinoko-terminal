@@ -1,0 +1,109 @@
+{
+  "contracts": [
+    {
+      "name": "Okinoko Escrow",
+      "id": 1,
+      "vscId": "vsc1BonkE2CtHqjnkFdH8hoAEMP25bbWhSr3UA",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-10-09T15:19:18",
+      "description": "This contract acts as an on-chain escrow between two parties, optionally including an arbitrator for dispute resolution. Deposit funds securely and choose whether to release them or request a refund.",
+      "functions": [
+        {
+          "name": "e_create",
+          "friendlyName": "Create Escrow",
+          "description": "Set up a new escrow by choosing who will receive the funds, how much to send, and who will act as arbitrator.\n! Don’t forget: You’ll get an escrow ID after creation. You’ll need it later to manage the escrow.",
+          "parse":"json",
+          "parameters": [
+            {
+              "name": "Descriptive Name",
+              "payloadName": "name",
+              "type": "string",
+              "mandatory":true
+            },
+            {
+              "name": "Receiver of the Amount",
+              "payloadName": "to",
+              "type": "address",
+              "mandatory":true
+            },
+            {
+              "name": "amount / asset",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory":true
+            },
+            {
+              "name": "Arbitrator (in case of Disputes)",
+              "payloadName": "arb",
+              "type": "address",
+              "mandatory":true
+            }
+          ]
+        },
+        {
+          "name": "e_decide",
+          "friendlyName": "Add Decision",
+          "description": "If you’re part of the escrow, you can send in your decision. Don’t worry: you can change it anytime before the escrow is finalized.",
+          "parse":"json",
+          "parameters": [
+            {
+              "name": "Escrow Id",
+              "payloadName": "id",
+              "type": "number",
+              "asString": false,
+              "mandatory":true
+            },
+            {
+              "name": "Release Funds to the Receiver?",
+              "payloadName": "d",
+              "type": "bool",
+              "asString": false,
+              "mandatory":false
+            }
+          ]
+        },
+        {
+          "name": "e_get",
+          "friendlyName": "Get Escrow",
+          "description": "This function is used to get all data related to a give escrow ID.",
+          "parse":"raw",
+          "parameters": [
+            {
+              "name": "Escrow Id",
+              "payloadName": "id",
+              "type": "number",
+              "asString": false,
+              "mandatory":true
+            }
+          ]
+        }
+       
+      
+      ]
+    },
+    {
+      "name": "Testing Contract",
+      "id": 1,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapt",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "This contract is just for testing purposes - you can use it but it does not add any value ¯\\(ツ)/¯",
+      "functions": [
+         {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "This function will return the message sent.",
+          "parse":"raw",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

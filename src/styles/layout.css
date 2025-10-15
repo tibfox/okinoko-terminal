@@ -1,0 +1,194 @@
+/* === Layout === */
+.terminal {
+  width: 50vw;
+  height: 75vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  border: 2px solid rgba(0, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .terminal {
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 10px;
+    background: black; 
+    min-height: 0;
+  }
+}
+
+.terminal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+
+/* Step transitions */
+.step {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.step.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.step.hidden {
+  display: none;
+}
+
+/* Flicker overlay */
+#flicker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0ff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+
+/* === Center the main terminal === */
+body,
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: black;
+  /* optional for contrast */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .terminal .grid-two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .terminal>div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Neon scrollbar theme */
+.scrollable-form {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #00ffffaa rgba(0, 0, 0, 0.3);
+  overscroll-behavior: contain;
+}
+
+/* Chrome/Edge/Safari */
+.scrollable-form::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollable-form::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+.scrollable-form::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00ffffaa, #008888cc);
+  border-radius: 4px;
+}
+.scrollable-form::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00ffff, #00cccc);
+}
+
+
+/* Tunables */
+.terminal {
+  --raster-size: 5px;                         /* grid spacing */
+  --line-alpha: 0.2;                          /* line strength */
+  --dot-alpha: 0.1;                           /* dot strength */
+  --tint: 180 100% 50%;                        /* cyan-ish; HSL */
+  position: relative;
+}
+
+/* Put all content above the overlay just in case */
+.terminal > * { position: relative; z-index: 1; }
+
+/* The raster overlay */
+.terminal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+
+  /* 1) dot field  2) horizontal lines  3) vertical lines */
+  background:
+    radial-gradient(circle at 1px 1px,
+      hsl(var(--tint) / var(--dot-alpha)) 1px,
+      transparent 1.2px) 0 0 / var(--raster-size) var(--raster-size),
+    repeating-linear-gradient(
+      0deg,
+      hsl(var(--tint) / var(--line-alpha)) 0 1px,
+      transparent 1px calc(var(--raster-size))
+    ),
+    repeating-linear-gradient(
+      90deg,
+      hsl(var(--tint) / var(--line-alpha)) 0 1px,
+      transparent 1px calc(var(--raster-size))
+    );
+
+  opacity: .25;                 /* global dimmer */
+  /* Tiny blur helps fight subpixel crawl on some displays */
+  filter: blur(1px);
+}
+.terminal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background: linear-gradient(
+    to bottom left,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.5) 60%,
+    rgba(0, 0, 0, 1) 90%
+  );
+  mix-blend-mode: multiply;
+
+  /* Animate the background position */
+  background-size: 200% 200%;
+  animation: fadeDrift 5s ease-in-out infinite alternate;
+}
+
+@keyframes fadeDrift {
+  0% {
+    background-position: top right;
+  }
+  100% {
+    background-position: bottom left;
+  }
+}
+
+/* (Nice-to-have) Respect user accessibility prefs */
+@media (prefers-contrast: more) {
+  .terminal::before { opacity: .35; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .terminal::before { opacity: .15; }
+}

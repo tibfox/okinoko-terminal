@@ -1,0 +1,280 @@
+{
+  "contracts": [
+    {
+      "name": "testing contract",
+      "id": 1,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapt",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+         {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"raw",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+
+
+    {
+      "name": "Okinoko Escrow",
+      "id": 2,
+      "vscId": "vsc1BonkE2CtHqjnkFdH8hoAEMP25bbWhSr3UA",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-10-09T15:19:18",
+      "description": "The contract provides an on-chain escrow mechanism between two parties with an optional third-party arbitrator to resolve disputes.",
+      "functions": [
+        {
+          "name": "e_create",
+          "friendlyName": "create escrow",
+          "description": "Create a new escrow transaction",
+          "parse":"json",
+          "parameters": [
+            {
+              "name": "descriptive name",
+              "payloadName": "name",
+              "type": "string",
+              "mandatory":true
+            },
+            {
+              "name": "receiver of the amount",
+              "payloadName": "to",
+              "type": "address",
+              "mandatory":true
+            },
+            {
+              "name": "arbitrator in case of disputes",
+              "payloadName": "arb",
+              "type": "address",
+              "mandatory":true
+            },
+            
+            {
+              "name": "amount / asset",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory":true
+            }
+          ]
+        },
+        {
+          "name": "e_decide",
+          "friendlyName": "add decision",
+          "description": "If you are part of the escrow you can send your desicion. Until the escorw is closed you can change that decision.",
+          "parse":"json",
+          "parameters": [
+            {
+              "name": "escrow id",
+              "payloadName": "id",
+              "type": "number",
+              "asString": false,
+              "mandatory":true
+            },
+            {
+              "name": "release the funds?",
+              "payloadName": "d",
+              "type": "bool",
+              "asString": false,
+              "mandatory":false
+            }
+          ]
+        }
+       
+      
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 3,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 4,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dfnSA6KqEaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 5,
+      "vscId": "vsc1Bmdbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 6,
+      "vscId": "vsceBmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 7,
+      "vscId": "vsc1dmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 8,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqgaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3rd cool contract",
+      "id": 9,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpdSA6KqEaBRQRDFYapd",
+      "owner": "tibfox.vsc",
+      "deployedOn":"2025-09-13T20:55:39",
+      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+      "functions": [
+        {
+          "name": "echo",
+          "friendlyName": "echo",
+          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
+          "parse":"csv",
+          "delimeter":"|",
+          "keyDelimeter":":",
+          "parameters": [
+            {
+              "name": "message",
+              "payloadName": "message",
+              "type": "string",
+              "mandatory":true
+            }
+          ]
+        }
+      ]
+    } 
+
+  ]
+}
