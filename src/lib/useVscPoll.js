@@ -1,6 +1,6 @@
 import { playBeep } from '../lib/beep.js'
 
-const ENDPOINT = 'https://vsc.techcoderx.com/api/v1/graphql'
+const ENDPOINT = 'https://vsc.okinoko.io/api/v1/graphql'
 
 /**
  * useVscPoll
