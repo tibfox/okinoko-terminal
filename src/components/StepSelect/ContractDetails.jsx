@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import DescriptionBox from './DescriptionBox.jsx'
+import DescriptionBox from '../common/DescriptionBox.jsx'
 import FunctionList from './FunctionList.jsx'
 
 export default function ContractDetails({

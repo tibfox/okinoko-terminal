@@ -70,7 +70,7 @@ export default function StepSelect({
         <span
           onClick={() => setShowPopup(true)}
           style={{
-            color: '#0ff',
+            color: 'var(--color-primary)',
             fontStyle: 'italic',
             cursor: 'pointer',
           }}

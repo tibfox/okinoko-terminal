@@ -1,3 +1,5 @@
+import { COLORS } from "../../styles/colors";
+
 import React, { useRef, useState, useEffect } from 'react'
 import { playBeep } from '../../lib/beep.js' // ⬅️ adjust path as needed
 
@@ -14,8 +16,8 @@ export default function NeonButton({
 
   const base = {
     backgroundColor: '#000',
-    border: '1px solid #0ff',
-    color: '#0ff',
+    border: '1px solid var(--color-primary)',
+    color: 'var(--color-primary)',
     borderRadius: '8px',
     padding: '0.5rem 1rem',
     cursor: 'pointer',

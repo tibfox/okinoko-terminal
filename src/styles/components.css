@@ -76,8 +76,8 @@ terminal-out {
 /* === Buttons === */
 .neon-btn {
   background: transparent;
-  color: #0ff;
-  border: 2px solid #0ff;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   width: 100%;
   height: 42px;
   padding: 0 12px;
@@ -172,7 +172,7 @@ terminal-out {
   overflow-y: auto;
   white-space: pre-line;
   line-height: 1.3;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid var(--color-primary-darker);
   padding: 14px;
   border-radius: 8px;
   font-size: 0.9em;
@@ -192,7 +192,7 @@ terminal-out {
 .typewriter::after {
   content: '▎';
   animation: blink 1s step-end infinite;
-  color: #0ff;
+  color: var(--color-primary-darker);
 }
 
 /* Blink animation */

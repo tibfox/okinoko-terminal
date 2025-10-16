@@ -1,3 +1,5 @@
+import { COLORS } from "../../styles/colors";
+
 import React, { useEffect, useState } from 'react'
 
 export default function AsciiArt() {
@@ -65,7 +67,7 @@ const [isMobile, setIsMobile] = useState(null) // ✅ null = unknown initially
           textAlign: 'center',
           margin: 0,
           padding: 0,
-          color: '#0ff',
+          color: 'var(--color-primary)',
         }}
       >
         {art.split('').map((ch, i) => (
@@ -73,7 +75,7 @@ const [isMobile, setIsMobile] = useState(null) // ✅ null = unknown initially
             key={i}
             style={
               isMobile
-                ? { color: '#0ff' } // static neon cyan on mobile
+                ? { color:'var(--color-primary)' } 
                 : {
                     color: `hsl(${(i * 10) % 360}, 100%, 60%)`,
                     animation: 'rainbowSteps 4.2s steps(6, end) infinite',

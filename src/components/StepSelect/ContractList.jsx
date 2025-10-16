@@ -1,7 +1,10 @@
+import { COLORS } from "../../styles/colors";
+
 import React, { useEffect, useState } from 'react'
 import ListButton from '../buttons/ListButton.jsx'
 
-import DescriptionBox from './DescriptionBox.jsx'
+import DescriptionBox from '../common/DescriptionBox.jsx'
+import { ColorSwatch } from '@chakra-ui/react'
 
 /**
  * ContractList
@@ -50,8 +53,8 @@ export default function ContractList({ contracts, contractId, setContractId, set
               setFnName('')
             }}
             style={{
-              backgroundColor: contractId === c.vscId ? 'rgb(20, 88, 88)' : 'rgba(20, 88, 88, 0.1)',
-              color: '#0ff',
+              backgroundColor: contractId === c.vscId ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)',
+              color: 'var(--color-primary)',
             }}
           >
             {c.name}
@@ -65,7 +68,7 @@ export default function ContractList({ contracts, contractId, setContractId, set
           style={{
             flex: '1 1 auto',
             padding: '10px',
-            color: '#0ff',
+            color: 'var(--color-primary)',
             fontSize: '0.85rem',
             lineHeight: 1.4,
             textAlign: 'justify',

@@ -1,4 +1,3 @@
-import React from 'react'
 import ListButton from '../buttons/ListButton.jsx'
 
 /**
@@ -18,6 +17,8 @@ import ListButton from '../buttons/ListButton.jsx'
  *  - setFnName (function): updates parent state when a new function is chosen.
  */
 export default function FunctionList({ selectedContract, fnName, setFnName }) {
+  getComputedStyle(document.documentElement)
+  .getPropertyValue('--color-primary-darkest')
   return (
     <div
       style={{
@@ -35,8 +36,8 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
           style={{
             // Highlight selected function visually
             
-            backgroundColor: fnName === fn.name ? 'rgb(20, 88, 88)' : 'rgba(20, 88, 88, 0.1)',
-            color: '#0ff',
+            backgroundColor: fnName === fn.name ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)',
+            color: 'var(--color-primary)',
             width: 'calc(33% - 10px)', // three per row at minimum width
             minWidth: '120px',
             flex: '0 1 auto',

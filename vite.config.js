@@ -5,7 +5,7 @@ import preact from '@preact/preset-vite'
 export default defineConfig({
   plugins: [preact()],
   server: {
-    port: 8082,
+    port: 8083,
  
   allowedHosts: ['.okinoko.io'],
 

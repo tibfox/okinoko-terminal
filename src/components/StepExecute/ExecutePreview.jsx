@@ -1,3 +1,4 @@
+import { COLORS } from "../../styles/colors";
 import { useState,useRef,useEffect } from 'preact/hooks'
 
 const LOG_COLORS = {
@@ -63,7 +64,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
       <div
   className="neon-scroll"
   style={{
-    border: '1px solid #0ff',
+    border: '1px solid var(--color-primary-darker)',
     borderRadius: '8px',
     padding: '8px',
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -101,7 +102,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
     className="neon-scroll"
     style={{
       flex: 1,
-      border: '1px solid #0ff',
+      border: '1px solid ' + 'var(--color-primary-darker)',
       borderRadius: '8px',
       padding: '8px',
       backgroundColor: 'rgba(0,0,0,0.6)',
@@ -116,7 +117,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
     }}
   >
     {logs.map((line, i) => {
-      const color = LOG_COLORS[line[0]] || 'hsl(180, 100%, 40%)'
+      const color = LOG_COLORS[line[0]] || + 'var(--color-primary)'
       return (
         <div
           key={i}
@@ -143,8 +144,8 @@ export default function ExecutePreview({ jsonPreview, logs }) {
         right: '10px',
         bottom: '10px',
         background: 'rgba(0,255,255,0.1)',
-        border: '1px solid hsl(180, 100%, 40%)',
-        color: 'hsl(180, 100%, 60%)',
+        border: '1px solid var(--color-primary)',
+        color: 'var(--color-primary)',
         borderRadius: '6px',
         fontSize: '0.8rem',
         cursor: 'pointer',
@@ -153,7 +154,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
         fontFamily: "'Share Tech Mono', monospace",
         
         transition: 'all 0.2s ease',
-        boxShadow: '0 0 8px rgba(0,255,255,0.3)',
+        boxShadow: '0 0 8px var(--color-primary-darker)',
         opacity: 0.8,
         backdropFilter: 'blur(2px)',
         zIndex: 5, // ✅ make sure it floats above log content

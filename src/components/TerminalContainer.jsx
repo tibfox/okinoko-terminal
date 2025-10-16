@@ -1,7 +1,11 @@
+import { COLORS } from "../styles/colors";
+
 import React, { useState, useEffect } from 'react'
 import SlotText from './animations/SlotText.jsx'
 
 import { playBeep, setSoundEnabled, getSoundEnabled } from '../lib/beep.js'
+
+import ColorPickerButton from "./ColorPickerButton.jsx";
 
 
 export default function TerminalContainer({ title, children }) {
@@ -58,6 +62,7 @@ export default function TerminalContainer({ title, children }) {
             gap: 0,
           }}
         >
+           
           {/* Left: Dynamic title */}
           <div style={{ flex: '1 1 auto', minWidth: 0 }}>
             <SlotText
@@ -69,8 +74,10 @@ export default function TerminalContainer({ title, children }) {
             />
           </div>
 
-          {/* 🔊 Logo + sound toggle */}
+         
 
+          {/* 🔊 Logo + sound toggle */}
+<ColorPickerButton />
           <button
             onClick={toggleSound}
             style={{
@@ -78,7 +85,7 @@ export default function TerminalContainer({ title, children }) {
               background: 'none',
               // border: '1px solid hsl(180, 100%, 40%)',
               borderRadius: '50%',
-              color: 'hsl(180, 100%, 30%)',
+              color: 'var(--color-primary)',
               width: '32px',
               height: '32px',
               cursor: 'pointer',
@@ -96,7 +103,7 @@ export default function TerminalContainer({ title, children }) {
               // 🎵 Sound ON — bright notes
               <span
                 style={{
-                  color: 'hsl(180, 100%, 30%)',
+                  color: 'var(--color-primary)',
                   // textShadow: '0 0 6px hsl(180, 100%, 50%)',
                 }}
               >
@@ -108,7 +115,7 @@ export default function TerminalContainer({ title, children }) {
                 style={{
                   position: 'relative',
                   display: 'inline-block',
-                  color: 'hsl(180, 100%, 15%)', // dimmer version of the note
+                  color: 'var(--color-primary-darker)', // dimmer version of the note
                 }}
               >
                 <span>♫</span>
@@ -116,7 +123,7 @@ export default function TerminalContainer({ title, children }) {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    color: 'hsl(180, 100%, 30%)', // bright X
+                    color: 'var(--color-primary)', // bright X
                     fontSize: '1.5rem',
                     pointerEvents: 'none',
                     transform: 'translateY(-1px)', // tiny centering tweak
@@ -173,55 +180,63 @@ export default function TerminalContainer({ title, children }) {
       ō<span style={{ letterSpacing: '0em' }}>K</span>I
       <span style={{ fontSize: '0.96em' }}>Ո</span>OKO TERMINAL
     </p>
-
-    {/* 🔊 Sound toggle on the right side of same line */}
-    <button
-      onClick={toggleSound}
-      style={{
-        position: 'absolute',
-        right: 0, // ✅ stick to right edge
-        background: 'none',
-        borderRadius: '50%',
-        color: 'hsl(180, 100%, 30%)',
-        width: '32px',
-        height: '32px',
-        cursor: 'pointer',
-        fontSize: '1.5rem',
-        fontFamily: "'Share Tech Mono', monospace",
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        transition: 'all 0.2s ease',
-      }}
-      title={soundEnabled ? 'Mute sound' : 'Enable sound'}
-    >
-      {soundEnabled ? (
-        <span style={{ color: 'hsl(180, 100%, 30%)' }}>♫</span>
-      ) : (
+<div
+  style={{
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+  }}
+>
+  <ColorPickerButton />
+  <button
+    onClick={toggleSound}
+    style={{
+      background: 'none',
+      borderRadius: '50%',
+      color: 'var(--color-primary)',
+      width: '32px',
+      height: '32px',
+      cursor: 'pointer',
+      fontSize: '1.5rem',
+      fontFamily: "'Share Tech Mono', monospace",
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      transition: 'all 0.2s ease',
+    }}
+    title={soundEnabled ? 'Mute sound' : 'Enable sound'}
+  >
+    {soundEnabled ? (
+      <span style={{ color: 'var(--color-primary)' }}>♫</span>
+    ) : (
+      <span
+        style={{
+          position: 'relative',
+          display: 'inline-block',
+          color: 'var(--color-primary-darker)',
+        }}
+      >
+        <span>♫</span>
         <span
           style={{
-            position: 'relative',
-            display: 'inline-block',
-            color: 'hsl(180, 100%, 15%)',
+            position: 'absolute',
+            inset: 0,
+            color: 'var(--color-primary)',
+            fontSize: '1.5rem',
+            pointerEvents: 'none',
+            transform: 'translateY(-1px)',
           }}
         >
-          <span>♫</span>
-          <span
-            style={{
-              position: 'absolute',
-              inset: 0,
-              color: 'hsl(180, 100%, 30%)',
-              fontSize: '1.5rem',
-              pointerEvents: 'none',
-              transform: 'translateY(-1px)',
-            }}
-          >
-            ✕
-          </span>
+          ✕
         </span>
-      )}
-    </button>
+      </span>
+    )}
+  </button>
+  </div>
   </div>
 
   {/* Title below logo */}

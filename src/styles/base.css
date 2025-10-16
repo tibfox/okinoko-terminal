@@ -13,7 +13,7 @@ body {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  color: hsl(180, 100%, 40%);
+  color: var(--color-primary-darker);
   animation: terminalFlicker 3.5s ease-in-out infinite;  
 }
 
@@ -21,24 +21,25 @@ h1 {
   font-size: 1.7em;
   text-shadow: 0 0 10px #0ff;
   margin-bottom: 1em;
+  color: var(--color-primary);
   font-family: 'Share Tech Mono',monospace;
 }
 
 h2 {
   font-size: 1.5em;
   text-shadow: 0 0 10px #0ff;
-  color: hsl(180, 100%, 40%);
+  color: var(--color-primary);
   font-family: 'Share Tech Mono',monospace;
 }
 
 h3 {
   font-size: 1.2em;
-  color: hsl(180, 100%, 40%);
+  color: var(--color-primary);
   font-family: 'Share Tech Mono',monospace;
 }
 
 a {
-  color: #0ff; /* neon cyan text color */
+  color: var(--color-primary);
   /* text-decoration: underline; */
   cursor: pointer;
   transition: color 0.2s ease;
@@ -51,7 +52,7 @@ a {
 
 .vsc-logo_oki {
   font-size: 0.86em;
-  color: #00ffff;
+  color: var(--color-primary);
   opacity: 0.6;                    
   font-family: 'Share Tech Mono',monospace;
   letter-spacing: 0.08em;
@@ -63,9 +64,9 @@ a {
 .vsc-logo_oki:hover {
   opacity: 0.9;
   text-shadow:
-    0 0 4px #00ffff,
-    0 0 8px #00cccc,
-    0 0 16px #00ffff;
+    0 0 4px  var(--color-primary),
+    0 0 8px  var(--color-primary-darker),
+    0 0 16px  var(--color-primary-darkest);
 }
 
 .vsc-logo_terminal {
@@ -145,7 +146,7 @@ html, body {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  color: hsl(180, 100%, 35%);
+  color: var(--color-primary);
   text-align: justify;
   min-height: 0;             /* ✅ prevents flex collapse */
 }

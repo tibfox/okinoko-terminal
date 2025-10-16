@@ -1,3 +1,5 @@
+import { COLORS } from "../../styles/colors";
+
 import React from 'react'
 import { playBeep } from '../../lib/beep.js' // adjust path as needed
 
@@ -26,7 +28,7 @@ export default function NeonSwitch({ name = '', checked, onChange, beep = true }
       {name && (
         <span
           style={{
-            color: '#0ff',
+            color: 'var(--color-primary)',
             fontFamily: "'Share Tech Mono', monospace",
             fontSize: '0.9em',
             userSelect: 'none',
@@ -41,16 +43,14 @@ export default function NeonSwitch({ name = '', checked, onChange, beep = true }
         style={{
           width: '44px',
           height: '22px',
-          border: '1px solid #0ff',
+          border: '1px solid ' + 'var(--color-primary-darker)',
           borderRadius: '12px',
           position: 'relative',
           backgroundColor: checked
-            ? 'rgba(0,255,255,0.3)'
-            : 'rgba(0,0,0,0.5)',
+            ? 'var(--color-primary-darker)'
+            : 'var(--color-primary-darkest)',
           transition: 'all 0.2s ease-in-out',
-          boxShadow: checked
-            ? '0 0 8px #0ff, inset 0 0 4px #0ff'
-            : 'inset 0 0 4px rgba(0,255,255,0.2)',
+         
         }}
       >
         <div
@@ -61,7 +61,7 @@ export default function NeonSwitch({ name = '', checked, onChange, beep = true }
             width: '16px',
             height: '16px',
             borderRadius: '50%',
-            backgroundColor: checked ? '#0ff' : '#555',
+            backgroundColor: checked ? 'var(--color-primary-darkers)' : '#555',
             transition: 'left 0.2s ease',
           }}
         />

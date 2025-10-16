@@ -10,3 +10,23 @@ export function getCookie(name) {
 export function deleteCookie(name) {
   document.cookie = `${name}=; Max-Age=0; path=/`
 }
+
+// src/utils/cookies.js
+
+// --- Theme color cookie helpers ---
+export function setColorCookie(color) {
+  document.cookie =
+    "themeColor=" +
+    encodeURIComponent(color) +
+    "; path=/; max-age=" + 60 * 60 * 24 * 365; // 1 year
+}
+
+export function getColorCookie() {
+  const match = document.cookie.match(/themeColor=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// --- (Optional) clear cookie helper ---
+export function clearColorCookie() {
+  document.cookie = "themeColor=; path=/; max-age=0";
+}
