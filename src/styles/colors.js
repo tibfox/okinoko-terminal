@@ -74,22 +74,32 @@ export function hexToHSL(hex) {
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
-export function darkenHSL({ h, s, l }, amount) {
-  if (h == null || s == null || l == null || isNaN(l)) {
-    return null; // invalid input
-  }
+// export function darkenHSL({ h, s, l }, amount) {
+//   if (h == null || s == null || l == null || isNaN(l)) {
+//     return null; // invalid input
+//   }
 
-  const newL = Math.max(l - amount, 10); // never darker than 10% lightness
-  return `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${newL.toFixed(1)}%)`;
-}
+//   const newL = Math.max(l - amount, 10); // never darker than 10% lightness
+//   return `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${newL.toFixed(1)}%)`;
+// }
 
 
 
 export function generateThemeShades(hexOrHSL) {
+  if (!hexOrHSL) {
+    console.warn("generateThemeShades: no color provided");
+    return {};
+  }
+
   const hsl =
     typeof hexOrHSL === "string" && hexOrHSL.startsWith("#")
       ? hexToHSL(hexOrHSL)
       : hexOrHSL; // assume already an { h, s, l } object
+
+  if (!hsl || hsl.h === undefined || hsl.s === undefined || hsl.l === undefined) {
+    console.error("Invalid HSL input:", hexOrHSL);
+    return {};
+  }
 
   const { h, s } = hsl;
 

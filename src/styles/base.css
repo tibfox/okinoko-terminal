@@ -60,6 +60,7 @@ a {
   display: none;
 }
 
+
 /* Override Aioha modal background and text */
 .aioha-modal {
   background-color: rgba(10, 10, 25, 0.95) !important; /* dark neon */

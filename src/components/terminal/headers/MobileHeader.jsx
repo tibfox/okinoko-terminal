@@ -2,6 +2,7 @@ import { h } from 'preact'
 import { useState, useRef, useEffect } from 'preact/hooks'
 import SlotText from '../../animations/SlotText.jsx'
 import ColorPickerButton from '../ColorPickerButton.jsx'
+import { ErudaToggle } from '../ErudaButton.jsx'
 import SoundToggleButton from '../SoundToggleButton.jsx'
 import BalanceDisplay from '../AccountDisplay.jsx'
 import { useAioha } from '@aioha/react-ui'
@@ -66,6 +67,8 @@ export default function MobileHeader({ title }) {
 
    
               <SoundToggleButton />
+
+              <ErudaToggle />
       </div>
 
       {/* --- Title below --- */}
