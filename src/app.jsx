@@ -1,3 +1,6 @@
+// src/eruda-setup.ts
+import eruda from 'eruda';
+
 import { useState } from 'preact/hooks'
 import './app.css'
 
@@ -17,6 +20,7 @@ const aioha = initAioha({
   },
   
 })
+
 
 export function App() {
   const [page, setPage] = useState(0)
