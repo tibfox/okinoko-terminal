@@ -1,7 +1,7 @@
 import { h } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { useVscQuery } from '../../lib/useVscQuery.js'
-import RcCircleGraph from './RcCircleGraph.js'
+import RcCircleGraph from './RcCircleGraph.jsx'
 
 const QUERY_ACC_BAL = `
   query AccBal($acc: String!) {
