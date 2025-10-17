@@ -59,7 +59,7 @@ export default function TerminalContainer({ title, children }) {
           flexDirection: 'column',        
           overflow: 'auto',
           minHeight: 0,                
-          maxHeight: isMobile ? '50vh' : '80vh',
+          maxHeight: isMobile ? '80vh' : '80vh',
           paddingBottom: isMobile ? '0.1rem' : '0',
         }}
       >
