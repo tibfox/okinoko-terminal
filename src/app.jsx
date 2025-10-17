@@ -28,6 +28,13 @@ export function App() {
     const [fnName, setFnName] = useState('')
     const [params, setParams] = useState({})
 
+    if (import.meta.env.VITE_EXPOSE_ERUDA === 'true') {
+  import('eruda').then((eruda) => {
+    eruda.default.init();
+  });
+}
+
+
   // simple helper to move between pages safely
   const nextPage = () => setPage((prev) => Math.min(prev + 1, 4))
   const prevPage = () => setPage((prev) => Math.max(prev - 1, 0))

@@ -1,5 +1,4 @@
 const ENDPOINT = import.meta.env.VITE_GRAPHQL_ENDPOINT
-
 /**
  * useVscQuery()
  *  - Minimal GraphQL helper for one-time queries or mutations.
