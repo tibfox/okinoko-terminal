@@ -1,7 +1,7 @@
 import { h } from "preact";
 import BalanceDisplay from "../AccountDisplay.jsx";
 import SlotText from "../../animations/SlotText.jsx";
-import ColorPickerButton from "../ColorPickerButton.jsx";
+import ColorPickerButton from "./ColorPickerButton.jsx";
 import SoundToggleButton from "../SoundToggleButton.jsx";
 import { useAioha } from "@aioha/react-ui";
 
@@ -34,7 +34,7 @@ export default function DesktopHeader({ title }) {
             baseDuration={100}
             charDuration={30}
           />
-          <ColorPickerButton />
+          <ColorPickerButton isMobile="false"/>
         </div>
 
         {/* --- Middle: Account Data --- */}

@@ -1,7 +1,7 @@
 import { h } from 'preact'
 import { useState, useRef, useEffect } from 'preact/hooks'
 import SlotText from '../../animations/SlotText.jsx'
-import ColorPickerButton from '../ColorPickerButton.jsx'
+import ColorPickerButton from './ColorPickerButton.jsx'
 
 import SoundToggleButton from '../SoundToggleButton.jsx'
 import BalanceDisplay from '../AccountDisplay.jsx'
@@ -52,7 +52,7 @@ export default function MobileHeader({ title }) {
           position: 'relative',
         }}
       >
-         <ColorPickerButton />
+         <ColorPickerButton isMobile="true"/>
         {/* Center: Balance */}
         <div
           style={{

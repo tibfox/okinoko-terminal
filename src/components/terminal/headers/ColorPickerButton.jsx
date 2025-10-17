@@ -5,10 +5,10 @@ import {
   setThemeColors,
   hexToHSL,
   generateThemeShades,
-} from "../../styles/colors";
-import { getColorCookie, setColorCookie } from "../../lib/cookies";
+} from "../../../styles/colors";
+import { getColorCookie, setColorCookie } from "../../../lib/cookies";
 
-export default function ColorPickerButton() {
+export default function ColorPickerButton({ isMobile}) {
   const inputRef = useRef(null);
   const savedColor = getColorCookie() || DEFAULT_COLOR;
   const [color, setColor] = useState(savedColor);
@@ -73,8 +73,8 @@ export default function ColorPickerButton() {
             key={variable}
             class="color-swatch"
             style={{
-              width: "22px",
-              height: "10px",
+              width: isMobile==='true'?'10px':'20px',
+              height: isMobile==='true'?'20px':'10px',
               borderRadius: "3px",
               background: `var(${variable})`,
               boxShadow: "0 0 2px rgba(0,0,0,0.3)",
