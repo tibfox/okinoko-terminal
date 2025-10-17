@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'PixelLCD';
+  src: url('../src/assets/fonts/pixel_lcd_7.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
 /* === Base Styles === */
 
 html {
@@ -5,38 +13,40 @@ html {
 }
 
 body {
-  background: radial-gradient(circle at center, #0d0d0d, #000000);
-  font-family: 'Share Tech Mono', monospace;
+   font-family: 'Share Tech Mono', monospace; 
   font-size: 1rem; /* inherits from html (16px) */
   margin: 0;
   padding: 0;
   display: flex;
   height: 100vh;
   overflow: hidden;
-  color: var(--color-primary-darker);
-  animation: terminalFlicker 3.5s ease-in-out infinite;  
+    cursor: crosshair;
+ 
 }
 
 h1 {
-  font-size: 1.7em;
-  text-shadow: 0 0 10px #0ff;
-  margin-bottom: 1em;
-  color: var(--color-primary);
-  font-family: 'Share Tech Mono',monospace;
+  font-size: 1.5em;
+  color: var(--color-primary-lighter);
+  /* font-family: 'PixelLCD', sans-serif; */
+  letter-spacing: 0.3em !important;
 }
 
 h2 {
-  font-size: 1.5em;
-  text-shadow: 0 0 10px #0ff;
-  color: var(--color-primary);
-  font-family: 'Share Tech Mono',monospace;
+  font-size: 1.3em;
+  text-shadow: 0 0 3px var(--color-primary-lighter);
+  color: var(--color-primary);  
 }
 
 h3 {
   font-size: 1.2em;
-  color: var(--color-primary);
-  font-family: 'Share Tech Mono',monospace;
+  color: var(--color-primary-lighter);
+  letter-spacing: 0.3em !important;
+   line-height: 0.7;
+  margin-top: 0.5em !important;   /* smaller top margin */
+  margin-bottom: 0em !important; /* smaller bottom margin */
+  padding: 0 !important; /* optional – ensures no extra padding */
 }
+
 
 a {
   color: var(--color-primary);
@@ -49,42 +59,6 @@ a {
 .hidden {
   display: none;
 }
-
-.vsc-logo_oki {
-  font-size: 0.86em;
-  color: var(--color-primary);
-  opacity: 0.6;                    
-  font-family: 'Share Tech Mono',monospace;
-  letter-spacing: 0.08em;
-  line-height: 1rem;
-  /* text-transform: uppercase; */
-  transition: opacity 0.3s ease, text-shadow 0.3s ease;
-}
-
-.vsc-logo_oki:hover {
-  opacity: 0.9;
-  text-shadow:
-    0 0 4px  var(--color-primary),
-    0 0 8px  var(--color-primary-darker),
-    0 0 16px  var(--color-primary-darkest);
-}
-
-.vsc-logo_terminal {
-  color: #00ffff;
-  opacity: 0.6;                    
-  font-family: 'Share Tech Mono',monospace;
-  text-transform: uppercase;
-  transition: opacity 0.3s ease, text-shadow 0.3s ease;
-}
-
-.vsc-logo_terminal:hover {
-  opacity: 0.9;
-  text-shadow:
-    0 0 4px #00ffff,
-    0 0 8px #00cccc,
-    0 0 16px #00ffff;
-}
-
 
 /* Override Aioha modal background and text */
 .aioha-modal {
@@ -101,7 +75,7 @@ a {
 
 /* Buttons inside modal */
 .aioha-modal button {
-  background: linear-gradient(90deg, #00ffff, #ff00ff);
+  background: linear-gradient(90deg, #00ffff, var(--color-primary-darkest));
   border: none;
   color: black;
   font-weight: bold;
@@ -115,7 +89,7 @@ a {
 /* Force all Aioha modals to use dark background */
 .aioha-modal .bg-white {
   background-color: #0a0a1a !important; /* your custom dark */
-  color: #00ffff !important;
+  color: var(--color-primary) !important;
 }
 
 /* optionally override gray background too */
@@ -132,29 +106,13 @@ html, body {
   padding: 0;
 }
 
-.terminal {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 100vh;         /* ✅ ensures full viewport height */
-  box-sizing: border-box;
-}
 
-.terminal-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  color: var(--color-primary);
-  text-align: justify;
-  min-height: 0;             /* ✅ prevents flex collapse */
-}
 
-/* Desktop-only overflow-y with neon scrollbar */
+/* Neon scrollbar look (Firefox) */
 .neon-scroll {
-  /* default (mobile): no internal scroll, content flows */
-  overflow-y: visible;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-darkest) rgba(0, 0, 0, 0.3);
+    overflow-y: visible;
 }
 
 /* Desktop: enable internal scroll when content overflows */
@@ -163,13 +121,6 @@ html, body {
     overflow-y: auto;
   }
 }
-
-/* Neon scrollbar look (Firefox) */
-.neon-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: #00ffffaa rgba(0, 0, 0, 0.3);
-}
-
 /* Neon scrollbar look (WebKit) */
 .neon-scroll::-webkit-scrollbar {
   width: 8px;
@@ -179,9 +130,9 @@ html, body {
   border-radius: 4px;
 }
 .neon-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #00ffffaa, #008888cc);
+  background: linear-gradient(180deg, var(--color-primary-darker), rgba(0, 0, 0, 0.3));
   border-radius: 4px;
 }
 .neon-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #00ffff, #00cccc);
+  background: linear-gradient(180deg, var(--color-primary-darker),  rgba(0, 0, 0, 0.3));
 }

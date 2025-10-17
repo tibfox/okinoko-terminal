@@ -24,7 +24,9 @@ export default function ContractDetails({
 
   return (
     <div
+    className="neon-scroll"
       style={{
+        
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
@@ -35,7 +37,7 @@ export default function ContractDetails({
       {!isMobile && (
         <>
           <h3>Contract Metadata</h3>
-          <table style={{ borderSpacing: '10px 2px', borderCollapse: 'separate' }}>
+          <table style={{ borderSpacing: '0px 0px', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><strong>Contract Owner:</strong></td>
@@ -61,7 +63,7 @@ export default function ContractDetails({
       )}
 
       {/* --- Functions Section --- */}
-      <h3>Functions</h3>
+     {!isMobile && ( <h3>Functions</h3> )} 
       <FunctionList
         selectedContract={selectedContract}
         fnName={fnName}

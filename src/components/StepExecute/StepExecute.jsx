@@ -1,6 +1,6 @@
 import  { useMemo, useState, useEffect } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
-import TerminalContainer from '../TerminalContainer.jsx'
+import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
 import ExecuteForm from './ExecuteForm.jsx'
 import ExecutePreview from './ExecutePreview.jsx'
@@ -95,7 +95,7 @@ export default function StepExecute({
         <div
           style={{
             background: 'rgba(0,255,136,0.1)',
-            border: '1px solid #00ff88',
+            border: '1px solid var(--color-primary-darker)',
             padding: '8px 12px',
             borderRadius: '8px',
             fontFamily: 'monospace',

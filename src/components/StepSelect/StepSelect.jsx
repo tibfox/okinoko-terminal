@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import contractsCfg from '../../data/contracts.json'
-import TerminalContainer from '../TerminalContainer.jsx'
+import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import ContractList from './ContractList.jsx'
 import ContractDetails from './ContractDetails.jsx'

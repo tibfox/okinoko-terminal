@@ -17,8 +17,8 @@ export function initTheme() {
   }
 
   // ✅ Always clamp darkening so we don't go below 10% lightness
-  const darker = darkenHSL(hsl, 40);
-  const darkest = darkenHSL(hsl, 80);
+  const darker = darkenHSL(hsl, 20);
+  const darkest = darkenHSL(hsl, 60);
 
   // ✅ Only set values if they are defined strings
   if (darker && darkest && savedColor) {

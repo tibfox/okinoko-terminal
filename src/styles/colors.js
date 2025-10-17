@@ -1,14 +1,15 @@
 export const COLORS = {
-  primary: "hsl(180, 100%, 40%)",        // #00cccc
-  primaryDarker: "hsl(180, 100%, 20%)",  // #006666
-  primaryDarkest: "hsl(180, 100%, 10%)", // #003333
-  primaryLighter: "hsl(180, 100%, 60%)", // #66ffff
-  primaryLightest: "hsl(180, 100%, 70%)",// #99ffff
-  secondary: "hsl(160, 60%, 45%)",       // a soft greenish teal
-  accent: "hsl(45, 100%, 50%)",          // golden accent
+  primary: "hsl(180, 100%, 50%)",
+  primaryLighter: "hsl(180, 100%, 65%)",
+  primaryLightest: "hsl(180, 100%, 85%)",
+  primaryDarker: "hsl(180, 100%, 35%)",
+  primaryDarkest: "hsl(180, 100%, 20%)",
+  secondary: "hsl(160, 60%, 45%)",
+  accent: "hsl(45, 100%, 50%)",
   background: "#f4f4f4",
   text: "#333333",
 };
+
 
 export const DEFAULT_COLOR = COLORS.primary;
 
@@ -80,4 +81,23 @@ export function darkenHSL({ h, s, l }, amount) {
 
   const newL = Math.max(l - amount, 10); // never darker than 10% lightness
   return `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${newL.toFixed(1)}%)`;
+}
+
+
+
+export function generateThemeShades(hexOrHSL) {
+  const hsl =
+    typeof hexOrHSL === "string" && hexOrHSL.startsWith("#")
+      ? hexToHSL(hexOrHSL)
+      : hexOrHSL; // assume already an { h, s, l } object
+
+  const { h, s } = hsl;
+
+  return {
+    primaryLightest: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 90%)`,
+    primaryLighter: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 70%)`,
+    primary: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 60%)`,
+    primaryDarker: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 30%)`,
+    primaryDarkest: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 15%)`,
+  };
 }

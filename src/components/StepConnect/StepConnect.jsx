@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAioha } from '@aioha/react-ui'
-import TerminalContainer from '../TerminalContainer.jsx'
+import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import ConnectIntro from './ConnectIntro.jsx'
 import ConnectWallet from './ConnectWallet.jsx'
 import AsciiArt from '../animations/vsc_ascii.jsx'

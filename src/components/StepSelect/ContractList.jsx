@@ -40,8 +40,8 @@ export default function ContractList({ contracts, contractId, setContractId, set
           maxHeight: isMobile ? '50%' : '100%',
           minHeight: isMobile ? '50%' : '100%',
           overflowY: 'auto',
-          borderRight: !isMobile ? '1px solid rgba(0,255,255,0.3)' : 'none',
-          borderBottom: isMobile ? '1px solid rgba(0,255,255,0.3)' : 'none',
+          borderRight: !isMobile ? '1px solid var(--color-primary-darkest)' : 'none',
+          borderBottom: isMobile ? '1px solid var(--color-primary-darkest)' : 'none',
           paddingRight: !isMobile ? '10px' : 0,
         }}
       >
@@ -54,7 +54,7 @@ export default function ContractList({ contracts, contractId, setContractId, set
             }}
             style={{
               backgroundColor: contractId === c.vscId ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)',
-              color: 'var(--color-primary)',
+              color:  contractId === c.vscId ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
             }}
           >
             {c.name}

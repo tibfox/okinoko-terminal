@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'preact/hooks'
-import NeonButton from '../buttons/NeonButton.jsx'
+import { useVscQuery } from '../../lib/useVscQuery.js'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ImageUploadField from '../common/ImageUploadField.jsx'
 import MetaInputField from '../common/MetaInputField.jsx'
@@ -12,18 +12,61 @@ export default function ExecuteForm({
   params,
   setParams,
   pending,
-  onSend,
   setStep,
   allMandatoryFilled,
 }) {
   const [isMobile, setIsMobile] = useState(false)
+  const [balances, setBalances] = useState({ hive: 0, hbd: 0 })
+  const [insufficient, setInsufficient] = useState(false)
+  const { runQuery } = useVscQuery()
 
+  // ✅ Fetch balances (always prefix user with "hive:")
+  useEffect(() => {
+    async function fetchBalances() {
+      if (!user) return
+      const QUERY = `
+        query GetBalances($acc: String!) {
+          bal: getAccountBalance(account: $acc) {
+            hive
+            hbd
+          }
+        }
+      `
+      const hiveUser = user.startsWith('hive:') ? user : `hive:${user}`
+      const { data, error } = await runQuery(QUERY, { acc: hiveUser })
+      if (!error && data?.bal) {
+        setBalances({
+          hive: Number(data.bal.hive) / 1000,
+          hbd: Number(data.bal.hbd) / 1000,
+        })
+      }
+    }
+    fetchBalances()
+  }, [user])
+
+  // Handle mobile layout
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900)
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Track insufficient balance for vscIntent fields
+  useEffect(() => {
+    const intent = fn?.parameters?.find((p) => p.type === 'vscIntent')
+    if (!intent) {
+      setInsufficient(false)
+      return
+    }
+
+    const current = params[intent.name] ?? { amount: '', asset: 'HIVE' }
+    const parsed = parseFloat(String(current.amount || '').replace(',', '.'))
+    const available = current.asset === 'HIVE' ? balances.hive : balances.hbd
+    const over = !isNaN(parsed) && parsed > available
+
+    setInsufficient(over)
+  }, [fn, params, balances])
 
   const renderParamInput = (p) => {
     if (p.type?.startsWith('meta-')) {
@@ -33,7 +76,7 @@ export default function ExecuteForm({
           paramType={p.type}
           params={params}
           setParams={setParams}
-          metaAsArray={p.metaAsArray ?? fn.metaAsArray ?? false}
+          metaAsArray={p.metaAsArray ?? fn?.metaAsArray ?? false}
         />
       )
     }
@@ -54,13 +97,41 @@ export default function ExecuteForm({
         <NeonSwitch
           name={p.name}
           checked={!!params[p.name]}
-          onChange={(val) => setParams((prev) => ({ ...prev, [p.name]: val }))}
+          onChange={(val) =>
+            setParams((prev) => ({ ...prev, [p.name]: val }))
+          }
         />
       )
     }
 
     if (p.type === 'vscIntent') {
       const current = params[p.name] ?? { amount: '', asset: 'HIVE' }
+      const available =
+        current.asset === 'HIVE' ? balances.hive : balances.hbd
+
+      const parsed = parseFloat(String(current.amount || '').replace(',', '.'))
+      const exceeds = !isNaN(parsed) && parsed > available
+
+      const onAmountChange = (e) => {
+        let val = e.target.value.replace(',', '.')
+        if (/^\d*([.]\d{0,3})?$/.test(val) || val === '') {
+          setParams((prev) => ({
+            ...prev,
+            [p.name]: { ...current, amount: val },
+          }))
+        }
+      }
+
+      const onAmountBlur = (e) => {
+        const val = parseFloat(String(e.target.value).replace(',', '.'))
+        if (!isNaN(val)) {
+          setParams((prev) => ({
+            ...prev,
+            [p.name]: { ...current, amount: val.toFixed(3) },
+          }))
+        }
+      }
+
       return (
         <div
           style={{
@@ -71,40 +142,18 @@ export default function ExecuteForm({
           }}
         >
           <FloatingLabelInput
-            type="number"
-            step="0.001"
-            min="0"
+            type="text"
+            inputMode="decimal"
             placeholder="Amount"
             label={`${p.name}${p.mandatory ? ' *' : ''}`}
             value={current.amount}
-            onChange={(e) => {
-              let val = e.target.value
-
-              // Only format if it's a valid number
-              if (val !== '' && !isNaN(val)) {
-                // Limit to 3 decimals without adding trailing zeros while typing
-                const parts = val.split('.')
-                if (parts[1]?.length > 3) {
-                  val = `${parts[0]}.${parts[1].slice(0, 3)}`
-                }
-              }
-
-              setParams((prev) => ({
-                ...prev,
-                [p.name]: { ...current, amount: val },
-              }))
+            onChange={onAmountChange}
+            onBlur={onAmountBlur}
+            style={{
+              flex: '0 0 50%',
+              borderColor: exceeds ? 'red' : 'var(--color-primary-lighter)',
+              boxShadow: exceeds ? '0 0 8px red' : 'none',
             }}
-            onBlur={(e) => {
-              // On blur, enforce 3-decimal formatting (e.g., 1.2 → 1.200)
-              const val = parseFloat(e.target.value)
-              if (!isNaN(val)) {
-                setParams((prev) => ({
-                  ...prev,
-                  [p.name]: { ...current, amount: val.toFixed(3) },
-                }))
-              }
-            }}
-            style={{ flex: '0 0 70%' }}
           />
 
           <select
@@ -117,24 +166,32 @@ export default function ExecuteForm({
               }))
             }
             style={{
-              flex: '0 0 25%',
+              flex: '0 0 20%',
               appearance: 'none',
               backgroundColor: 'black',
-              color: 'var(--color-primary)',
-              border: '1px solid var(--color-primary)',
-              borderRadius: '4px',
-              height: '28px',
-              padding: '0 24px 0 8px',
+              padding: '0 20px 0 8px',
               backgroundImage:
-                'linear-gradient(45deg, transparent 50%, var(--color-primary) 50%), linear-gradient(135deg, var(--color-primary) 50%, transparent 50%)',
-              backgroundPosition: 'calc(100% - 12px) 10px, calc(100% - 7px) 10px',
+                'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
+              backgroundPosition:
+                'calc(100% - 12px) center, calc(100% - 7px) center',
               backgroundSize: '5px 5px, 5px 5px',
               backgroundRepeat: 'no-repeat',
+              color: 'var(--color-primary-lighter)',
             }}
           >
             <option value="HIVE">HIVE</option>
             <option value="HBD">HBD</option>
           </select>
+
+          <span
+            style={{
+              flex: '0 0 auto',
+              fontSize: '0.8rem',
+              color: exceeds ? 'red' : 'var(--color-primary-lighter)',
+            }}
+          >
+            {available.toFixed(3)} {current.asset}
+          </span>
         </div>
       )
     }
@@ -165,7 +222,7 @@ export default function ExecuteForm({
       <FloatingLabelInput
         label={`${p.name}${p.mandatory ? ' *' : ''}`}
         type={p.type === 'number' ? 'number' : 'text'}
-        value={params[p.name] ?? ''}   // ✅ controlled by state
+        value={params[p.name] ?? ''}
         onChange={(e) =>
           setParams((prev) => ({
             ...prev,
@@ -183,19 +240,18 @@ export default function ExecuteForm({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        borderRight: isMobile ? 'none' : '1px solid rgba(0,255,255,0.3)',
+        borderRight: isMobile ? 'none' : '1px solid var(--color-primary-darkest)',
         paddingRight: isMobile ? '0' : '10px',
         overflow: 'hidden',
-        minHeight: 0, // ✅ allows internal scroll area to size correctly
-        overflowY: isMobile ? 'auto' : 'visible', // ✅ mobile scroll enabled
+        minHeight: 0,
+        overflowY: isMobile ? 'auto' : 'visible',
       }}
     >
-      {/* Scrollable content */}
       <div
         className="neon-scroll"
         style={{
           flex: 1,
-          minHeight: 0, // ✅ ensures scrollable height inside flexbox
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
@@ -228,10 +284,6 @@ export default function ExecuteForm({
         {fn?.parameters?.length ? (
           fn.parameters.map((p) => (
             <div key={p.name} style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* <label>
-                {p.name}
-                 {p.mandatory && '*'}
-               </label> */}
               {renderParamInput(p)}
             </div>
           ))
@@ -239,8 +291,6 @@ export default function ExecuteForm({
           <p>No parameters for this function.</p>
         )}
       </div>
-
-
     </div>
   )
 }

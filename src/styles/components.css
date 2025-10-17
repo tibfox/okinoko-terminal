@@ -2,29 +2,29 @@
 .vsc-input {
   display: inline-block;
   width: 100%;
-  height: 42px;
+  height: 50px;
   padding: 0 12px;
-  margin-bottom: 15px;
+  /* margin-bottom: 15px; */
   background: rgba(0, 255, 255, 0.06);
-  border: 2px solid #0ff;
+  border: 1px solid var(--color-primary-lighter);
   border-radius: 6px;
-  color: #0ff;
-  font-family: 'WDXL Lubrifont TC', sans-serif;
+  color: var(--color-primary-lighter);
+  /* font-family: 'WDXL Lubrifont TC', sans-serif; */
   font-size: 1em;
   text-align: center;
   outline: none;
-  box-shadow: 0 0 12px rgba(0,255,255,0.3);
-  transition: all 0.2s ease;
+  /* box-shadow: 0 0 12px rgba(0,255,255,0.3); */
+  /* transition: all 0.5s ease; */
   box-sizing: border-box;
 }
-.vsc-input:focus {
+/* .vsc-input:focus {
   box-shadow: 0 0 18px #0ff;
   border-color: #00ffff;
 }
 .vsc-input:focus {
  background: rgba(0,255,255,0.1);
   box-shadow: 0 0 16px rgba(0,255,255,0.4);
-}
+} */
 
 
 /* Remove dropdown arrow */
@@ -132,36 +132,16 @@ terminal-out {
 
 /* === Buttons === */
 .neon-list-btn {
-   /* background-color:  rgb(20, 88, 88); */
-  /* color: #0ff; */
-   
   width: 100%;
   height: 42px;
-  /* padding: 0 12px; */
-  /* font-size: 1.em; */
-  font-family: 'Share Tech Mono',monospace;
-  /* margin-top: 20px; */
-  /* text-transform: uppercase; */
-  cursor: pointer;
-  /* text-shadow: 0 0 8px #0ff; */
-  /* box-shadow: 0 0 15px #0ff, inset 0 0 8px rgba(0,255,255,0.4); */
-  /* transition: all 0.5s ease-in-out; */
 }
 
 .neon-list-btn:hover {
-  /* background: rgb(20, 88, 88); */
-  /* text-shadow: 0 0 10px #fff; */
-  /* box-shadow: 0 0 3px rgb(20, 88, 88), inset 0 0 4px  rgb(20, 88, 88); */
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid var(--color-primary);
 }
 
 .neon-list-btn:disabled, .neon-btn.disabled {
   opacity: 0.4;
-  /* border-color: #044; */
-  color: #044;
-  cursor: not-allowed;
-  box-shadow: none;
-  text-shadow: none;
 }
 
 
@@ -172,7 +152,7 @@ terminal-out {
   overflow-y: auto;
   white-space: pre-line;
   line-height: 1.3;
-  border: 1px solid var(--color-primary-darker);
+  border: 1px solid var(--color-primary-darkest);
   padding: 14px;
   border-radius: 8px;
   font-size: 0.9em;
@@ -190,24 +170,30 @@ terminal-out {
 }
 
 .typewriter::after {
-  content: '▎';
-  animation: blink 1s step-end infinite;
-  color: var(--color-primary-darker);
+  content: '▏'; /* slim, realistic cursor */
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--color-primary-lighter);
+  animation: blink-fade 1s ease-in-out infinite;
+  animation-delay: var(--blink-delay, 0.5s); /* optional random start offset */
+  opacity: 1;
 }
 
-/* Blink animation */
-@keyframes blink {
-  from, to {
-    opacity: 0;
-  }
-  50% {
+@keyframes blink-fade {
+  0%, 100% {
     opacity: 1;
+    filter: drop-shadow(0 0 3px var(--color-primary-darker));
   }
-}
-
-@keyframes blink {
-  50% {
+  33%,66% {
     opacity: 0;
+    filter: drop-shadow(0 0 1px var(--color-primary-darkest));
   }
 }
 
+
+.color-swatch:hover {
+  box-shadow:
+    0 0 6px var(--color-primary),
+    0 0 10px var(--color-primary-lighter);
+  transform: scale(1.25);
+}

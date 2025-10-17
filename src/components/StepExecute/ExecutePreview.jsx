@@ -60,11 +60,11 @@ export default function ExecutePreview({ jsonPreview, logs }) {
         minHeight: 0,
       }}
     >
-      <h3>Payload Preview</h3>
+      <h3>Payload Preview</h3><h3></h3>
       <div
   className="neon-scroll"
   style={{
-    border: '1px solid var(--color-primary-darker)',
+    border: '1px solid var(--color-primary-darkest)',
     borderRadius: '8px',
     padding: '8px',
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -84,7 +84,8 @@ export default function ExecutePreview({ jsonPreview, logs }) {
 </div>
 
 
-      <h3>Log Console</h3>
+      <h3>Log Console</h3><h3></h3>
+      
 
       {/* ✅ Wrapper (relative) */}
       <div
@@ -102,7 +103,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
     className="neon-scroll"
     style={{
       flex: 1,
-      border: '1px solid ' + 'var(--color-primary-darker)',
+      border: '1px solid ' + 'var(--color-primary-darkest)',
       borderRadius: '8px',
       padding: '8px',
       backgroundColor: 'rgba(0,0,0,0.6)',

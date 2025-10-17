@@ -4,7 +4,7 @@ import './app.css'
 import { initAioha } from '@aioha/aioha'
 import { AiohaProvider } from '@aioha/react-ui'
 
-import TerminalContainer from './components/TerminalContainer.jsx'
+import TerminalContainer from './components/terminal/TerminalContainer.jsx'
 import NeonButton from './components/buttons/NeonButton.jsx'
 import StepConnect from './components/StepConnect/StepConnect.jsx'
 import StepSelect from './components/StepSelect/StepSelect.jsx'
