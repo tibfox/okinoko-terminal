@@ -1,15 +1,8 @@
 import DesktopHeader from './headers/DesktopHeader.jsx'
 import MobileHeader from './headers/MobileHeader.jsx'
 
-import BalanceDisplay from './AccountDisplay.jsx'
-import SoundToggleButton from './SoundToggleButton.jsx'
 
-import React, { useState, useEffect } from 'react'
-import SlotText from '../animations/SlotText.jsx'
-
-import { playBeep, setSoundEnabled, getSoundEnabled } from '../../lib/beep.js'
-
-import ColorPickerButton from "./ColorPickerButton.jsx";
+import { useState, useEffect } from 'preact/hooks'
 
 
 export default function TerminalContainer({ title, children }) {
@@ -28,15 +21,17 @@ export default function TerminalContainer({ title, children }) {
     return null
   }
 
+  const mobileWidth = '90vw'
+  const desktopWidth = '66vw'
 
   return (
     <div
       className="terminal"
       style={{
         position: 'relative',
-        width: isMobile ? '95vw' : '66vw',
-        maxWidth: isMobile ? '95vw' : '66vw',
-        minWidth: isMobile ? '95vw' : '66vw',
+        width: isMobile ? mobileWidth : desktopWidth,
+        maxWidth: isMobile ? mobileWidth : desktopWidth,
+        minWidth: isMobile ? mobileWidth : desktopWidth,
         flex: 1,                  // ✅ let CSS manage full height
         display: 'flex',
         flexDirection: 'column',
@@ -64,8 +59,8 @@ export default function TerminalContainer({ title, children }) {
           flexDirection: 'column',        
           overflow: 'auto',
           minHeight: 0,                
-          maxHeight: isMobile ? 'calc(100vh - 180px)' : '80vh',
-          paddingBottom: isMobile ? '1rem' : '0',
+          maxHeight: isMobile ? '100vh' : '80vh',
+          paddingBottom: isMobile ? '0.1rem' : '0',
         }}
       >
         {children}

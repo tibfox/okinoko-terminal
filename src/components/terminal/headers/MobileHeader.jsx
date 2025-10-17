@@ -47,7 +47,7 @@ export default function MobileHeader({ title }) {
           alignItems: 'center',
           justifyContent: 'space-between',
           width: '100%',
-          padding: '0 0.75rem',
+          padding: '0',
           boxSizing: 'border-box',
           position: 'relative',
         }}
@@ -75,7 +75,7 @@ export default function MobileHeader({ title }) {
       {/* --- Title below --- */}
       <SlotText
         text={title.toUpperCase()}
-        tag="h2"
+        tag="h4"
         interval={100}
         baseDuration={150}
         charDuration={50}

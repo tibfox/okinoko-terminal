@@ -1,5 +1,5 @@
 {
-  "name": "aioha-test",
+  "name": "okinoko-terminal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,11 @@
     "@aioha/aioha": "^1.8.0",
     "@aioha/react-ui": "^1.8.0",
     "@chakra-ui/react": "^3.27.1",
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-brands-svg-icons": "^7.1.0",
+    "@fortawesome/free-regular-svg-icons": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/react-fontawesome": "^3.1.0",
     "preact": "^10.27.2"
   },
   "devDependencies": {

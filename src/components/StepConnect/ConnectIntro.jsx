@@ -38,9 +38,7 @@ export default function ConnectIntro() {
           textAlign: 'justify',
           lineHeight: 1.5,
           // color: '#0ff',
-          marginBottom: '0.8rem',
           fontSize: isMobile ? '0.9rem' : '1rem',
-          padding: isMobile ? '0 1rem' : 0,
         }}
       >
         This terminal is your <b>direct uplink</b> to the <a href="https://vsc.eco/">VSC blockchain</a>! Streamlined,

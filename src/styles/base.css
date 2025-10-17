@@ -47,6 +47,11 @@ h3 {
   padding: 0 !important; /* optional – ensures no extra padding */
 }
 
+h4 {
+  font-size: 1em;
+  text-shadow: 0 0 3px var(--color-primary-lighter);
+  color: var(--color-primary);  
+}
 
 a {
   color: var(--color-primary);

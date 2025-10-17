@@ -1,6 +1,9 @@
-import { h } from 'preact'
 import { useState } from 'preact/hooks'
 import { playBeep, setSoundEnabled, getSoundEnabled } from '../../lib/beep.js'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faVolumeXmark,faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
+
+
 
 export default function SoundToggleButton({ style = {} }) {
   const [soundEnabled, setSoundState] = useState(getSoundEnabled())
@@ -16,11 +19,11 @@ export default function SoundToggleButton({ style = {} }) {
   const baseStyle = {
     background: 'none',
     border: 'none',
-    color: 'var(--color-primary-darker)',
+    
     width: '32px',
     height: '32px',
     cursor: 'pointer',
-    fontSize: '1.5rem',
+    fontSize: '1rem',
     fontFamily: "'Share Tech Mono', monospace",
     display: 'flex',
     alignItems: 'center',
@@ -31,7 +34,7 @@ export default function SoundToggleButton({ style = {} }) {
     textShadow: hovered
       ? '0 0 8px var(--color-primary), 0 0 12px var(--color-primary-lighter)'
       : 'none',
-    transform: 'rotate(180deg)', // 👈 Always include rotation here
+    
   }
 
   return (
@@ -39,20 +42,23 @@ export default function SoundToggleButton({ style = {} }) {
       onClick={toggleSound}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ ...baseStyle, ...style }} // 👈 Merge styles safely
+      style={{ ...baseStyle, ...style }} 
       title={soundEnabled ? 'Mute sound' : 'Enable sound'}
     >
       {soundEnabled ? (
-        <span style={{ color: 'var(--color-primary-darker)' }}>🕪</span>
+        <span style={{ color: hovered?'var(--color-primary)':'var(--color-primary-darker)', }}>
+       <FontAwesomeIcon icon={faVolumeHigh} />
+
+        </span>
       ) : (
         <span
           style={{
             position: 'relative',
             display: 'inline-block',
-            color: 'var(--color-primary-darkest)',
+            color: hovered?'var(--color-primary)':'var(--color-primary-darker)',
           }}
         >
-          <span>🕨</span>
+          <span><FontAwesomeIcon icon={faVolumeXmark} /></span>
         </span>
       )}
     </button>

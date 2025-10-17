@@ -2,7 +2,6 @@
 import eruda from 'eruda';
 
 import { useState } from 'preact/hooks'
-import './app.css'
 
 import { initAioha } from '@aioha/aioha'
 import { AiohaProvider } from '@aioha/react-ui'
