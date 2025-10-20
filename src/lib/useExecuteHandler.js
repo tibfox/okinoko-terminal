@@ -23,7 +23,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
     return saved ? JSON.parse(saved) : []
   })
 
-   const hiveUser = user.startsWith('hive:') ? user : `hive:${user}`
+  const hiveUser = user?.startsWith('hive:') ? user : user ? `hive:${user}` : ''
 
   // === Fetch HIVE/HBD balances once user is known ===
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
     })
   }
 
-  // Payload builder (unchanged)
+  // Payload builder
   const buildPayload = (fn, params) => {
     if (!fn) return { payload: '', intents: [] }
 
@@ -122,20 +122,65 @@ export default function useExecuteHandler({ contract, fn, params }) {
     switch (fn.parse) {
       case 'raw': {
         const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
-        const val = params?.[first?.name] ?? getDefaultValue(first ?? { type: 'string' })
-        return { payload: val.toString(), intents }
+        const val =
+          params?.[first?.name] ?? getDefaultValue(first ?? { type: 'string' })
+        return { payload: val != null ? val.toString() : '', intents }
       }
 
       case 'csv': {
-        const delimiter = fn.delimeter ?? ','
-        const keyDelimiter = fn.keyDelimeter ?? ':'
+        const delimiter = fn.delimiter ?? ','
+        const keyDelimiter = fn.keyDelimiter ?? ':'
+        const excludeKeys = fn.excludeKeys ?? false
+
+        // Utility to normalize values to a real boolean (true/false) if possible
+        function toBool(v) {
+          if (v === true || v === false) return v
+          if (v === 1 || v === '1') return true
+          if (v === 0 || v === '0') return false
+          if (typeof v === 'string') {
+            const s = v.trim().toLowerCase()
+            if (s === 'true' || s === 't' || s === 'yes' || s === 'y' || s === 'on') return true
+            if (s === 'false' || s === 'f' || s === 'no' || s === 'n' || s === 'off') return false
+          }
+          return null
+        }
+
+        function isBoolType(p) {
+          return p && (p.type === 'bool' || p.type === 'boolean')
+        }
+
         const str = ps
           .filter((p) => p.type !== 'vscIntent')
           .map((p) => {
-            const val = params?.[p.name] ?? getDefaultValue(p)
+            let val = params?.[p.name] ?? getDefaultValue(p)
+
+            // Pull from parameter-level config, fallback to standard values
+            const trueOut = p.boolTrue != null ? String(p.boolTrue) : 'true'
+            const falseOut = p.boolFalse != null ? String(p.boolFalse) : 'false'
+
+            // Process boolean types using parameter-level output
+            if (isBoolType(p)) {
+              const parsed = toBool(val)
+              if (parsed === true) val = trueOut
+              else if (parsed === false) val = falseOut
+              // else leave val as-is (fallback)
+            }
+
+            // Ensure val is a string
+            if (val !== null && val !== undefined && typeof val !== 'string') {
+              val = String(val)
+            }
+
+            // Return value-only if excludeKeys is true
+            if (excludeKeys) {
+              return val
+            }
+
+            // Normal key:value format
             return `${p.payloadName || p.name}${keyDelimiter}${val}`
           })
           .join(delimiter)
+
         return { payload: str, intents }
       }
 

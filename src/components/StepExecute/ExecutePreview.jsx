@@ -99,24 +99,26 @@ export default function ExecutePreview({ jsonPreview, logs }) {
 >
   {/* ✅ Scrollable log box */}
   <div
-    ref={logContainerRef}
-    className="neon-scroll"
-    style={{
-      flex: 1,
-      border: '1px solid ' + 'var(--color-primary-darkest)',
-      borderRadius: '8px',
-      padding: '8px',
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      fontFamily: "'Share Tech Mono', monospace",
-      fontSize: '0.9em',
-      overflowY: 'auto',
-      boxSizing: 'border-box',
-      height: '100%',       // ✅ ensures this fills the wrapper
-      minHeight: 0,
-      whiteSpace: 'pre-wrap',     
-    wordWrap: 'break-word',     
-    }}
-  >
+  ref={logContainerRef}
+  className="neon-scroll"
+  style={{
+    flex: 1,
+    border: '1px solid var(--color-primary-darkest)',
+    borderRadius: '8px',
+    padding: '8px',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    fontFamily: "'Share Tech Mono', monospace",
+    fontSize: '0.9em',
+    overflowY: 'auto',
+    boxSizing: 'border-box',
+    height: '100%',
+    minHeight: 0,
+    textAlign: 'left',       // ✅ Force left alignment
+    whiteSpace: 'pre-wrap',  // ✅ Preserve new lines and wrap long lines
+    overflowWrap: 'break-word', // ✅ Break long words when needed
+    wordBreak: 'break-all',  // ✅ Hard break fallback
+  }}
+>
     {logs.map((line, i) => {
       const color = LOG_COLORS[line[0]] || + 'var(--color-primary)'
       return (

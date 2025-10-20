@@ -24,9 +24,9 @@ export default function ContractDetails({
 
   return (
     <div
-    className="neon-scroll"
+      className="neon-scroll"
       style={{
-        
+
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
@@ -41,15 +41,36 @@ export default function ContractDetails({
             <tbody>
               <tr>
                 <td><strong>Contract Owner:</strong></td>
-                <td>{selectedContract.owner}</td>
+                <td>
+                 <a
+                    href={`https://vsc.techcoderx.com/address/hive:${selectedContract.owner}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {selectedContract.owner}
+                  </a>
+                </td>
+
               </tr>
               <tr>
                 <td><strong>Deployed On:</strong></td>
                 <td>{selectedContract.deployedOn}</td>
               </tr>
+               <tr>
+                <td><strong>Verified On:</strong></td>
+                <td>{selectedContract.verifiedOn}</td>
+              </tr>
               <tr>
                 <td><strong>VSC ID:</strong></td>
-                <td>{selectedContract.vscId}</td>
+                <td>
+                  <a
+                    href={`https://vsc.techcoderx.com/contract/${selectedContract.vscId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {selectedContract.vscId}
+                  </a>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -57,13 +78,13 @@ export default function ContractDetails({
           <DescriptionBox
             text={selectedContract.description}
             onDone={() => setContractDone(true)}
-            
+
           />
         </>
       )}
 
       {/* --- Functions Section --- */}
-     {!isMobile && ( <h3>Functions</h3> )} 
+      {!isMobile && (<h3>Functions</h3>)}
       <FunctionList
         selectedContract={selectedContract}
         fnName={fnName}
@@ -71,7 +92,7 @@ export default function ContractDetails({
       />
 
       {/* Selected function description */}
-      <DescriptionBox text={selectedFunction?.description} isMobile={isMobile}/>
+      <DescriptionBox text={selectedFunction?.description} isMobile={isMobile} />
     </div>
   )
 }
