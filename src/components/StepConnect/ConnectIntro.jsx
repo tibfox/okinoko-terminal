@@ -41,8 +41,8 @@ export default function ConnectIntro() {
           fontSize: isMobile ? '0.9rem' : '1rem',
         }}
       >
-        This terminal is your <b>direct uplink</b> to the <a href="https://vsc.eco/">VSC blockchain</a>! Streamlined,
-        fast, and tuned for quick access to curated smart contracts operating on the vsc network.
+        This terminal is your <b>direct uplink</b> to the <a href="https://vsc.eco/">Magi blockchain</a>! Streamlined,
+        fast, and tuned for quick access to curated smart contracts operating on the magi network.
       </p>
 
     </div>

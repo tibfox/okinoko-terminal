@@ -50,8 +50,14 @@ export default function StepSelect({
     }
 
     // On desktop (or mobile with function selected)
-    setStep(2)
+    if (selectedFunction.parse == "game") {
+    setStep(3)
+    console.log("page 3")
+    }else{
+      setStep(2)
     console.log("page 2")
+    }
+    
   }
 
   return (
@@ -77,7 +83,7 @@ export default function StepSelect({
         >
           currently supported
         </span>{' '}
-        smart contracts running on the vsc blockchain.
+        smart contracts running on the magi blockchain.
       </p>
 
       {/* Popup */}

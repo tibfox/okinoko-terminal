@@ -37,21 +37,6 @@ select {
   cursor: pointer;
 }
 
-/* === Terminal Output === */
-terminal-out {
-  background: black;
-  color: #0f0;
-  border: 2px solid #0f0;
-  padding: 0 12px;
-  margin-top: 20px;
-  width: 90%;
-  max-height: 200px;
-  overflow: auto;
-  border-radius: 10px;
-  box-shadow: 0 0 15px #0f0;
-  text-shadow: 0 0 6px #0f0;
-}
-
 /* === Log === */
 #log {
   text-align: left;
@@ -197,3 +182,53 @@ terminal-out {
     0 0 10px var(--color-primary-lighter);
   transform: scale(1.25);
 }
+
+/* === Game Selection dev === */
+/* Container with border + visual style */
+.game-selection-table {
+  background: black;
+  border: 1px solid var(--color-primary-darkest);
+  border-radius: 8px;
+  /* margin-top: 20px; */
+  width: 100%;
+  padding: 0;
+  overflow: hidden; /* prevent layout shift */
+  max-height: 33%; /* relative to parent height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header stays fixed */
+.game-selection-table table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* Scrollable body only */
+.game-table-body {
+  overflow-y: auto;
+  flex: 1; /* takes remaining height */
+}
+
+/* Column fix + wrapping */
+.game-selection-table td,
+.game-selection-table th {
+  padding: 4px 6px;   /* reduce padding */
+  line-height: 1.2;   /* compact vertical spacing */
+  white-space: normal !important;  /* allow wrapping */
+  word-wrap: break-word;          /* old standard */
+  overflow-wrap: anywhere;        /* modern, best for forcing breaks */
+  hyphens: auto;                  /* optional: hyphenate nicely */
+}
+
+.game-selection-table button,
+.game-selection-table .neon-button, /* depending on your button class */
+.game-selection-table .NeonButton {
+  padding: 2px 6px !important; /* smaller button size */
+  font-size: 0.85em;           /* slightly smaller text */
+  line-height: 1;              /* avoid extra height coming from line height */
+}
+
+
+

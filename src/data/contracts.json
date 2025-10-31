@@ -86,109 +86,226 @@
         }
       ]
     },
+    
     {
-      "name": "Ōkinoko Escrow (legacy)",
+      "name": "SDK Function Tests",
       "id": 2,
-      "vscId": "vsc1BonkE2CtHqjnkFdH8hoAEMP25bbWhSr3UA",
+      "vscId": "vsc1Bpi2HEM4cM1WrpGNsCUfuLBKeULRWYfTcz",
       "owner": "tibfox.vsc",
-      "deployedOn": "2025-10-09T15:19:18",
+      "deployedOn": "2025-10-31T11:41:51",
       "verifiedOn": "unverified",
-      "description": "! Important: Only use if you still have open escrows on this contract!\nThis contract acts as an on-chain escrow between two parties, optionally including an arbitrator for dispute resolution. Deposit funds securely and choose whether to release them or request a refund.",
+      "description": "All currently supported sdk functions",
       "functions": [
         {
-          "name": "e_create",
-          "friendlyName": "Create Escrow",
-          "description": "Set up a new escrow by choosing who will receive the funds, how much to send, and who will act as arbitrator.\n! Don’t forget: You’ll get an escrow ID after creation. You’ll need it later to manage the escrow.",
-          "parse": "json",
+          "name": "log",
+          "friendlyName": "Log something",
+          "description": "sdk.Log(*a)",
+          "parse": "raw",
           "parameters": [
             {
-              "name": "Descriptive Name",
-              "payloadName": "name",
-              "type": "string",
+              "name": "log message",
+              "payloadName": "",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "state_set",
+          "friendlyName": "Set State",
+          "description": "sdk.StateSetObject(key, value)",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys":true,
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
               "mandatory": true
             },
             {
-              "name": "Receiver of the Amount",
-              "payloadName": "to",
-              "type": "address",
+              "name": "value",
+              "payloadName": "value",
+              "type": "string", 
               "mandatory": true
-            },
+            }
+          ]
+        },
+        {
+          "name": "state_get",
+          "friendlyName": "Get State",
+          "description": "sdk.StateGetObject(*key)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "state_del",
+          "friendlyName": "Delete State",
+          "description": "sdk.StateDeleteObject(*key)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "get_env",
+          "friendlyName": "Get full env and convert to string",
+          "description": "sdk.GetEnv()",
+          "parse": "raw",
+          "parameters": [
+           
+          ]
+        },
+        {
+          "name": "get_env_string",
+          "friendlyName": "Get full env string",
+          "description": "sdk.GetEnvStr()",
+          "parse": "raw",
+          "parameters": [
+           
+          ]
+        },
+        {
+          "name": "get_envkey",
+          "friendlyName": "Get Env Key",
+          "description": "sdk.GetEnvKey(*a)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "get_balance",
+          "friendlyName": "Get Hive Balance for user",
+          "description": "sdk.GetBalance(sdk.Address(*a), sdk.AssetHive)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "user",
+              "payloadName": "key",
+              "type": "address", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "hive_draw",
+          "friendlyName": "Draw 0.001 from caller",
+          "description": "sdk.HiveDraw(1, sdk.AssetHive) ",
+          "parse": "raw",
+          "parameters": [
             {
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true
-            },
+            }
+          ]
+        },{
+          "name": "hive_transfer",
+          "friendlyName": "Send 0.001 Hive from contract to user",
+          "description": "sdk.HiveTransfer(sdk.Address(*receiver), 1, sdk.AssetHive)",
+          "parse": "raw",
+          "parameters": [
             {
-              "name": "Arbitrator (in case of Disputes)",
-              "payloadName": "arb",
-              "type": "address",
+              "name": "user",
+              "payloadName": "key",
+              "type": "address", 
               "mandatory": true
             }
           ]
         },
         {
-          "name": "e_decide",
-          "friendlyName": "Add Decision",
-          "description": "If you’re part of the escrow, you can send in your decision. Don’t worry: you can change it anytime before the escrow is finalized.",
-          "parse": "json",
+          "name": "hive_withdraw",
+          "friendlyName": "Withdraw 0.001 Hive from contract to user",
+          "description": "sdk.HiveWithdraw(sdk.Address(*receiver), 1, sdk.AssetHive)",
+          "parse": "raw",
           "parameters": [
             {
-              "name": "Escrow Id",
-              "payloadName": "id",
-              "type": "number",
-              "asString": false,
+              "name": "user",
+              "payloadName": "key",
+              "type": "address", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "contract_read",
+          "friendlyName": "Read state of other contract",
+          "description": "sdk.ContractStateGet(contractId, key)",
+          "parse": "csv",
+          "delimiter":"|",
+          "excludeKeys":true, 
+          "parameters": [
+            {
+              "name": "contract",
+              "payloadName": "contract",
+              "type": "string", 
               "mandatory": true
             },
-            {
-              "name": "Release Funds to the Receiver?",
-              "payloadName": "d",
-              "type": "bool",
-              "asString": false,
+              {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
               "mandatory": false
             }
           ]
         },
         {
-          "name": "e_get",
-          "friendlyName": "Get Escrow",
-          "description": "This function is used to get all data related to a give escrow ID.",
-          "parse": "raw",
+          "name": "contract_call",
+          "friendlyName": "Call method of other contract",
+          "description": "sdk.ContractCall(contractId, method, callPayload, callOptions)",
+          "parse": "csv",
+          "delimiter":"|",
+          "excludeKeys":true,
           "parameters": [
             {
-              "name": "Escrow Id",
-              "payloadName": "id",
-              "type": "number",
-              "asString": false,
+              "name": "contract",
+              "payloadName": "contract",
+              "type": "string", 
               "mandatory": true
+            },
+              {
+              "name": "method",
+              "payloadName": "method",
+              "type": "string", 
+              "mandatory": true
+            }
+            ,
+              {
+              "name": "payload",
+              "payloadName": "payload",
+              "type": "string", 
+              "mandatory": true
+            }
+         ,
+            {
+              "name": "amount / asset",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory":true
             }
           ]
         }
-      ]
-    },
-    {
-      "name": "Testing Contract",
-      "id": 3,
-      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapt",
-      "owner": "tibfox.vsc",
-      "deployedOn": "2025-09-13T20:55:39",
-      "verifiedOn": "unverified",
-      "description": "This contract is just for testing purposes - you can use it but it does not add any value ¯\\(ツ)/¯",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "This function will return the message sent.",
-          "parse": "raw",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory": true
-            }
-          ]
-        }
+        
       ]
     }
   ]

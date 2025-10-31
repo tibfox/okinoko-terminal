@@ -274,7 +274,35 @@
           ]
         }
       ]
-    } 
+    } ,
+    {
+      "name": "Ōkinoko In-A-Row (in development)",
+      "id": 10,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYast",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-09-13T20:55:39",
+      "verifiedOn": "unverified",
+      "description": "Play games on vsc!",
+      "functions": [
+        {
+          "name": "TTT",
+          "friendlyName": "TicTacToe",
+          "description": "Play the famous tic tac toe against someone!",
+          "parse": "game"
+        },
+        {
+          "name": "C4",
+          "friendlyName": "Connect 4",
+          "description": "Play the famous Connect Four against someone!",
+          "parse": "game"
+        },{
+          "name": "G",
+          "friendlyName": "Gomoku",
+          "description": "Play the famous Gomoku with swap2 freestyle rules against someone!",
+          "parse": "game"
+        }
+      ]
+    }
 
   ]
 }

@@ -6,11 +6,10 @@ import { useState } from 'preact/hooks'
 import { initAioha } from '@aioha/aioha'
 import { AiohaProvider } from '@aioha/react-ui'
 
-import TerminalContainer from './components/terminal/TerminalContainer.jsx'
-import NeonButton from './components/buttons/NeonButton.jsx'
 import StepConnect from './components/StepConnect/StepConnect.jsx'
 import StepSelect from './components/StepSelect/StepSelect.jsx'
 import StepExecute from './components/StepExecute/StepExecute.jsx'
+import StepGame from './components/StepGame/StepGame.jsx'
 
 const aioha = initAioha({
   hiveauth: {
@@ -68,26 +67,15 @@ export function App() {
         )
       case 3:
         return (
-          <TerminalContainer title="Community">
-            <p>Connect with other Hive users, creators, and developers!</p>
-            <div className="flex gap-4 mt-4">
-              <NeonButton onClick={prevPage}>Back</NeonButton>
-              <NeonButton onClick={nextPage}>Next</NeonButton>
-            </div>
-          </TerminalContainer>
+          <StepGame
+                        contractId={contractId}
+                        fnName={fnName}
+                        params={params}
+                        setParams={setParams}
+                        setStep={setPage}
+                      />
         )
-      case 4:
-        return (
-          <TerminalContainer title="Final Step">
-            <p>🎉 You’ve reached the end! Ready to join the Hive Open Days?</p>
-            <div className="flex gap-4 mt-4">
-              <NeonButton onClick={prevPage}>Back</NeonButton>
-              <NeonButton onClick={() => alert('See you at the event!')}>
-                Finish
-              </NeonButton>
-            </div>
-          </TerminalContainer>
-        )
+      
       default:
         return null
     }
