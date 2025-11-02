@@ -108,7 +108,7 @@ export default function StepGame({
     setSelectedCells(cells)
   }
 
-  const handleSendMoveDummy = async () => {
+  const handleSendMoveDummy = async  () => {
     console.log('[Move] selectedCells:', selectedCells, 'game:', activeGame)
     await handleSend()
   }
