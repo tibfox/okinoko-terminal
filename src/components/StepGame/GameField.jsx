@@ -1,21 +1,23 @@
 // GameField.jsx
 import { useMemo, useState, useEffect, useRef } from 'preact/hooks'
 
-export default function GameField({ game, user, onSelectionChange }) {
+export default function GameField({ game, user, onSelectionChange,setParams }) {
   const size = useMemo(() => {
     if (!game) return null
-    if (game.type === 'TTT') return { rows: 3, cols: 3 }
-    if (game.type === 'C4') return { rows: 6, cols: 7 }
-    if (game.type === 'G')  return { rows: 15, cols: 15 }
+    if (game.type === "TicTacToe") return { rows: 3, cols: 3 }
+    if (game.type === "TicTacToe5" || game.type === "Squava") return { rows: 5, cols: 5 }
+    if (game.type === "Connect4") return { rows: 6, cols: 7 }
+    if (game.type === "Gomoku")  return { rows: 15, cols: 15 }
     return null
   }, [game?.type])
 
   const allowMultiple = game?.state === 'swap'
+  const fullUser = user.startsWith('hive:') ? user : `hive:${user}`
   const isMyTurn =
-    user &&
+    fullUser &&
     game &&
-    ((user === game.creator && game.turn === '1') ||
-     (user === game.opponent && game.turn === '2'))
+    ((fullUser === game.creator && game.turn === '1') ||
+     (fullUser === game.opponent && game.turn === '2'))
 
   const [selected, setSelected] = useState([])
   const [fallingFrame, setFallingFrame] = useState(null) // { r, c } for C4 animation
@@ -24,22 +26,56 @@ export default function GameField({ game, user, onSelectionChange }) {
   const SOFT_GLOW_PRIMARY = '0 0 18px var(--color-primary), inset 0 0 12px var(--color-primary)'
   const ULTRA_GLOW        = '0 0 50px var(--color-primary), 0 0 30px var(--color-primary), inset 0 0 25px var(--color-primary), inset 0 0 15px var(--color-primary)'
 
-  useEffect(() => {
-    setSelected([])
-    onSelectionChange?.([])
-    setFallingFrame(null)
-  }, [game?.id, game?.state])
+
+// helper to sync selection and params
+const updateSelection = (cells) => {
+  setSelected(cells)
+  onSelectionChange?.(cells)
+
+  // Convert to payload format "__gameMove"
+  // Convert selection array to string "r,c" or "r1,c1;r2,c2" for swap mode
+  const paramMove = cells.length > 1
+    ? cells.map(s => `${s.r},${s.c}`).join(';')
+    : cells.length === 1
+      ? `${cells[0].r},${cells[0].c}`
+      : ''
+
+  setParams(prev => ({
+    ...prev,
+    __gameCell: paramMove || undefined   // clear if empty
+  }))
+}
+
 
   useEffect(() => {
-    onSelectionChange?.(selected)
-  }, [selected])
+  updateSelection([])
+  setFallingFrame(null)
+}, [game?.id, game?.state])
+
+
 
   if (!game || !size) {
     return (
-      <div style={{ padding: '20px', color: '#0f0', fontFamily: 'monospace' }}>
-        <h2>No game selected</h2>
-        <p>Select a game to load the board.</p>
-      </div>
+        <div><h2>Welcome to the Game Arena</h2>
+<p>No game selected yet - this is just your staging area.
+From here, you can choose to <b>Create</b> a new game, <b>Join</b> a game someone else started, or <b>Continue</b> a game you're already part of.
+Pick an option to get started and dive into a match.</p>
+
+<div style={{ marginTop: '40px' }}>
+<h4>First Move Payment (FMP)</h4>
+
+<p>Some game creators enable a feature called <b>First Move Payment</b>.
+If it's available, you can choose to pay a small extra amount to secure the first turn.
+
+Why? Because in many strategy games, going first offers a small tactical advantage.
+If you don't want it, simply leave it off and join the game normally - completely optional.
+
+
+</p></div>
+<div style={{ marginTop: '40px' }}>
+<h4>Enjoy your gaming!</h4></div>
+</div>
+     
     )
   }
 
@@ -57,7 +93,7 @@ export default function GameField({ game, user, onSelectionChange }) {
     if (!isMyTurn) return
 
     // C4: click only on top row; animate falling frame-by-frame
-    if (game.type === 'C4') {
+    if (game.type === 'Connect4') {
   // Cancel current animation if any
   if (fallingTimerRef.current) {
     clearTimeout(fallingTimerRef.current)
@@ -84,7 +120,7 @@ export default function GameField({ game, user, onSelectionChange }) {
     } else {
       // Final landing
       setFallingFrame(null)
-      setSelected([{ r: landingRow, c }])
+      updateSelection([{ r: landingRow, c }])
       fallingTimerRef.current = null
     }
   }
@@ -100,12 +136,14 @@ export default function GameField({ game, user, onSelectionChange }) {
     if (cellVal !== '0') return
 
     if (allowMultiple) {
-      setSelected(prev => {
-        const exists = prev.some(s => s.r === r && s.c === c)
-        return exists ? prev.filter(s => !(s.r === r && s.c === c)) : [...prev, { r, c }]
-      })
+      updateSelection(
+  exists
+    ? prev.filter(s => !(s.r === r && s.c === c))
+    : [...prev, { r, c }]
+)
+
     } else {
-      setSelected([{ r, c }])
+     updateSelection([{ r, c }])
     }
   }
 
@@ -165,11 +203,11 @@ export default function GameField({ game, user, onSelectionChange }) {
 
             // Clickability: for C4 allow only top row; otherwise as before
             const clickable = isMyTurn && !isUsed && (
-              game.type !== 'C4' ? true : r === 0
+              game.type !== 'Connect4' ? true : r === 0
             )
 
             // G-type: filled stones with glow; empty calm; selected empty = ultra
-            if (game.type === 'G') {
+            if (game.type === 'Gomoku') {
               const fillColor = stoneFillForG(val)
               let background = 'transparent'
               let boxShadow = 'none'
@@ -196,7 +234,7 @@ export default function GameField({ game, user, onSelectionChange }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 'clamp(0.6rem, 2vw, 2rem)',
+                    fontSize: 'clamp(0.6rem, 1vw, 1rem)',
                     fontWeight: 'bold',
                     cursor: clickable ? 'pointer' : 'not-allowed',
                     transition: 'box-shadow 120ms ease, background 120ms ease'
@@ -206,7 +244,7 @@ export default function GameField({ game, user, onSelectionChange }) {
             }
 
             // C4: frame-by-frame falling animation (soft glow while falling), selected uses ULTRA on landing
-            if (game.type === 'C4') {
+            if (game.type === 'Connect4') {
               const isSelectedLanding = selectedCell
               const bgBase =
   isSelectedLanding
@@ -242,7 +280,7 @@ const shadow =
                         ? 'var(--color-primary)'
                         : 'var(--color-primary-darker)'
                       : (clickable ? 'var(--color-primary)' : '#555'),
-                    fontSize: 'clamp(0.6rem, 2vw, 2rem)',
+                    fontSize: 'clamp(0.6rem, 1vw, 1rem)',
                     fontWeight: 'bold',
                     cursor: clickable ? 'pointer' : 'not-allowed',
                     transition: 'box-shadow 80ms linear, background 80ms linear'
@@ -282,7 +320,7 @@ return (
       alignItems: 'center',
       justifyContent: 'center',
       color: cellColor,
-      fontSize: 'clamp(0.6rem, 4vw, 4rem)',
+      fontSize: 'clamp(0.6rem, 1vw, 1rem)',
       cursor: clickable ? 'pointer' : 'not-allowed',
       transition: 'box-shadow 120ms ease, background 120ms ease'
     }}

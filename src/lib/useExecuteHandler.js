@@ -72,6 +72,9 @@ export default function useExecuteHandler({ contract, fn, params }) {
     })
   }
 
+
+
+
   // Payload builder
   const buildPayload = (fn, params) => {
     if (!fn) return { payload: '', intents: [] }
@@ -120,6 +123,71 @@ export default function useExecuteHandler({ contract, fn, params }) {
     }
 
     switch (fn.parse) {
+
+      case "game": {
+        const action = params?.__gameAction
+        const gameId = params?.__gameId
+        var payload = `${gameId}`
+        var intent
+        // dynamic move index example
+        if (action === "g_join") {
+          console.log('Building intent for g_join')
+          const intentAmount = params?.__gameIntentAmount
+
+          if (intentAmount && !isNaN(parseFloat(intentAmount))) {
+            if (!params?.__gameFmpEnabled) {
+              console.log('No First Move Purchase enabled, setting intent to intent amount only')
+              intent = { token: params?.__gameIntentAsset, limit: parseFloat(intentAmount).toFixed(3) }
+            } else {
+              console.log('First Move Purchase enabled, setting intent to total amount (intent + fmp)')
+              const totalAmount = parseFloat(intentAmount) + parseFloat(params?.__gameFirstMovePurchase || 0)
+              console.log('Total amount to intent:', totalAmount)
+              intent = { token: params?.__gameIntentAsset, limit: totalAmount.toFixed(3) }
+            }
+          }
+
+        }
+
+        if (action === "g_create") {
+          console.log('Building intent for g_create')
+          const gameType = params?.__gameCreateType || ''
+          const name = params?.__gameCreateName || ''
+          payload = `${gameType}|${name}|`
+          const createBet = params?.__gameCreateBet
+          if (createBet && !isNaN(parseFloat(createBet.amount))) {
+            intent = { token: createBet.asset, limit: parseFloat(createBet.amount).toFixed(3) }
+          }
+          if (params?.__gameFmpEnabled && !isNaN(parseFloat(params?.__gameCreateFmp))) {
+            const fmp = parseFloat(params?.__gameCreateFmp)
+            payload += `${fmp.toFixed(3)}`
+          }
+        }
+
+
+
+        if (action === "g_resign" || action === "g_timeout") {
+          // do nothing - we already have the game as payload
+        }
+
+        if (action === "g_move") {
+        payload += `|${params?.__gameCell?.replace(',', '|')}`
+
+        }
+
+        const intents = []
+        if (intent) {
+          intents.push({
+            type: "transfer.allow",
+            args: {
+              token: intent.token.toLowerCase(),
+              limit: intent.limit
+            }
+          })
+        }
+        console.log('Game payload:', payload, ' Intents:', intents, ' Action:', action)
+        return { payload, intents, callAction: action }
+      }
+
       case 'raw': {
         const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
         const val =
@@ -230,7 +298,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
         })
 
         const jsonString = JSON.stringify(obj)
-        return { payload: jsonString, intents }
+        return { payload: jsonString, intents, callAction: null }
       }
     }
   }
@@ -240,6 +308,77 @@ export default function useExecuteHandler({ contract, fn, params }) {
    */
   const allMandatoryFilled = useMemo(() => {
     if (!fn) return false
+
+    const gameAction = params?.__gameAction
+
+    // --- Create mode params ---
+    const betObj = params?.__gameCreateBet
+    const betAmount = betObj?.amount ? parseFloat(betObj.amount) : 0
+    const asset = betObj?.asset
+    const fmpEnabledCreate = params?.__gameFmpEnabled
+    const fmpAmountCreate = fmpEnabledCreate
+      ? parseFloat(params?.__gameCreateFmp || 0)
+      : 0
+
+    // --- Join mode params ---
+    const joinAmount = params?.__gameIntentAmount
+      ? parseFloat(params?.__gameIntentAmount)
+      : 0
+    const fmpEnabledJoin = params?.__gameFmpEnabled
+    const fmpAmountJoin = fmpEnabledJoin
+      ? parseFloat(params?.__gameFirstMovePurchase || 0)
+      : 0
+
+    // --- Common balance ---
+    const totalCreate = betAmount + (fmpEnabledCreate ? fmpAmountCreate : 0)
+    const totalJoin = joinAmount + (fmpEnabledJoin ? fmpAmountJoin : 0)
+    const available = asset === 'HIVE' ? balances.hive : balances.hbd
+
+    //
+    // === Custom override behavior ===
+    //
+    if (fn?.parse === "game") {
+
+      // ✅ JOIN game: require total = bet + fmp
+      if (gameAction === "g_join") {
+        console.log('Validating g_join mandatory params and balance')
+        if (totalJoin <= 0) {
+          console.log('g_join true: totalJoin <= 0')
+          return true
+        }
+        console.log('g_join required total:', totalJoin, ' available balance:', available)
+        return totalJoin <= available
+      }
+
+      if (gameAction === "g_move") {
+      const gameCell = params?.__gameCell
+      if (gameCell == null || isNaN(parseInt(gameCell))) {
+        console.log('g_move false: gameCell is invalid:', gameCell)
+        return false
+      }else {
+        console.log('g_move true: gameCell is valid:', gameCell)
+        return true
+      }
+    }
+
+      if (gameAction === "g_resign" || gameAction === "g_timeout") {
+      
+      }
+
+      // ✅ CREATE game: if bet exists, enforce balance >= bet 
+      if (gameAction === "g_create") {
+        console.log('Validating g_create mandatory params and balance')
+        console.log('g_create required bet amount:', betAmount, ' available balance:', available)
+        console.log('g_create fmp enabled:', fmpEnabledCreate, ' fmp amount:', fmpAmountCreate)
+        if (fmpEnabledCreate && (isNaN(fmpAmountCreate) || fmpAmountCreate <= 0)) {
+          console.log('g_create true: fmp enabled but fmp amount is NaN')
+          return false
+        }
+        if (betAmount == null) return true
+        return betAmount <= available
+
+      }
+    }
 
     return fn.parameters?.every((p) => {
       if (!p.mandatory) return true
@@ -267,7 +406,28 @@ export default function useExecuteHandler({ contract, fn, params }) {
    * Executes the contract function
    */
   async function handleSend() {
-    if (!contract || !fn || !allMandatoryFilled) return
+
+    if (!contract || !fn || !allMandatoryFilled) {
+      if (!contract) {
+        console.warn('[useExecuteHandler] ❌ send aborted — missing contract')
+        return
+      }
+
+      if (!fn) {
+        console.warn('[useExecuteHandler] ❌ send aborted — missing function definition (fn)')
+        return
+      }
+
+      if (!allMandatoryFilled) {
+        console.warn('[useExecuteHandler] ❌ send aborted — required params are missing or insufficient balance')
+        console.warn('params:', params)
+        console.warn('fn.parameters:', fn.parameters)
+        console.warn('balances:', balances)
+        return
+      }
+
+      return
+    }
 
     setPending(true)
     let startingMessages = ['▶ Signing and broadcasting…']
@@ -282,10 +442,11 @@ export default function useExecuteHandler({ contract, fn, params }) {
     setWaiting(false)
 
     try {
-      const { payload, intents } = buildPayload(fn, params)
+      const { payload, intents, callAction } = buildPayload(fn, params)
+      console.log('[useExecuteHandler] Payload:', payload, ' Intents:', intents, ' Action:', callAction)
       const res = await aioha.vscCallContract(
         contract.vscId,
-        fn.name,
+        callAction,
         payload,
         RC_LIMIT_DEFAULT,
         intents,

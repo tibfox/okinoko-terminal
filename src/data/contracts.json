@@ -86,18 +86,62 @@
         }
       ]
     },
-    
-    {
-      "name": "SDK Function Tests",
+     {
+      "name": "Ōkinoko In-A-Row Games",
       "id": 2,
-      "vscId": "vsc1Bpi2HEM4cM1WrpGNsCUfuLBKeULRWYfTcz",
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYast",
       "owner": "tibfox.vsc",
-      "deployedOn": "2025-10-31T11:41:51",
+      "deployedOn": "2025-09-13T20:55:39",
       "verifiedOn": "unverified",
-      "description": "All currently supported sdk functions",
+      "description": "Play games on-chain!",
       "functions": [
         {
-          "name": "log",
+          "name": "TicTacToe",
+          "friendlyName": "Tic Tac Toe",
+          "description": "Tic Tac Toe is a classic 3×3 grid game where two players alternate placing Xs and Os. The goal is to get three in a row horizontally, vertically, or diagonally.",
+          "parse": "game",
+          "parameters": []
+        },
+        {
+          "name": "TicTacToe5",
+          "friendlyName": "Tic Tac Toe 5",
+          "description": "Tic Tac Toe 5 is an extended version of Tic Tac Toe played on a larger 5×5 grid. The aim is to align 4 marks in a row instead of three.",
+          "parse": "game",
+          "parameters": []
+        },
+        {
+          "name": "Connect4",
+          "friendlyName": "Connect 4",
+          "description": "Connect Four is a vertical board game where players drop colored discs into a 7×6 grid. The objective is to be the first to align four pieces in a row in any direction.",
+          "parse": "game",
+          "parameters": []
+        },{
+          "name": "Gomoku",
+          "friendlyName": "Gomoku",
+          "description": "Gomoku is played on a 15xx15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row ( not more). To ensure fairness we use Swap2 rules for the opening moves.",
+          "parse": "game",
+          "parameters": []
+        },{
+          "name": "Squava",
+          "friendlyName": "Squava",
+          "description": "Squava is a Yavalath variant played on a 5×5 grid. Players try to create a row of 4 of their symbol while avoiding a row of 3, which results in an immediate loss.",
+          "parse": "game",
+          "parameters": []
+        }
+      ]
+    },
+    
+    {
+      "name": "SDK Function Tests #2",
+      "id": 3,
+      "vscId": "vsc1BdaaUWkeEoCkHrFDt9uVMq7LXKSxcSFoPK",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-10-31T15:12:33",
+      "verifiedOn": "unverified",
+      "description": "All currently supported sdk functions #2",
+      "functions": [
+        {
+          "name": "c_log",
           "friendlyName": "Log something",
           "description": "sdk.Log(*a)",
           "parse": "raw",
@@ -111,7 +155,7 @@
           ]
         },
         {
-          "name": "state_set",
+          "name": "c_state_set",
           "friendlyName": "Set State",
           "description": "sdk.StateSetObject(key, value)",
           "parse": "csv",
@@ -133,7 +177,7 @@
           ]
         },
         {
-          "name": "state_get",
+          "name": "c_state_get",
           "friendlyName": "Get State",
           "description": "sdk.StateGetObject(*key)",
           "parse": "raw",
@@ -147,7 +191,7 @@
           ]
         },
         {
-          "name": "state_del",
+          "name": "c_state_del",
           "friendlyName": "Delete State",
           "description": "sdk.StateDeleteObject(*key)",
           "parse": "raw",
@@ -161,7 +205,7 @@
           ]
         },
         {
-          "name": "get_env",
+          "name": "c_get_env",
           "friendlyName": "Get full env and convert to string",
           "description": "sdk.GetEnv()",
           "parse": "raw",
@@ -170,7 +214,7 @@
           ]
         },
         {
-          "name": "get_env_string",
+          "name": "c_get_env_string",
           "friendlyName": "Get full env string",
           "description": "sdk.GetEnvStr()",
           "parse": "raw",
@@ -179,7 +223,7 @@
           ]
         },
         {
-          "name": "get_envkey",
+          "name": "c_get_envkey",
           "friendlyName": "Get Env Key",
           "description": "sdk.GetEnvKey(*a)",
           "parse": "raw",
@@ -193,7 +237,7 @@
           ]
         },
         {
-          "name": "get_balance",
+          "name": "c_get_balance",
           "friendlyName": "Get Hive Balance for user",
           "description": "sdk.GetBalance(sdk.Address(*a), sdk.AssetHive)",
           "parse": "raw",
@@ -207,7 +251,7 @@
           ]
         },
         {
-          "name": "hive_draw",
+          "name": "c_hive_draw",
           "friendlyName": "Draw 0.001 from caller",
           "description": "sdk.HiveDraw(1, sdk.AssetHive) ",
           "parse": "raw",
@@ -220,7 +264,7 @@
             }
           ]
         },{
-          "name": "hive_transfer",
+          "name": "c_hive_transfer",
           "friendlyName": "Send 0.001 Hive from contract to user",
           "description": "sdk.HiveTransfer(sdk.Address(*receiver), 1, sdk.AssetHive)",
           "parse": "raw",
@@ -234,7 +278,7 @@
           ]
         },
         {
-          "name": "hive_withdraw",
+          "name": "c_hive_withdraw",
           "friendlyName": "Withdraw 0.001 Hive from contract to user",
           "description": "sdk.HiveWithdraw(sdk.Address(*receiver), 1, sdk.AssetHive)",
           "parse": "raw",
@@ -248,7 +292,7 @@
           ]
         },
         {
-          "name": "contract_read",
+          "name": "c_contract_read",
           "friendlyName": "Read state of other contract",
           "description": "sdk.ContractStateGet(contractId, key)",
           "parse": "csv",
@@ -270,7 +314,7 @@
           ]
         },
         {
-          "name": "contract_call",
+          "name": "c_contract_call",
           "friendlyName": "Call method of other contract",
           "description": "sdk.ContractCall(contractId, method, callPayload, callOptions)",
           "parse": "csv",
@@ -301,7 +345,7 @@
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
-              "mandatory":true
+              "mandatory":false
             }
           ]
         }

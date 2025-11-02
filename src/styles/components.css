@@ -193,7 +193,7 @@ select {
   width: 100%;
   padding: 0;
   overflow: hidden; /* prevent layout shift */
-  max-height: 33%; /* relative to parent height */
+  max-height: 75%; /* relative to parent height */
   display: flex;
   flex-direction: column;
 }
@@ -230,5 +230,7 @@ select {
   line-height: 1;              /* avoid extra height coming from line height */
 }
 
-
+.game-row:hover {
+  background-color: var(--color-primary-darkest);
+}
 

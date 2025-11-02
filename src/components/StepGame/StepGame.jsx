@@ -5,6 +5,7 @@ import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
 import GameSelect from './GameSelect.jsx'
 import GameField from './GameField.jsx'
+import GameJoin from './GameJoin.jsx'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
@@ -21,6 +22,7 @@ export default function StepGame({
   const [activePage, setActivePage] = useState('form')
   const [resumedTx, setResumedTx] = useState(null)
   const [activeGame, setActiveGame] = useState(null)
+  const [displayMode, setDisplayMode] = useState(null)
   const [selectedCells, setSelectedCells] = useState([])
 
   useEffect(() => {
@@ -65,14 +67,39 @@ export default function StepGame({
     await handleSend()
   }
 
-  const handleGameSelected = (game) => {
-    setActiveGame(game)
-    setSelectedCells([])
-    if (isMobile) setActivePage('preview')
+  const handleGameSelected = (game, mode) => {
+    console.log('Game selected: ', game, ' mode: ', mode)
+    setDisplayMode(mode)
+    if (game != null) {
+      setActiveGame(game)
+      setSelectedCells([])
+      if (mode == 'g_join') {
+      setParams({
+        __gameIntentAmount: game.bet,
+        __gameIntentAsset: game.asset,
+        __gameFirstMovePurchase: game.firstMovePurchase,
+        __gameId: game.id,
+        __gameAction: 'g_join',
+      })
+    }
+    if (mode == 'continue') {
+      setParams({
+        __gameId: game.id,
+        __gameAction: 'g_move',
+      })
+    }
+      
+    }else{
+      setActiveGame(null)
+    }
+
+
+    if (isMobile) setActivePage('preview') // TODO: handle mobile stuff
   }
 
   const handleUnselectGame = () => {
     setActiveGame(null)
+    setDisplayMode(null)
     setSelectedCells([])
     if (isMobile) setActivePage('form')
   }
@@ -81,14 +108,28 @@ export default function StepGame({
     setSelectedCells(cells)
   }
 
-  const handleSendMoveDummy = () => {
+  const handleSendMoveDummy = async () => {
     console.log('[Move] selectedCells:', selectedCells, 'game:', activeGame)
+    await handleSend()
   }
 
-  const isGameMode = !!activeGame
-const isSendEnabled = isGameMode
-  ? selectedCells.length > 0 && !pending   // Only depend on selected cell
-  : allMandatoryFilled && !pending         // Original behavior for non-game flow
+  const handleJoin = async () => {
+    console.log('[Join] game:', activeGame)
+
+    await handleSend()
+  }
+
+  const handleCreate = async () => {
+    console.log('[Create] game')
+    await handleSend()
+  }
+
+
+  // const isGameMode = !!activeGame
+  // const isSendEnabled = isGameMode
+  //   ? selectedCells.length > 0 && !pending   // Only depend on selected cell
+  //   : allMandatoryFilled && !pending         // Original behavior for non-game flow
+  const isSendEnabled = allMandatoryFilled && !pending         // Original behavior for non-game flow
 
 
   return (
@@ -157,7 +198,7 @@ const isSendEnabled = isGameMode
             flex: 1,
           }}
         >
-          {!activeGame && (
+          {!activeGame || displayMode == 'g_join' || displayMode == 'g_create' ? (
             <GameSelect
               user={user}
               contract={contract}
@@ -170,24 +211,23 @@ const isSendEnabled = isGameMode
               allMandatoryFilled={allMandatoryFilled}
               onGameSelected={handleGameSelected}
             />
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                gap: '12px',
+                textAlign: 'center',
+                opacity: 0.9,
+              }}
+            >
+              <div>Game selected. Switch to Preview ▶</div>
+              <NeonButton onClick={handleUnselectGame} style={{ minWidth: '50%' }}>◀ Game Selection</NeonButton>
+            </div>
           )}
-          {activeGame && (
-  <div
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100%',
-      gap: '12px',
-      textAlign: 'center',
-      opacity: 0.9,
-    }}
-  >
-    <div>Game selected. Switch to Preview ▶</div>
-    <NeonButton onClick={handleUnselectGame} style={{minWidth: '50%'}}>◀ Game Selection</NeonButton>
-  </div>
-)}
 
         </div>
 
@@ -200,12 +240,20 @@ const isSendEnabled = isGameMode
             flex: 1,
           }}
         >
-          <GameField
-            key={activeGame ? `${activeGame.id}-${activeGame.state}` : 'nogame'}
-            game={activeGame}
-            onSelectionChange={handleMoveSelected}
-            user={user}
-          />
+          {displayMode == 'g_join' ? (
+            <GameJoin
+              game={activeGame}
+              setParams={setParams}
+              user={user}
+            />
+          ) : (
+            <GameField
+              key={activeGame ? `${activeGame.id}-${activeGame.state}` : 'nogame'}
+              game={activeGame}
+              onSelectionChange={handleMoveSelected}
+              user={user}
+              setParams={setParams}
+            />)}
         </div>
       </div>
 
@@ -219,16 +267,38 @@ const isSendEnabled = isGameMode
           alignItems: 'center',
         }}
       >
-       
+
 
         <NeonButton onClick={() => setStep(1)}>◀ Back</NeonButton>
 
-        <NeonButton
-          disabled={!isSendEnabled}
-          onClick={handleSendMoveDummy}
-        >
-          {pending ? 'Sending…' : 'Send Move ▶'}
-        </NeonButton>
+        {
+          displayMode == null ? (
+            <p></p>
+          ) :
+
+            displayMode == 'g_create' ? (
+              <NeonButton
+                onClick={handleCreate}
+                disabled={!isSendEnabled}
+              >
+                {pending ? 'Creating...' : 'Create Game ▶'}
+              </NeonButton>
+            ) :
+              displayMode == 'g_join' ? (
+                <NeonButton
+                  onClick={handleJoin}
+                  disabled={!isSendEnabled}
+                >
+                  {pending ? 'Joining...' : 'Join Game ▶'}
+                </NeonButton>
+              ) : (
+                <NeonButton
+                  onClick={handleSendMoveDummy}
+                  disabled={!isSendEnabled}
+                >
+                  {pending ? 'Sending…' : 'Send Move ▶'}
+                </NeonButton>
+              )}
       </div>
     </TerminalContainer>
   )
