@@ -104,9 +104,9 @@ export function generateThemeShades(hexOrHSL) {
   const { h, s } = hsl;
 
   return {
-    primaryLightest: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 90%)`,
-    primaryLighter: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 70%)`,
-    primary: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 60%)`,
+    primaryLightest: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 100%)`,
+    primaryLighter: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 90%)`,
+    primary: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 80%)`, // TODO: adjust based on input brightness ?
     primaryDarker: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 30%)`,
     primaryDarkest: `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, 15%)`,
   };
