@@ -28,7 +28,7 @@ export default function DesktopHeader({ title }) {
         {/* --- Left: Title + Color Row --- */}
         <div style={{ flex: "0 1 auto", minWidth: 0, marginRight: "auto" }}>
           <SlotText
-            text={title.toUpperCase()}
+            text={title.toUpperCase().replace(/Ō/g, "ō")}
             tag="h1"
             interval={60}
             baseDuration={100}

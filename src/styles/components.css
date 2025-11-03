@@ -74,7 +74,40 @@ select {
   /* text-shadow: 0 0 8px #0ff; */
   /* box-shadow: 0 0 15px #0ff, inset 0 0 8px rgba(0,255,255,0.4); */
   transition: all 0.2s ease-in-out;
+  position: relative;
 }
+
+.cyber-tile {
+    --tile-width: 100%;
+    --tile-padding: 8px;
+    --tile-edges: 20px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding));
+   --og-clip-path: polygon(
+    var(--tile-edges) 0,                 /* cut top-left */
+    100% 0,
+    100% calc(100% - var(--tile-edges)), /* full top/right edges */
+    calc(100% - var(--tile-edges)) 100%, /* cut bottom-right */
+    0 100%,
+    0 var(--tile-edges)
+);
+
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding) !important;
+    padding-bottom: var(--tile-edges);
+    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+}
+/* 
+.neon-btn:after{
+    position: absolute;
+    content: '';
+    left: -50px;
+    top: 0px;
+    border-style: solid;
+    border-color: blue transparent blue transparent;
+    border-width: 100px 0px 0px 50px;
+} */
 
 /* .neon-btn:hover {
   border-color: #ff00ff;
@@ -119,10 +152,11 @@ select {
 .neon-list-btn {
   width: 100%;
   height: 42px;
+  border: 1px solid var(--color-primary-darker);
 }
 
 .neon-list-btn:hover {
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-primary-lighter);
 }
 
 .neon-list-btn:disabled, .neon-btn.disabled {
@@ -140,6 +174,7 @@ select {
   border: 1px solid var(--color-primary-darkest);
   padding: 14px;
   border-radius: 8px;
+  background-color: black;
   font-size: 0.9em;
   font-family: 'Share Tech Mono',monospace;
    /* border: 1px solid rgba(0, 255, 255, 0.3), */

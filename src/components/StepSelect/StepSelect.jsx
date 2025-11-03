@@ -4,6 +4,8 @@ import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import ContractList from './ContractList.jsx'
 import ContractDetails from './ContractDetails.jsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
 export default function StepSelect({
   contractId,
@@ -21,7 +23,13 @@ export default function StepSelect({
 
   // responsive flags
   const [isMobile, setIsMobile] = useState(null)
-  const [activePage, setActivePage] = useState('list')
+  const [activePage, setActivePage] = useState(() => {
+  return sessionStorage.getItem("activePage") || "list"
+})
+
+useEffect(() => {
+  sessionStorage.setItem("activePage", activePage)
+}, [activePage])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900)
@@ -189,6 +197,7 @@ export default function StepSelect({
               setFnName('')
             }}
             setFnName={setFnName}
+            setContractDoneCallback={setContractDone}
           />
         </div>
 
@@ -210,7 +219,7 @@ export default function StepSelect({
             selectedFunction={selectedFunction}
             fnName={fnName}
             setFnName={setFnName}
-            setContractDone={setContractDone}
+            setContractDoneCallback={setContractDone}
           />
         </div>
       </div>
@@ -226,12 +235,15 @@ export default function StepSelect({
           width:'100%'
         }}
       >
-        <NeonButton onClick={() => setStep(0)}>◀ Back</NeonButton>
+        <NeonButton onClick={() => setStep(0)}>
+          <FontAwesomeIcon icon={faChevronLeft} style={{marginRight: '10px'}}/>
+           Back</NeonButton>
         <NeonButton
           disabled={!selectedContract || (!isMobile && !selectedFunction)}
           onClick={handleNext} // ✅ Use new function
         >
-          Next ▶
+          Next 
+          <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
         </NeonButton>
       </div>
     </TerminalContainer>

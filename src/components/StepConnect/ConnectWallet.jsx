@@ -4,6 +4,9 @@ import { KeyTypes } from '@aioha/aioha'
 import { playBeep } from '../../lib/beep.js'
 import NeonButton from '../buttons/NeonButton.jsx'
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+
 /**
  * ConnectWallet
  * ---------------
@@ -34,6 +37,7 @@ export default function ConnectWallet({ showModal, setShowModal, setStep }) {
     <>
       {/* --- Connect Wallet Button --- */}
       <center><NeonButton onClick={() => setShowModal(true)}>
+        <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
         Connect Wallet
       </NeonButton><br></br><br></br></center>
 

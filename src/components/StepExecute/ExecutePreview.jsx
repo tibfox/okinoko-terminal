@@ -60,7 +60,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
         minHeight: 0,
       }}
     >
-      <h3>Payload Preview</h3><h3></h3>
+      <h3 className="cyber-tile" style={{maxWidth: '75%'}}>&nbsp;Payload Preview</h3>
       <div
   className="neon-scroll"
   style={{
@@ -84,7 +84,8 @@ export default function ExecutePreview({ jsonPreview, logs }) {
 </div>
 
 
-      <h3>Log Console</h3><h3></h3>
+      
+      <h3 className="cyber-tile" style={{maxWidth: '75%'}}>&nbsp;Log Console</h3>
       
 
       {/* ✅ Wrapper (relative) */}

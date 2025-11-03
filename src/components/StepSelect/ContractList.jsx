@@ -1,10 +1,10 @@
-import { COLORS } from "../../styles/colors";
-
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'preact/hooks'
 import ListButton from '../buttons/ListButton.jsx'
 
 import DescriptionBox from '../common/DescriptionBox.jsx'
-import { ColorSwatch } from '@chakra-ui/react'
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFileContract } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * ContractList
@@ -12,7 +12,7 @@ import { ColorSwatch } from '@chakra-ui/react'
  * Displays all available contracts.
  * On mobile, shows metadata + short description for the selected one.
  */
-export default function ContractList({ contracts, contractId, setContractId, setFnName }) {
+export default function ContractList({ contracts, contractId, setContractId, setFnName,setContractDoneCallback }) {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -55,9 +55,17 @@ export default function ContractList({ contracts, contractId, setContractId, set
             style={{
               backgroundColor: contractId === c.vscId ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)',
               color:  contractId === c.vscId ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
+              textAlign: 'left',
+              whiteSpace: 'nowrap',
+              padding: '0.5em 1em',
+              // border: 'none',
+              // borderRadius: '2px',
+              cursor: 'pointer',
+              width: '100%',
             }}
           >
-            {c.name}
+           <FontAwesomeIcon icon={faFileContract} style={{marginRight: '10px'}} /> 
+          {c.name}
           </ListButton>
         ))}
       </div>
@@ -106,7 +114,7 @@ export default function ContractList({ contracts, contractId, setContractId, set
           {/* Short Description */}
            <DescriptionBox
                       text={selectedContract.description}
-                      onDone={() => setContractDone(true)}
+                      onDone={() => setContractDoneCallback(true)}
                       isMobile={isMobile}
                     />
         </div>

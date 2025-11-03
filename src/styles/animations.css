@@ -1,7 +1,3 @@
-@keyframes terminalFlicker {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.1); }
-}
 
 @keyframes flickerPulse {
   0%, 100% { opacity: 1; filter: brightness(1); }

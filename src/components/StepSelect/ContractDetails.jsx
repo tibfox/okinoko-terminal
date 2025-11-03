@@ -7,7 +7,7 @@ export default function ContractDetails({
   selectedFunction,
   fnName,
   setFnName,
-  setContractDone,
+  setContractDoneCallback,
 }) {
   const [isMobile, setIsMobile] = useState(false)
 
@@ -36,7 +36,7 @@ export default function ContractDetails({
     >
       {!isMobile && (
         <>
-          <h3>Contract Metadata</h3>
+          <h3 className="cyber-tile"  style={{maxWidth: '60%'}}>&nbsp;Contract Metadata</h3>
           <table style={{ borderSpacing: '0px 0px', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
@@ -77,14 +77,14 @@ export default function ContractDetails({
 
           <DescriptionBox
             text={selectedContract.description}
-            onDone={() => setContractDone(true)}
+            onDone={() => setContractDoneCallback(true)}
 
           />
         </>
       )}
 
       {/* --- Functions Section --- */}
-      {!isMobile && (<h3>Functions</h3>)}
+      {!isMobile && (<h3 className="cyber-tile" style={{maxWidth: '50%'}}>&nbsp;Functions</h3>)}
       <FunctionList
         selectedContract={selectedContract}
         fnName={fnName}
@@ -92,7 +92,7 @@ export default function ContractDetails({
       />
 
       {/* Selected function description */}
-      <DescriptionBox text={selectedFunction?.description} isMobile={isMobile} />
+      <DescriptionBox text={selectedFunction?.description} isMobile={isMobile} onDone={() => setContractDoneCallback(true)} />
     </div>
   )
 }

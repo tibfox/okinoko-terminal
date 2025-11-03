@@ -21,7 +21,7 @@ export default function TerminalContainer({ title, children }) {
     return null
   }
 
-  const mobileWidth = '90vw'
+  const mobileWidth = '100vw'
   const desktopWidth = '66vw'
 
   return (
@@ -36,7 +36,7 @@ export default function TerminalContainer({ title, children }) {
         display: 'flex',
         flexDirection: 'column',
         margin: isMobile ? '0' : 'auto',
-        padding: isMobile ? '3rem 0rem' : '1rem 1rem',
+        padding: isMobile ? '3.5rem 1.5rem' : '1rem 1rem',
         // overflowY: isMobile ? 'auto' : 'visible',
         overflowY: 'auto',
         boxSizing: 'border-box',

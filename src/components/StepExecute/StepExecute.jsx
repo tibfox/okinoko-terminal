@@ -1,4 +1,4 @@
-import  { useMemo, useState, useEffect } from 'preact/hooks'
+import { useMemo, useState, useEffect } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
@@ -7,6 +7,9 @@ import ExecutePreview from './ExecutePreview.jsx'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+
 
 export default function StepExecute({
   contractId,
@@ -55,7 +58,7 @@ export default function StepExecute({
     jsonPreview,
     handleSend,
     allMandatoryFilled,
-  } = useExecuteHandler({  contract, fn, params, setParams, resumedTx })
+  } = useExecuteHandler({ contract, fn, params, setParams, resumedTx })
 
   const handleSendAndForward = async () => {
     if (isMobile && activePage !== 'preview') {
@@ -168,12 +171,21 @@ export default function StepExecute({
           width: '100%',
         }}
       >
-        <NeonButton onClick={() => setStep(1)}>◀ Back</NeonButton>
+        <NeonButton onClick={() => setStep(1)}>
+          <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
+          Back</NeonButton>
         <NeonButton
           disabled={pending || !allMandatoryFilled}
           onClick={handleSendAndForward}
         >
-          {pending ? 'Sending…' : 'Send ▶'}
+            {pending ? (
+              'Sending…'
+            ) : (
+              <>
+                Send
+                <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+              </>
+            )}
         </NeonButton>
       </div>
     </TerminalContainer>

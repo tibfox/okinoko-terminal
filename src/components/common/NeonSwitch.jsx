@@ -61,7 +61,9 @@ export default function NeonSwitch({ name = '', checked, onChange, beep = true }
             width: '16px',
             height: '16px',
             borderRadius: '50%',
-            backgroundColor: checked ? 'var(--color-primary-darkers)' : '#555',
+            backgroundColor: checked
+            ? 'var(--color-primary)'
+            : 'var(--color-primary-darker)',
             transition: 'left 0.2s ease',
           }}
         />

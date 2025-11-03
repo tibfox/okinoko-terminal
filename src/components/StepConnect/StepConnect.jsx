@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useAioha } from '@aioha/react-ui'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import ConnectIntro from './ConnectIntro.jsx'
-import ConnectWallet from './ConnectWallet.jsx'
 import AsciiArt from '../animations/magi_ascii/small.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { playBeep } from '../../lib/beep.js'
 import { AiohaPage } from '../aioha-page.jsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
 /*
  * StepConnect (Responsive)
  * -------------------------
@@ -27,7 +28,7 @@ export default function StepConnect({ setStep }) {
   if (isMobile === null) {
     return null
   }
-  const terminalTitle = 'Welcome to the terminal'
+  const terminalTitle = 'Welcome to the ŌKIՈOKO TERMINAL'
   return (
     <TerminalContainer title={terminalTitle}>
       <div
@@ -80,7 +81,8 @@ export default function StepConnect({ setStep }) {
                 playBeep(800, 100)
               }}
             >
-              Enter ▶
+              Enter
+              <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
             </NeonButton>
           )}
         </div>

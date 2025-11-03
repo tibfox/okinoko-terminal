@@ -1,4 +1,8 @@
 import ListButton from '../buttons/ListButton.jsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faDice,faCirclePlay } from '@fortawesome/free-solid-svg-icons';
+
+
 
 export default function FunctionList({ selectedContract, fnName, setFnName }) {
   return (
@@ -24,7 +28,8 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
               fnName === fn.name
                 ? 'var(--color-primary-lightest)'
                 : 'var(--color-primary-lighter)',
-            textAlign: 'center',
+                
+            textAlign: 'left',
             whiteSpace: 'nowrap',
             padding: '0.5em 1em',
             // border: 'none',
@@ -35,8 +40,10 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
             display: 'inline-flex',
             flex: '0 0 auto',
             width: 'auto',
+            alignItems: 'center',
           }}
         >
+         <FontAwesomeIcon icon={fn.parse =="game"?faDice:faCirclePlay} style={{marginRight: '10px'}} /> 
           {fn.friendlyName}
         </ListButton>
       ))}

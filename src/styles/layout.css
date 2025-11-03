@@ -24,7 +24,7 @@
     border-radius: 0;
     box-shadow: none;
     padding: 10px;
-    background: black; 
+    background: black;
     min-height: 0;
   }
 }
@@ -106,14 +106,17 @@ html {
 .scrollable-form::-webkit-scrollbar {
   width: 8px;
 }
+
 .scrollable-form::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
 }
+
 .scrollable-form::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #00ffffaa, #008888cc);
   border-radius: 4px;
 }
+
 .scrollable-form::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #00ffff, #00cccc);
 }
@@ -121,15 +124,20 @@ html {
 
 /* Tunables */
 .terminal {
-  --raster-size: 5px;                         /* grid spacing */
-  --line-alpha: 0.2;                          /* line strength */
-  --dot-alpha: 0.1;                           /* dot strength */
-  --tint: 180 100% 50%;                        /* cyan-ish; HSL */
+  --raster-size: 18px;
+  /* grid spacing */
+  --line-alpha: 0.8;
+  /* line strength */
+  --dot-alpha: 0.5;
+  /* dot strength */
   position: relative;
 }
 
 /* Put all content above the overlay just in case */
-.terminal > * { position: relative; z-index: 1; }
+.terminal>* {
+  position: relative;
+  z-index: 1;
+}
 
 /* The raster overlay */
 .terminal::before {
@@ -137,61 +145,22 @@ html {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 
   /* 1) dot field  2) horizontal lines  3) vertical lines */
   background:
     radial-gradient(circle at 1px 1px,
-      hsl(var(--tint) / var(--dot-alpha)) 1px,
+      hsl(from var(--color-primary) h s l / var(--dot-alpha)) 1px,
       transparent 1.2px) 0 0 / var(--raster-size) var(--raster-size),
-    repeating-linear-gradient(
-      0deg,
-      hsl(var(--tint) / var(--line-alpha)) 0 1px,
-      transparent 1px calc(var(--raster-size))
-    ),
-    repeating-linear-gradient(
-      90deg,
-      hsl(var(--tint) / var(--line-alpha)) 0 1px,
-      transparent 1px calc(var(--raster-size))
-    );
+    repeating-linear-gradient(0deg,
+      hsl(from var(--color-primary) h s l / var(--line-alpha)) 0 0.5px,
+      transparent 1px calc(var(--raster-size))),
+    repeating-linear-gradient(90deg,
+      hsl(from var(--color-primary) h s l / var(--line-alpha)) 0 1px,
+      transparent 1px calc(var(--raster-size)));
 
-  opacity: .25;                 /* global dimmer */
+  opacity: .25;
+  /* global dimmer */
   /* Tiny blur helps fight subpixel crawl on some displays */
   filter: blur(1px);
-}
-.terminal::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-
-  background: linear-gradient(
-    to bottom left,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.5) 60%,
-    rgba(0, 0, 0, 1) 90%
-  );
-  mix-blend-mode: multiply;
-
-  /* Animate the background position */
-  background-size: 200% 200%;
-  animation: fadeDrift 5s ease-in-out infinite alternate;
-}
-
-@keyframes fadeDrift {
-  0% {
-    background-position: top right;
-  }
-  100% {
-    background-position: bottom left;
-  }
-}
-
-/* (Nice-to-have) Respect user accessibility prefs */
-@media (prefers-contrast: more) {
-  .terminal::before { opacity: .35; }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .terminal::before { opacity: .15; }
 }

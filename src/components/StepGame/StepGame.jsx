@@ -9,7 +9,8 @@ import GameJoin from './GameJoin.jsx'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
-
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faHourglassStart, faCirclePlay, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 export default function StepGame({
   contractId,
   fnName,
@@ -23,6 +24,9 @@ export default function StepGame({
   const [resumedTx, setResumedTx] = useState(null)
   const [activeGame, setActiveGame] = useState(null)
   const [displayMode, setDisplayMode] = useState(null)
+  const [opponentName, setOpponentName] = useState(null)
+  const [formattedAgo, setFormattedAgo] = useState(null)
+  const [isMyTurn, setIsMyTurn] = useState(null)
   const [selectedCells, setSelectedCells] = useState([])
 
   useEffect(() => {
@@ -60,12 +64,6 @@ export default function StepGame({
     allMandatoryFilled,
   } = useExecuteHandler({ contract, fn, params, setParams, resumedTx })
 
-  const handleSendAndForward = async () => {
-    if (isMobile && activePage !== 'preview') {
-      setActivePage('preview')
-    }
-    await handleSend()
-  }
 
   const handleGameSelected = (game, mode) => {
     console.log('Game selected: ', game, ' mode: ', mode)
@@ -73,28 +71,48 @@ export default function StepGame({
     if (game != null) {
       setActiveGame(game)
       setSelectedCells([])
+      const minsAgo = game.lastMoveMinutesAgo;
+      const daysAgo = Math.floor(minsAgo / (24 * 60));
+      const hoursAgo = Math.floor((minsAgo % (24 * 60)) / 60);
+      const minutesAgo = minsAgo % 60;
+
+      const timeAgo = `${hoursAgo.toString().padStart(2, '0')}h ${minutesAgo.toString().padStart(2, '0')}min`;
+      setFormattedAgo(daysAgo > 0 ? `${daysAgo}d ${timeAgo}` : `${timeAgo}`)
+      const fullUser = user.startsWith('hive:') ? user : `hive:${user}`
+      setIsMyTurn(
+        fullUser &&
+        game &&
+        ((fullUser === game.playerX && game.turn === '1') ||
+          (fullUser === game.playerY && game.turn === '2')))
+
+      if (game != null && fullUser != null) {
+        setOpponentName(fullUser === game.playerX ? game.playerY : game.playerX)
+      }
+
+
       if (mode == 'g_join') {
-      setParams({
-        __gameIntentAmount: game.bet,
-        __gameIntentAsset: game.asset,
-        __gameFirstMovePurchase: game.firstMovePurchase,
-        __gameId: game.id,
-        __gameAction: 'g_join',
-      })
-    }
-    if (mode == 'continue') {
-      setParams({
-        __gameId: game.id,
-        __gameAction: 'g_move',
-      })
-    }
-      
-    }else{
+        setParams({
+          __gameIntentAmount: game.bet,
+          __gameIntentAsset: game.asset,
+          __gameFirstMovePurchase: game.firstMovePurchase,
+          __gameId: game.id,
+          __gameAction: 'g_join',
+        })
+        if (isMobile) setActivePage('preview')
+      }
+      if (mode == 'continue') {
+        setParams({
+          __gameId: game.id,
+          __gameAction: 'g_move',
+        })
+      }
+
+    } else {
       setActiveGame(null)
     }
 
 
-    if (isMobile) setActivePage('preview') // TODO: handle mobile stuff
+
   }
 
   const handleUnselectGame = () => {
@@ -108,7 +126,7 @@ export default function StepGame({
     setSelectedCells(cells)
   }
 
-  const handleSendMoveDummy = async  () => {
+  const handleSendMoveDummy = async () => {
     console.log('[Move] selectedCells:', selectedCells, 'game:', activeGame)
     await handleSend()
   }
@@ -132,6 +150,8 @@ export default function StepGame({
   const isSendEnabled = allMandatoryFilled && !pending         // Original behavior for non-game flow
 
 
+
+
   return (
     <TerminalContainer title={fn.friendlyName}>
       {isMobile && (
@@ -147,13 +167,13 @@ export default function StepGame({
             onClick={() => setActivePage('form')}
             style={{ opacity: activePage === 'form' ? 1 : 0.5 }}
           >
-            INPUT
+            {!activeGame ? "BROWSE" : displayMode == "g_join" ? "BROWSE" : "INFO"}
           </NeonButton>
           <NeonButton
             onClick={() => setActivePage('preview')}
             style={{ opacity: activePage === 'preview' ? 1 : 0.5 }}
           >
-            Preview & Logs
+            {!activeGame ? "DETAILS" : displayMode == "g_join" ? "GAME INFO" : "BOARD"}
           </NeonButton>
         </div>
       )}
@@ -210,6 +230,7 @@ export default function StepGame({
               setStep={setStep}
               allMandatoryFilled={allMandatoryFilled}
               onGameSelected={handleGameSelected}
+              isMobile={isMobile}
             />
           ) : (
             <div
@@ -224,8 +245,45 @@ export default function StepGame({
                 opacity: 0.9,
               }}
             >
-              <div>Game selected. Switch to Preview ▶</div>
-              <NeonButton onClick={handleUnselectGame} style={{ minWidth: '50%' }}>◀ Game Selection</NeonButton>
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: '20px' }}>{activeGame?.id}: {activeGame?.name}</h2>
+                <center>    <table style={{ textAlign: 'left', tableLayout: 'auto', borderCollapse: 'collapse' }}>
+                  {/* <colgroup>
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '70%' }} />itemAlign
+                
+              </colgroup> */}
+                  <tbody>
+                    <tr><td style={{ paddingRight: '10px' }}><strong>Opponent:</strong></td><td>{opponentName || ''}</td></tr>
+                    <tr><td style={{ paddingRight: '10px' }}><strong>Prize Pool:</strong></td><td>
+                      {activeGame?.bet > 0 ? `${activeGame?.bet * 2} ${activeGame?.asset}` : 'none'}
+                    </td></tr>
+                    <tr>
+                      <td style={{ paddingRight: '10px' }}><strong>Turn:</strong></td>
+                      <td>
+                        {isMyTurn ? (
+                          <>
+                            <FontAwesomeIcon icon={faCirclePlay} style={{marginRight: '10px'}}/>
+                            <strong>your turn</strong>
+                          </>
+                        ) : (
+                          <>
+                            <FontAwesomeIcon icon={faHourglassStart} style={{marginRight: '10px'}}/>{opponentName || ''}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                    <tr><td style={{ paddingRight: '10px' }}><strong>Last move:</strong></td><td>{formattedAgo || ''} ago</td></tr>
+                  </tbody>
+                </table></center>
+                <div style={{ marginTop: '15px', fontSize: '0.9rem', opacity: 0.8, textAlign: 'justify' }}>
+                  {fn.description}
+                </div>
+              </div>
+
+              <NeonButton onClick={handleUnselectGame} style={{ minWidth: '50%' }}>
+                <FontAwesomeIcon icon={faChevronLeft} style={{marginRight: '10px'}}/>
+                Game List</NeonButton>
             </div>
           )}
 
@@ -253,6 +311,11 @@ export default function StepGame({
               onSelectionChange={handleMoveSelected}
               user={user}
               setParams={setParams}
+              handleResign={handleSend}
+              handleTimeout={handleSend}
+              isMobile={isMobile}
+
+
             />)}
         </div>
       </div>
@@ -269,7 +332,9 @@ export default function StepGame({
       >
 
 
-        <NeonButton onClick={() => setStep(1)}>◀ Back</NeonButton>
+        <NeonButton onClick={() => setStep(1)}>
+          <FontAwesomeIcon icon={faChevronLeft} style={{marginRight: '10px'}}/>
+          Game Mode</NeonButton>
 
         {
           displayMode == null ? (
@@ -281,7 +346,10 @@ export default function StepGame({
                 onClick={handleCreate}
                 disabled={!isSendEnabled}
               >
-                {pending ? 'Creating...' : 'Create Game ▶'}
+                {pending ? ('Creating...' ): (<>
+                    Create Game
+                    <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}}/>
+                  </>)}
               </NeonButton>
             ) :
               displayMode == 'g_join' ? (
@@ -289,15 +357,26 @@ export default function StepGame({
                   onClick={handleJoin}
                   disabled={!isSendEnabled}
                 >
-                  {pending ? 'Joining...' : 'Join Game ▶'}
+                  {pending ? ('Joining...') : (<>
+                    Join Game
+                    <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
+                  </>)}
                 </NeonButton>
               ) : (
                 <NeonButton
                   onClick={handleSendMoveDummy}
                   disabled={!isSendEnabled}
                 >
-                  {pending ? 'Sending…' : 'Send Move ▶'}
+                  {pending ? (
+                    'Sending…'
+                  ) : (
+                    <>
+                      Send Move
+                      <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}}/>
+                    </>
+                  )}
                 </NeonButton>
+
               )}
       </div>
     </TerminalContainer>

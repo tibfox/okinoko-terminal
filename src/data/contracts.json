@@ -118,7 +118,7 @@
         },{
           "name": "Gomoku",
           "friendlyName": "Gomoku",
-          "description": "Gomoku is played on a 15xx15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row ( not more). To ensure fairness we use Swap2 rules for the opening moves.",
+          "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row (not more). To ensure fairness we use Swap2 rules for the opening moves.",
           "parse": "game",
           "parameters": []
         },{

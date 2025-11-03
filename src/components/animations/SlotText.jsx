@@ -61,7 +61,7 @@ export default function SlotText({
 
   return (
     <Tag
-      className={className}
+      className={`cyber-tile ${className}`}
       style={{
         display: 'inline-block',
         whiteSpace: 'pre',
@@ -82,7 +82,8 @@ export default function SlotText({
         textRendering: 'optimizeSpeed',
       }}
     >
-      {displayChars.join('')}
+      &nbsp;{displayChars.join('')}&nbsp;
+
     </Tag>
   )
 }

@@ -74,7 +74,7 @@ export default function MobileHeader({ title }) {
 
       {/* --- Title below --- */}
       <SlotText
-        text={title.toUpperCase()}
+        text={title.toUpperCase().replace(/Ō/g, "ō")}
         tag="h4"
         interval={100}
         baseDuration={150}
