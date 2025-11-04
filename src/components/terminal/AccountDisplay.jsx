@@ -51,6 +51,8 @@ useEffect(() => {
     let cancelled = false
     async function load() {
       setLoading(true)
+      console.log("🔍 RC fetch triggered", Date.now());
+
       const { data, error } = await runQuery(QUERY_ACC_BAL, { acc: account })
       if (!cancelled && !error && data?.rc && data?.bal) {
         setRc(data.rc)

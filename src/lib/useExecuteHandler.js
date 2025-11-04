@@ -1,16 +1,18 @@
-import { useState, useEffect, useMemo, useRef } from 'preact/hooks'
+import { useState, useEffect, useMemo, useRef, useContext } from 'preact/hooks'
 import { KeyTypes } from '@aioha/aioha'
 import { useAioha } from '@aioha/providers/react'
 import { playBeep } from './beep.js'
-import { useVscPoll } from './useVscPoll.js'
 import { useVscQuery } from './useVscQuery.js'
+
+import { TransactionContext } from '../transactions/context';
+
 
 const RC_LIMIT_DEFAULT = 10000
 
 export default function useExecuteHandler({ contract, fn, params }) {
   const { aioha, user } = useAioha()
-  const { pollTx } = useVscPoll()
   const { runQuery } = useVscQuery()
+  const { addTransaction, state } = useContext(TransactionContext);
 
   const [pending, setPending] = useState(false)
   const [waiting, setWaiting] = useState(false)
@@ -77,6 +79,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
 
   // Payload builder
   const buildPayload = (fn, params) => {
+    console.log("creating payload for " + fn.name)
     if (!fn) return { payload: '', intents: [] }
 
     const ps = fn.parameters ?? []
@@ -122,10 +125,11 @@ export default function useExecuteHandler({ contract, fn, params }) {
       return ''
     }
 
+    var action = fn.name
     switch (fn.parse) {
 
       case "game": {
-        const action = params?.__gameAction
+        action = params?.__gameAction
         const gameId = params?.__gameId
         var payload = `${gameId}`
         var intent
@@ -170,7 +174,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
         }
 
         if (action === "g_move") {
-        payload += `|${params?.__gameCell?.replace(',', '|')}`
+          payload += `|${params?.__gameCell?.replace(',', '|')}`
 
         }
 
@@ -185,14 +189,15 @@ export default function useExecuteHandler({ contract, fn, params }) {
           })
         }
         console.log('Game payload:', payload, ' Intents:', intents, ' Action:', action)
-        return { payload, intents, callAction: action }
+        return { payload: payload, intents, action }
       }
 
       case 'raw': {
         const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
         const val =
           params?.[first?.name] ?? getDefaultValue(first ?? { type: 'string' })
-        return { payload: val != null ? val.toString() : '', intents }
+          console.log("action: " + action)
+        return { payload: val != null ? val.toString() : '', intents, action }
       }
 
       case 'csv': {
@@ -249,7 +254,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
           })
           .join(delimiter)
 
-        return { payload: str, intents }
+        return { payload: str, intents, action }
       }
 
       case 'json':
@@ -298,7 +303,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
         })
 
         const jsonString = JSON.stringify(obj)
-        return { payload: jsonString, intents, callAction: null }
+        return { payload:jsonString, intents, action }
       }
     }
   }
@@ -351,18 +356,18 @@ export default function useExecuteHandler({ contract, fn, params }) {
       }
 
       if (gameAction === "g_move") {
-      const gameCell = params?.__gameCell
-      if (gameCell == null || isNaN(parseInt(gameCell))) {
-        console.log('g_move false: gameCell is invalid:', gameCell)
-        return false
-      }else {
-        console.log('g_move true: gameCell is valid:', gameCell)
-        return true
+        const gameCell = params?.__gameCell
+        if (gameCell == null || isNaN(parseInt(gameCell))) {
+          console.log('g_move false: gameCell is invalid:', gameCell)
+          return false
+        } else {
+          console.log('g_move true: gameCell is valid:', gameCell)
+          return true
+        }
       }
-    }
 
       if (gameAction === "g_resign" || gameAction === "g_timeout") {
-      
+
       }
 
       // ✅ CREATE game: if bet exists, enforce balance >= bet 
@@ -442,11 +447,12 @@ export default function useExecuteHandler({ contract, fn, params }) {
     setWaiting(false)
 
     try {
-      const { payload, intents, callAction } = buildPayload(fn, params)
-      console.log('[useExecuteHandler] Payload:', payload, ' Intents:', intents, ' Action:', callAction)
+      const { payload, intents, action } = buildPayload(fn, params)
+
+      console.log('[useExecuteHandler] Payload:', payload, ' Intents:', intents, ' Action:', action)
       const res = await aioha.vscCallContract(
         contract.vscId,
-        callAction,
+        action,
         payload,
         RC_LIMIT_DEFAULT,
         intents,
@@ -461,30 +467,25 @@ export default function useExecuteHandler({ contract, fn, params }) {
         setWaiting(true)
 
         let vscStarted = false
-        await pollTx(txid, (line) => {
-          if (!vscStarted) {
-            vscStarted = true
-            setWaiting(false)
-          }
-
-          const isVSCProgressLine = [
-            '⧖ Waiting for VSC execution',
-            '⬢ VSC contract executed successfully',
-            '✘ VSC contract failed.',
-          ].some((prefix) => line.startsWith(prefix))
-
-          if (isVSCProgressLine) {
-            setLogs((prev) => {
-              const updated = [...prev]
-              if (/^⧖ Waiting for VSC execution/.test(updated.at(-1))) {
-                updated[updated.length - 1] = line
-              } else updated.push(line)
-              return updated
-            })
-          } else {
-            appendLog(line)
+        addTransaction({
+          id: txid,
+          status: 'pending',
+          startedAt: Date.now(),
+          action: action,
+          payload: payload,
+          onStatus: (status, result) => {
+            if (status === 'success') {
+              playBeep(880, 80, 'square')
+              appendLog('⬢ VSC contract executed successfully.')
+              if (result) appendLog('⬒ Return: ' + result)
+            } else {
+              playBeep(250, 250, 'sawtooth')
+              appendLog('✘ VSC contract failed.')
+              appendLog('⬒ Return: ' + JSON.stringify(result))
+            }
           }
         })
+
 
         appendLog('⬢ Transaction confirmed!')
       } else {

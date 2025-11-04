@@ -5,6 +5,8 @@ import ColorPickerButton from "./ColorPickerButton.jsx";
 import SoundToggleButton from "../SoundToggleButton.jsx";
 import { useAioha } from "@aioha/react-ui";
 
+import TxQueueIndicator from "../TxQueueIndicator.jsx";
+
 export default function DesktopHeader({ title }) {
   const { user } = useAioha();
 
@@ -41,12 +43,16 @@ export default function DesktopHeader({ title }) {
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
+            flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
+            gap: "0.5rem",
           }}
         >
+          <SoundToggleButton />
+          <TxQueueIndicator />
           <BalanceDisplay account={`hive:${user}`} fontMult={1} />
+          
         </div>
       </div>
 
@@ -58,7 +64,8 @@ export default function DesktopHeader({ title }) {
           right: 10, // align to right edge
         }}
       >
-        <SoundToggleButton />
+       
+        
       </div>
     </div>
   );

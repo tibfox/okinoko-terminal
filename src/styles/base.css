@@ -53,6 +53,12 @@ h4 {
   color: var(--color-primary);  
 }
 
+h5 {
+  font-size: 1em;
+  color: var(--color-primary);
+  margin-left: 1em;
+}
+
 a {
   color: var(--color-primary);
   /* text-decoration: underline; */

@@ -7,4 +7,13 @@ import './styles/layout.css'
 import './styles/components.css'
 import './styles/animations.css'
 
-render(<App />, document.getElementById('app'))
+import { TransactionProvider } from './transactions/provider';
+import { PopupProvider } from "./popup/PopupProvider.jsx";
+
+render(
+    <TransactionProvider>
+        <PopupProvider>
+        <App />
+        </PopupProvider>
+    </TransactionProvider>    ,
+    document.getElementById('app'))

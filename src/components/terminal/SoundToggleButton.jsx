@@ -47,7 +47,7 @@ export default function SoundToggleButton({ style = {} }) {
     >
       {soundEnabled ? (
         <span style={{ color: hovered?'var(--color-primary)':'var(--color-primary-darker)', }}>
-       <FontAwesomeIcon icon={faVolumeHigh} />
+       <FontAwesomeIcon icon={faVolumeHigh} style={{fontSize: '1.5rem'}} />
 
         </span>
       ) : (

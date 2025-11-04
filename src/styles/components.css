@@ -98,6 +98,31 @@ select {
     padding-bottom: var(--tile-edges);
     background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
 }
+
+.cyber-popup {
+    --tile-width: 33%;
+    --tile-padding: 8px;
+    --tile-edges: 20px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding));
+   --og-clip-path: polygon(
+  0 0,
+  calc(100% - var(--tile-edges)) 0,              /* cut top-right */
+  100% var(--tile-edges),
+  100% 100%,
+  var(--tile-edges) 100%,                        /* cut bottom-left */
+  0 calc(100% - var(--tile-edges))
+);
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding) !important;
+    padding-bottom: var(--tile-edges);
+   background-color: var(--cyber-bg, var(--color-primary-darkest));
+}
+
+
+
+
 /* 
 .neon-btn:after{
     position: absolute;
@@ -270,3 +295,50 @@ select {
   background-color: var(--color-primary-darkest);
 }
 
+.tx-indicator.active {
+  animation: pulse 1.1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+
+.tx-badge {
+  position: absolute;
+  background: black;
+  color: var(--color-primary);
+  font-size: 9px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 2;
+  border: 2px solid var(--color-primary-darker);
+}
+
+/* rotating cyber border ring */
+.tx-badge::before {
+  content: "";
+  position: absolute;
+  inset: -2px; /* outer ring distance */
+  border-radius: 999px;
+  border: 2px solid transparent;
+  animation: spin 2s linear infinite;
+  z-index: -1;
+}
+
+/* color variations */
+.pending-badge::before {
+  border-top-color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  /* border-right-color: var(--color-primary); */
+}
+
+/* animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
