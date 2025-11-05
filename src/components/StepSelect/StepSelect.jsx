@@ -91,7 +91,7 @@ useEffect(() => {
         >
           currently supported
         </span>{' '}
-        smart contracts running on the magi blockchain.
+        smart contracts running on the Magi blockchain.
       </p>
 
       {/* Popup */}

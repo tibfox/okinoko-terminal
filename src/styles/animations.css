@@ -63,3 +63,26 @@
   box-shadow: 0 0 12px hsl(180, 100%, 60%);
   transform: translateY(-2px);
 }
+
+.rainbow-ascii {
+  background: linear-gradient(
+    270deg,
+    red,
+    yellow,
+    lime,
+    cyan,
+    blue,
+    magenta,
+    red
+  );
+  background-size: 200% 100%;
+  animation: rainbow 6s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes rainbow {
+  0%   { background-position: 200% 50%; }
+  100% { background-position: 0% 50%; }
+}

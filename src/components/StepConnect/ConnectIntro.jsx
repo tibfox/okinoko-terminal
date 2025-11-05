@@ -35,14 +35,14 @@ export default function ConnectIntro() {
       <p
         style={{
           // maxWidth: '800px',
-          textAlign: 'justify',
+          // textAlign: 'justify',
           lineHeight: 1.5,
           // color: '#0ff',
           fontSize: isMobile ? '0.9rem' : '1rem',
         }}
       >
-        This terminal is your <b>direct uplink</b> to the <a href="https://vsc.eco/">Magi blockchain</a>! Streamlined,
-        fast, and tuned for quick access to curated smart contracts operating on the magi network.
+        This terminal is your <b>direct uplink</b> to the <a href="https://vsc.eco/">Magi blockchain</a>!<br></br><br></br>
+        Streamlined, fast, and tuned for quick access to curated smart contracts operating on the Magi network.
       </p>
 
     </div>
