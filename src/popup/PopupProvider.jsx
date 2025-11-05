@@ -61,7 +61,7 @@ export function PopupProvider({ children }) {
 
             {/* BACK PANEL */}
             <div
-              class="cyber-popup"
+              // class="cyber-popup"
                style={{
         flex: 1,
         position: "relative",

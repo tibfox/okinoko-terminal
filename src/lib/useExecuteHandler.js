@@ -435,7 +435,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
     }
 
     setPending(true)
-    let startingMessages = ['▶ Signing and broadcasting…']
+    let startingMessages = ['▶ Signing and broadcasting L1…']
     if (aioha.getCurrentProvider() == 'hiveauth') {
       startingMessages.push('(accept tx via HiveAuth)')
     }
@@ -462,8 +462,8 @@ export default function useExecuteHandler({ contract, fn, params }) {
       if (res?.success) {
         playBeep(880, 50, 'square')
         const txid = res.result
-        appendLog(`⬢ Broadcast successful!`)
-        appendLog(`🗒 TXID: ${txid}`)
+        appendLog(`⬢ L1: Broadcast successful!`)
+        appendLog(`🗒 L1: TXID: ${txid}`)
         setWaiting(true)
 
         let vscStarted = false
@@ -476,25 +476,26 @@ export default function useExecuteHandler({ contract, fn, params }) {
           onStatus: (status, result) => {
             if (status === 'success') {
               playBeep(880, 80, 'square')
-              appendLog('⬢ VSC contract executed successfully.')
-              if (result) appendLog('⬒ Return: ' + result)
+              appendLog('⬢ Magi: contract executed successfully.')
+              if (result) appendLog('🗒 Magi: Return: ' + result)
             } else {
               playBeep(250, 250, 'sawtooth')
-              appendLog('✘ VSC contract failed.')
-              appendLog('⬒ Return: ' + JSON.stringify(result))
+              appendLog('✘ Magi: contract failed.')
+              appendLog('🗒 Magi: Return: ' + JSON.stringify(result))
             }
           }
         })
 
 
-        appendLog('⬢ Transaction confirmed!')
+        appendLog('🗒 L1: Transaction confirmed!')
+        appendLog('⧖ Magi: Waiting for contract execution…')
       } else {
         playBeep(250, 200, 'sawtooth')
-        appendLog(`✘ Broadcast failed: ${res?.error || 'Unknown error'}`)
+        appendLog(`✘ L1: Broadcast failed: ${res?.error || 'Unknown error'}`)
       }
     } catch (e) {
       playBeep(250, 200, 'sawtooth')
-      appendLog(`✘ Error: ${e?.message || e}`)
+      appendLog(`✘ L1: Error: ${e?.message || e}`)
     } finally {
       setPending(false)
     }

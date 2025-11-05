@@ -51,46 +51,47 @@ export default function ColorPickerButton({ isMobile}) {
 
   return (
     <button
-      onClick={handlePick}
-      title="Pick a theme color"
-      style={{
-        background: "none",
-        border: "none",
-        padding: 0,
-        cursor: "pointer",
-        display: "flex",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "6px",
-          marginTop: "8px",
-        }}
-      >
-        {colorVars.map((variable) => (
-          <div
-            key={variable}
-            class="color-swatch"
-            style={{
-              width: isMobile==='true'?'10px':'20px',
-              height: isMobile==='true'?'20px':'10px',
-              borderRadius: "3px",
-              background: `var(${variable})`,
-              boxShadow: "0 0 2px rgba(0,0,0,0.3)",
-              transition: "all 0.3s ease",
-            }}
-          />
-        ))}
-      </div>
+  onClick={handlePick}
+  title="Pick a theme color"
+  style={{
+    background: "none",
+    border: "none",
+    padding: 0,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  }}
+>
+  <div
+    style={{
+      width:"1.5rem",
+      height:"1.5rem",
+      borderRadius: "30%",
+      background: `
+        conic-gradient(
+          var(--color-primary-lightest) 0deg 72deg,
+          var(--color-primary-lighter) 72deg 144deg,
+          var(--color-primary) 144deg 216deg,
+          var(--color-primary-darker) 216deg 288deg,
+          var(--color-primary-darkest) 288deg 360deg
+        )
+      `,
+      boxShadow: "0 0 4px rgba(0,0,0,0.35)",
+      transition: "transform .2s ease",
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15)")}
+    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+  />
 
-      <input
-        ref={inputRef}
-        type="color"
-        value={color}
-        onInput={handleChange}
-        style={{ display: "none" }}
-      />
-    </button>
+  <input
+    ref={inputRef}
+    type="color"
+    value={color}
+    onInput={handleChange}
+    style={{ display: "none" }}
+  />
+</button>
+
   );
 }

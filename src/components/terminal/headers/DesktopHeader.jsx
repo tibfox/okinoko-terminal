@@ -1,27 +1,22 @@
-import { h } from "preact";
+import { useState } from "preact/hooks";
 import BalanceDisplay from "../AccountDisplay.jsx";
 import SlotText from "../../animations/SlotText.jsx";
-import ColorPickerButton from "./ColorPickerButton.jsx";
-import SoundToggleButton from "../SoundToggleButton.jsx";
 import { useAioha } from "@aioha/react-ui";
-
 import TxQueueIndicator from "../TxQueueIndicator.jsx";
+import SettingsMenu from "../SettingsMenu.jsx";
+
 
 export default function DesktopHeader({ title }) {
   const { user } = useAioha();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div
-      style={{
-        position: "relative", // anchor for absolute positioning
-        marginBottom: "40px",
-      }}
-    >
-      {/* === Header row === */}
+    <div style={{ position: "relative", marginBottom: "40px" }}>
+      {/* === Header Row === */}
       <div
         style={{
           display: "flex",
-          alignItems: "center", // centers title + balance
+          alignItems: "center",
           justifyContent: "flex-start",
           flexWrap: "nowrap",
           gap: "0.75rem",
@@ -36,8 +31,10 @@ export default function DesktopHeader({ title }) {
             baseDuration={100}
             charDuration={30}
           />
-          <ColorPickerButton isMobile="false"/>
         </div>
+
+        {/* --- Burger Button --- */}
+
 
         {/* --- Middle: Account Data --- */}
         <div
@@ -49,24 +46,14 @@ export default function DesktopHeader({ title }) {
             gap: "0.5rem",
           }}
         >
-          <SoundToggleButton />
           <TxQueueIndicator />
           <BalanceDisplay account={`hive:${user}`} fontMult={1} />
-          
+          <SettingsMenu />
+
         </div>
+       
       </div>
 
-      {/* === Sound button below header, right aligned === */}
-      <div
-        style={{
-          position: "absolute",
-          top: "calc(100% + 6px)", // just below the header
-          right: 10, // align to right edge
-        }}
-      >
-       
-        
-      </div>
     </div>
   );
 }

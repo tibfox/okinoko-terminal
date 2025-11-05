@@ -1,9 +1,9 @@
 import { h } from 'preact'
 import { useState, useRef, useEffect } from 'preact/hooks'
 import SlotText from '../../animations/SlotText.jsx'
-import ColorPickerButton from './ColorPickerButton.jsx'
+import TxQueueIndicator from "../TxQueueIndicator.jsx";
+import SettingsMenu from "../SettingsMenu.jsx";
 
-import SoundToggleButton from '../SoundToggleButton.jsx'
 import BalanceDisplay from '../AccountDisplay.jsx'
 import { useAioha } from '@aioha/react-ui'
 
@@ -33,7 +33,7 @@ export default function MobileHeader({ title }) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'end',
         textAlign: 'center',
         marginBottom: '20px',
         gap: '0.75rem',
@@ -42,35 +42,19 @@ export default function MobileHeader({ title }) {
     >
       {/* --- Top bar: Logo | Balance | Menu --- */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          padding: '0',
-          boxSizing: 'border-box',
-          position: 'relative',
-        }}
-      >
-         <ColorPickerButton isMobile="true"/>
-        {/* Center: Balance */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            justifyContent: 'end',
-            minWidth: 0,
-            overflow: 'visible',
-          }}
-        >
-                <BalanceDisplay account={`hive:${user}`} fontMult={0.8} />
-        </div>
-
-   
-              <SoundToggleButton />
-
-             
-      </div>
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  
+                  gap: "0.5rem",
+                }}
+              >
+                <TxQueueIndicator />
+                <BalanceDisplay account={`hive:${user}`} fontMult={1} />
+                <SettingsMenu />
+      
+              </div>
 
       {/* --- Title below --- */}
       <SlotText

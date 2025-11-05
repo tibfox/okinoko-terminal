@@ -84,13 +84,29 @@ export default function ContractDetails({
       )}
 
       {/* --- Functions Section --- */}
-      {!isMobile && (<h3 className="cyber-tile" style={{maxWidth: '50%'}}>&nbsp;Functions</h3>)}
+      {!isMobile && (
+        <>
+          {selectedContract.functions[0].parse == "game" ? (
+            <h3 className="cyber-tile" style={{ maxWidth: '30%' }}>
+              &nbsp;Games
+            </h3>
+          ) : (
+            <h3 className="cyber-tile" style={{ maxWidth: '50%' }}>
+              &nbsp;Functions
+            </h3>
+          )}
+        </>
+      )}
       <FunctionList
         selectedContract={selectedContract}
         fnName={fnName}
         setFnName={setFnName}
       />
 
+      {/* Selected function description */}
+        
+        
+      
       {/* Selected function description */}
       <DescriptionBox text={selectedFunction?.description} isMobile={isMobile} onDone={() => setContractDoneCallback(true)} />
     </div>

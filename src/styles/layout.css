@@ -14,6 +14,46 @@
   overflow: hidden;
   position: relative;
   min-height: 0;
+    --raster-size: 12px;
+  /* grid spacing */
+  --line-alpha: 0.2;
+  /* line strength */
+  --dot-alpha: 0.2;
+  /* dot strength */
+  position: relative;
+}
+
+
+/* Put all content above the overlay just in case */
+/* .terminal>* {
+  position: relative;
+  z-index: 1;
+} */
+
+/* The raster overlay */
+.terminal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  /* 1) dot field  2) horizontal lines  3) vertical lines */
+  background:
+    radial-gradient(circle at 1px 1px,
+      hsl(from var(--color-primary-darkest) h s l / var(--dot-alpha)) 1px,
+      transparent 1.2px) 0 0 / var(--raster-size) var(--raster-size),
+    repeating-linear-gradient(0deg,
+      hsl(from var(--color-primary-darkest) h s l / var(--line-alpha)) 0 0.5px,
+      transparent 1px calc(var(--raster-size))),
+    repeating-linear-gradient(90deg,
+      hsl(from var(--color-primary-darkest) h s l / var(--line-alpha)) 0 1px,
+      transparent 1px calc(var(--raster-size)));
+
+  /* opacity: .25; */
+  /* global dimmer */
+  /* Tiny blur helps fight subpixel crawl on some displays */
+  /* filter: blur(1px); */
 }
 
 @media (max-width: 900px) {
@@ -119,48 +159,4 @@ html {
 
 .scrollable-form::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #00ffff, #00cccc);
-}
-
-
-/* Tunables */
-.terminal {
-  --raster-size: 18px;
-  /* grid spacing */
-  --line-alpha: 0.8;
-  /* line strength */
-  --dot-alpha: 0.5;
-  /* dot strength */
-  position: relative;
-}
-
-/* Put all content above the overlay just in case */
-.terminal>* {
-  position: relative;
-  z-index: 1;
-}
-
-/* The raster overlay */
-.terminal::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-
-  /* 1) dot field  2) horizontal lines  3) vertical lines */
-  background:
-    radial-gradient(circle at 1px 1px,
-      hsl(from var(--color-primary) h s l / var(--dot-alpha)) 1px,
-      transparent 1.2px) 0 0 / var(--raster-size) var(--raster-size),
-    repeating-linear-gradient(0deg,
-      hsl(from var(--color-primary) h s l / var(--line-alpha)) 0 0.5px,
-      transparent 1px calc(var(--raster-size))),
-    repeating-linear-gradient(90deg,
-      hsl(from var(--color-primary) h s l / var(--line-alpha)) 0 1px,
-      transparent 1px calc(var(--raster-size)));
-
-  opacity: .25;
-  /* global dimmer */
-  /* Tiny blur helps fight subpixel crawl on some displays */
-  filter: blur(1px);
 }

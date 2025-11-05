@@ -8,7 +8,7 @@ import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight,faBolt } from '@fortawesome/free-solid-svg-icons';
 
 
 export default function StepExecute({
@@ -175,7 +175,7 @@ export default function StepExecute({
           <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
           Back</NeonButton>
         <NeonButton
-          disabled={pending || !allMandatoryFilled}
+          //  disabled={pending || !allMandatoryFilled}
           onClick={handleSendAndForward}
         >
             {pending ? (
@@ -183,7 +183,7 @@ export default function StepExecute({
             ) : (
               <>
                 Send
-                <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+                <FontAwesomeIcon icon={faBolt} style={{ marginLeft: '10px' }} />
               </>
             )}
         </NeonButton>

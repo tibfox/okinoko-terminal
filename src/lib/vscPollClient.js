@@ -34,7 +34,6 @@ export async function checkTxStatus(txid) {
     return {
       status: okVal ? 'success' : 'error',
       result: result.ret ?? null,
-      
     }
   } catch (e) {
     return { status: 'pending', result: null }

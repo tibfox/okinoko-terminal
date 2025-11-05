@@ -10,10 +10,11 @@ import {
   faUpRightFromSquare,
   faChevronDown,
   faChevronUp,
+  faTrash
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function TxQueuePopupBody() {
-  const { state } = useContext(TransactionContext);
+  const { state, removeTransaction } = useContext(TransactionContext);
 
   // Live tick so "Waiting Ns" updates
   const [tick, setTick] = useState(Date.now());
@@ -79,32 +80,38 @@ export default function TxQueuePopupBody() {
                   ? tx.id.slice(0, TRUNCATE) + "…"
                   : tx.id}
               </div>
+              <div style={{ fontSize: "0.85rem", cursor: "pointer" }} >
+                {/* Copy button */}
+                <FontAwesomeIcon
+                  icon={faCopy}
+                  style={{ marginRight: "8px" }}
+                  onClick={() => navigator.clipboard.writeText(tx.id)}
+                  title="Copy transaction ID"
+                />
 
-              {/* Copy button */}
-              <FontAwesomeIcon
-                icon={faCopy}
-                style={{ cursor: "pointer", fontSize: "0.85rem", opacity: 0.8 }}
-                onClick={() => navigator.clipboard.writeText(tx.id)}
-                title="Copy transaction ID"
-              />
-
-              {/* External link */}
-              <FontAwesomeIcon
-                icon={faUpRightFromSquare}
-                style={{ cursor: "pointer", fontSize: "0.85rem", opacity: 0.8 }}
-                onClick={() =>
-                  window.open(`https://vsc.techcoderx.com/tx/${tx.id}`, "_blank")
-                }
-                title="View on explorer"
-              />
+                {/* External link */}
+                <FontAwesomeIcon
+                  icon={faUpRightFromSquare}
+                  style={{ marginRight: "8px" }}
+                  onClick={() =>
+                    window.open(`https://vsc.techcoderx.com/tx/${tx.id}`, "_blank")
+                  }
+                  title="View on explorer"
+                />
+                <FontAwesomeIcon
+                  icon={faTrash}
+                  title="Remove from list"
+                  onClick={() => removeTransaction(tx.id)}
+                />
+              </div>
             </div>
 
             {/* Created / Status table (matches your table structure & labels) */}
-            <table style={{ width: "100%", fontSize: "0.75rem" }}>
+            <table style={{ width: "100%", fontSize: "0.9rem" }}>
               <tbody>
                 <tr>
                   <td style={{ paddingRight: "8px" }}>Created:</td>
-                  <td style={{ wordBreak: "break-all" }}>
+                  <td style={{ wordBreak: "break-all", textAlign: "left" }}>
                     {new Date(tx.startedAt).toLocaleString()}
                   </td>
                 </tr>
@@ -118,6 +125,7 @@ export default function TxQueuePopupBody() {
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
+                      textAlign: "left"
                     }}
                   >
                     {tx.status === "pending"
@@ -154,7 +162,7 @@ export default function TxQueuePopupBody() {
                   gap: "4px",
                 }}
               >
-                {isExpanded ? "hide payload" : "show payload"}
+                {isExpanded ? "hide details" : "show details"}
                 <FontAwesomeIcon
                   icon={isExpanded ? faChevronUp : faChevronDown}
                   style={{ fontSize: "0.75rem" }}
@@ -175,7 +183,18 @@ export default function TxQueuePopupBody() {
                   color: "var(--color-primary-lighter)",
                 }}
               >
-                {JSON.stringify(tx.payload, null, 2)}
+                <table>
+                  <tbody>
+                    <tr><td><strong></strong>Payload:</td>
+                      <td>{JSON.stringify(tx.payload, null, 2)}</td>
+                    </tr>
+                    <tr><td><strong>Return:</strong></td>
+                      <td>{JSON.stringify(tx.result, null, 2)}</td>
+                    </tr>
+                  </tbody>
+
+                </table>
+
               </pre>
             )}
           </div>

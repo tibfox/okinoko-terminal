@@ -157,7 +157,7 @@ useEffect(() => {
             onClick={() => setActivePage('details')}
             style={{ opacity: activePage === 'details' ? 1 : 0.5 }}
           >
-            Functions
+          {selectedContract?.functions[0].parse == "game"?"Games": "Functions"} 
           </NeonButton>
         </div>
       )}

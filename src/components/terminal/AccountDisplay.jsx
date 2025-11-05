@@ -2,6 +2,7 @@ import { h } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { useVscQuery } from '../../lib/useVscQuery.js'
 import RcCircleGraph from './RcCircleGraph.jsx'
+import Menu from "../buttons/MenuButton.jsx" 
 
 const QUERY_ACC_BAL = `
   query AccBal($acc: String!) {
@@ -25,33 +26,26 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
   const [rc, setRc] = useState(null)
   const [bal, setBal] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [fakePercent, setFakePercent] = useState(0)
 
-  // Simulated loading animation with easing
-useEffect(() => {
-  if (!loading) return
+  // Fake loading bar animation
+  useEffect(() => {
+    if (!loading) return
+    let t = 0
+    const interval = setInterval(() => {
+      const sineValue = (Math.sin(t) + 1) / 2
+      setFakePercent(Math.round(sineValue * 100))
+      t += 0.15
+    }, 50)
+    return () => clearInterval(interval)
+  }, [loading])
 
-  let t = 0
-  const interval = setInterval(() => {
-    // sine wave from 0 to 1 -> multiply by 100
-    const sineValue = (Math.sin(t) + 1) / 2 // range 0 → 1
-    const easedPercent = Math.round(sineValue * 100)
-    setFakePercent(easedPercent)
-
-    t += 0.15 // speed of animation (adjust to taste)
-  }, 50) // frame rate
-
-  return () => clearInterval(interval)
-}, [loading])
-
-
+  // Load account + RC
   useEffect(() => {
     let cancelled = false
     async function load() {
       setLoading(true)
-      console.log("🔍 RC fetch triggered", Date.now());
 
       const { data, error } = await runQuery(QUERY_ACC_BAL, { acc: account })
       if (!cancelled && !error && data?.rc && data?.bal) {
@@ -69,10 +63,9 @@ useEffect(() => {
     const options = forceDecimals
       ? { minimumFractionDigits: 3, maximumFractionDigits: 3 }
       : { maximumFractionDigits: 3 }
-    return num.toLocaleString('en-US', options).replace(/,/g, '.')
+    return num.toLocaleString("en-US", options).replace(/,/g, ".")
   }
 
-  // If still loading, show fake values
   if (loading) {
     return (
       <RcCircleGraph
@@ -92,55 +85,50 @@ useEffect(() => {
   const rcPercent = (rcRatio * 100).toFixed(1)
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '0.85rem',
-        textAlign: 'left',
-      }}
+    <Menu
+      closeOnOutsideClick={true}
+      title={account} 
+      trigger={
+        <RcCircleGraph
+          rcPercent={rcPercent}
+          rcRatio={rcRatio}
+          hovered={hovered}
+          setHovered={setHovered}
+        />
+      }
+      style={{ minWidth: "240px" }}
+      menuStyle={{ background: "#000" }}
     >
-      {expanded && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            padding: '0 0.3rem',
-            background: '#000',
-            border: '1px solid var(--color-primary-darkest)',
-            fontSize: `${0.85 * fontMult}rem`,
-          }}
-        >
-          <table style={{ borderCollapse: 'collapse', color: 'var(--color-primary)' }}>
-            <tbody>
-              <tr>
-                <td style={{ textAlign: 'right', paddingRight: '0.2rem' }}><b>RC:</b></td>
-                <td colSpan={3} style={{ textAlign: 'left', paddingRight: '0.4rem' }}>
-                  {format(rc.amount)}&nbsp;/&nbsp;{format(rc.max_rcs)}
-                </td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'right', paddingRight: '0.2rem' }}><b>HIVE:</b></td>
-                <td style={{ textAlign: 'left', paddingRight: '0.4rem' }}>
-                  {format(Number(bal.hive) / 1000, true)}
-                </td>
-                <td style={{ textAlign: 'right', paddingRight: '0.2rem' }}><b>HBD:</b></td>
-                <td>{format(Number(bal.hbd) / 1000, true)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <RcCircleGraph
-        rcPercent={rcPercent}
-        rcRatio={rcRatio}
-        hovered={hovered}
-        setHovered={setHovered}
-        onClick={() => setExpanded(v => !v)}
-        expanded={expanded}
-        loading={loading}
-      />
-    </div>
+      <table style={{ borderCollapse: "collapse", color: "var(--color-primary)", fontSize: `${0.85 * fontMult}rem` }}>
+        <tbody>
+          <tr>
+            <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
+              <b>RC:</b>
+            </td>
+            <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
+              {format(rc.amount)} / {format(rc.max_rcs)}
+            </td>
+          </tr>
+          <tr>
+            <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
+              <b>HIVE:</b>
+            </td>
+            <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
+              {format(Number(bal.hive) / 1000, true)}
+            </td>
+           
+          </tr>
+          <tr>
+            
+            <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
+              <b>HBD:</b>
+            </td>
+            <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
+          {format(Number(bal.hbd) / 1000, true)}
+          </td>
+          </tr>
+        </tbody>
+      </table>
+    </Menu>
   )
 }
