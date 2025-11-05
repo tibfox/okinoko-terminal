@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 import Menu from "../buttons/MenuButton.jsx";
 
-export default function TxQueueIndicator() {
+export default function TxQueueIndicator({ isMobile }) {
   const { state } = useContext(TransactionContext);
 
   const pending = state.queue.filter((tx) => tx.status === "pending");
@@ -26,7 +26,7 @@ export default function TxQueueIndicator() {
     <Menu
     title="Recent Transactions"
       closeOnOutsideClick={true}
-      style={{ minWidth: "350px" }}
+      style={{ minWidth: "330px", right: isMobile === "true" ? "-110px" : "0" }}
       menuStyle={{
         background: "rgba(0,0,0,0.85)",
         padding: "12px",

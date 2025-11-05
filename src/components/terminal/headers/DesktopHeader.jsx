@@ -46,7 +46,9 @@ export default function DesktopHeader({ title }) {
             gap: "0.5rem",
           }}
         >
-          <TxQueueIndicator />
+          <TxQueueIndicator 
+          isMobile = "false"
+          />
           <BalanceDisplay account={`hive:${user}`} fontMult={1} />
           <SettingsMenu />
 

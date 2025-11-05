@@ -1,281 +1,356 @@
 {
   "contracts": [
     {
-      "name": "testing contract",
+      "name": "Ōkinoko Escrow",
       "id": 1,
-      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapt",
+      "vscId": "vsc1BgfucQVHwYBHuK2yMEv4AhYua9rtQ45Uoe",
       "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-         {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"raw",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-
-
-    {
-      "name": "Okinoko Escrow",
-      "id": 2,
-      "vscId": "vsc1BonkE2CtHqjnkFdH8hoAEMP25bbWhSr3UA",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-10-09T15:19:18",
-      "description": "The contract provides an on-chain escrow mechanism between two parties with an optional third-party arbitrator to resolve disputes.",
+      "deployedOn": "2025-10-18T22:02:33",
+      "verifiedOn": "2025-10-20T08:37:05",
+      "description": "This contract acts as an on-chain escrow between two parties, optionally including an arbitrator for dispute resolution. Deposit funds securely and choose whether to release them or request a refund.",
       "functions": [
         {
           "name": "e_create",
-          "friendlyName": "create escrow",
-          "description": "Create a new escrow transaction",
-          "parse":"json",
+          "friendlyName": "Create Escrow",
+          "description": "Set up a new escrow by choosing who will receive the funds, how much to send, and who will act as arbitrator.\n! Don’t forget: You’ll get an escrow ID after creation. You’ll need it later to manage the escrow.",
+          "parse":"csv",
+          "delimiter":"|",
+          "excludeKeys":true,
           "parameters": [
             {
-              "name": "descriptive name",
+              "name": "Descriptive Name",
               "payloadName": "name",
               "type": "string",
-              "mandatory":true
+              "mandatory": true
             },
             {
-              "name": "receiver of the amount",
+              "name": "Receiver of the Amount",
               "payloadName": "to",
               "type": "address",
-              "mandatory":true
+              "mandatory": true
             },
-            {
-              "name": "arbitrator in case of disputes",
-              "payloadName": "arb",
-              "type": "address",
-              "mandatory":true
-            },
-            
             {
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
-              "mandatory":true
+              "mandatory": true
+            },
+            {
+              "name": "Arbitrator (in case of Disputes)",
+              "payloadName": "arb",
+              "type": "address",
+              "mandatory": true
             }
           ]
         },
         {
           "name": "e_decide",
-          "friendlyName": "add decision",
-          "description": "If you are part of the escrow you can send your desicion. Until the escorw is closed you can change that decision.",
-          "parse":"json",
+          "friendlyName": "Add Decision",
+          "description": "If you’re part of the escrow, you can send in your decision. Don’t worry: you can change it anytime before the escrow is finalized.",
+          "parse":"csv",
+          "delimiter":"|",
+          "excludeKeys":true,
           "parameters": [
             {
-              "name": "escrow id",
+              "name": "Escrow Id",
               "payloadName": "id",
               "type": "number",
               "asString": false,
-              "mandatory":true
+              "mandatory": true
             },
             {
-              "name": "release the funds?",
+              "name": "Release Funds to the Receiver?",
               "payloadName": "d",
               "type": "bool",
+              "boolFalse":"f",
+              "boolTrue":"r",
+              "asString": true,
+              "mandatory": false
+            }
+          ]
+        },
+        {
+          "name": "e_get",
+          "friendlyName": "Get Escrow",
+          "description": "This function is used to get all data related to a give escrow ID.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Escrow Id",
+              "payloadName": "id",
+              "type": "number",
               "asString": false,
+              "mandatory": true
+            }
+          ]
+        }
+      ]
+    },
+     {
+      "name": "Ōkinoko In-A-Row Games",
+      "id": 2,
+      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYast",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-09-13T20:55:39",
+      "verifiedOn": "unverified",
+      "description": "Play games on-chain!",
+      "functions": [
+        {
+          "name": "TicTacToe",
+          "friendlyName": "Tic Tac Toe",
+          "description": "Tic Tac Toe is a classic 3×3 grid game where two players alternate placing Xs and Os. The goal is to get three in a row horizontally, vertically, or diagonally.",
+          "parse": "game",
+          "parameters": []
+        },
+        {
+          "name": "TicTacToe5",
+          "friendlyName": "Tic Tac Toe 5",
+          "description": "Tic Tac Toe 5 is an extended version of Tic Tac Toe played on a larger 5×5 grid. The aim is to align 4 marks in a row instead of three.",
+          "parse": "game",
+          "parameters": []
+        },
+        {
+          "name": "Connect4",
+          "friendlyName": "Connect 4",
+          "description": "Connect Four is a vertical board game where players drop colored discs into a 7×6 grid. The objective is to be the first to align four pieces in a row in any direction.",
+          "parse": "game",
+          "parameters": []
+        },{
+          "name": "Gomoku",
+          "friendlyName": "Gomoku",
+          "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row (not more). To ensure fairness we use Swap2 rules for the opening moves.",
+          "parse": "game",
+          "parameters": []
+        },{
+          "name": "Squava",
+          "friendlyName": "Squava",
+          "description": "Squava is a Yavalath variant played on a 5×5 grid. Players try to create a row of 4 of their symbol while avoiding a row of 3, which results in an immediate loss.",
+          "parse": "game",
+          "parameters": []
+        }
+      ]
+    },
+    
+    {
+      "name": "SDK Function Tests #2",
+      "id": 3,
+      "vscId": "vsc1BdaaUWkeEoCkHrFDt9uVMq7LXKSxcSFoPK",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-10-31T15:12:33",
+      "verifiedOn": "unverified",
+      "description": "All currently supported sdk functions #2",
+      "functions": [
+        {
+          "name": "c_log",
+          "friendlyName": "Log something",
+          "description": "sdk.Log(*a)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "log message",
+              "payloadName": "",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_state_set",
+          "friendlyName": "Set State",
+          "description": "sdk.StateSetObject(key, value)",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys":true,
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            },
+            {
+              "name": "value",
+              "payloadName": "value",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_state_get",
+          "friendlyName": "Get State",
+          "description": "sdk.StateGetObject(*key)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_state_del",
+          "friendlyName": "Delete State",
+          "description": "sdk.StateDeleteObject(*key)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_get_env",
+          "friendlyName": "Get full env and convert to string",
+          "description": "sdk.GetEnv()",
+          "parse": "raw",
+          "parameters": [
+           
+          ]
+        },
+        {
+          "name": "c_get_env_string",
+          "friendlyName": "Get full env string",
+          "description": "sdk.GetEnvStr()",
+          "parse": "raw",
+          "parameters": [
+           
+          ]
+        },
+        {
+          "name": "c_get_envkey",
+          "friendlyName": "Get Env Key",
+          "description": "sdk.GetEnvKey(*a)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_get_balance",
+          "friendlyName": "Get Hive Balance for user",
+          "description": "sdk.GetBalance(sdk.Address(*a), sdk.AssetHive)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "user",
+              "payloadName": "key",
+              "type": "address", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_hive_draw",
+          "friendlyName": "Draw 0.001 from caller",
+          "description": "sdk.HiveDraw(1, sdk.AssetHive) ",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "amount / asset",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true
+            }
+          ]
+        },{
+          "name": "c_hive_transfer",
+          "friendlyName": "Send 0.001 Hive from contract to user",
+          "description": "sdk.HiveTransfer(sdk.Address(*receiver), 1, sdk.AssetHive)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "user",
+              "payloadName": "key",
+              "type": "address", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_hive_withdraw",
+          "friendlyName": "Withdraw 0.001 Hive from contract to user",
+          "description": "sdk.HiveWithdraw(sdk.Address(*receiver), 1, sdk.AssetHive)",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "user",
+              "payloadName": "key",
+              "type": "address", 
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "c_contract_read",
+          "friendlyName": "Read state of other contract",
+          "description": "sdk.ContractStateGet(contractId, key)",
+          "parse": "csv",
+          "delimiter":"|",
+          "excludeKeys":true, 
+          "parameters": [
+            {
+              "name": "contract",
+              "payloadName": "contract",
+              "type": "string", 
+              "mandatory": true
+            },
+              {
+              "name": "key",
+              "payloadName": "key",
+              "type": "string", 
+              "mandatory": false
+            }
+          ]
+        },
+        {
+          "name": "c_contract_call",
+          "friendlyName": "Call method of other contract",
+          "description": "sdk.ContractCall(contractId, method, callPayload, callOptions)",
+          "parse": "csv",
+          "delimiter":"|",
+          "excludeKeys":true,
+          "parameters": [
+            {
+              "name": "contract",
+              "payloadName": "contract",
+              "type": "string", 
+              "mandatory": true
+            },
+              {
+              "name": "method",
+              "payloadName": "method",
+              "type": "string", 
+              "mandatory": true
+            }
+            ,
+              {
+              "name": "payload",
+              "payloadName": "payload",
+              "type": "string", 
+              "mandatory": true
+            }
+         ,
+            {
+              "name": "amount / asset",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
               "mandatory":false
             }
           ]
         }
-       
-      
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 3,
-      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 4,
-      "vscId": "vsc1Bmbe2GzDpaKvz6dfnSA6KqEaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 5,
-      "vscId": "vsc1Bmdbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 6,
-      "vscId": "vsceBmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 7,
-      "vscId": "vsc1dmbe2GzDpaKvz6dpnSA6KqEaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 8,
-      "vscId": "vsc1Bmbe2GzDpaKvz6dpnSA6KqgaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "3rd cool contract",
-      "id": 9,
-      "vscId": "vsc1Bmbe2GzDpaKvz6dpdSA6KqEaBRQRDFYapd",
-      "owner": "tibfox.vsc",
-      "deployedOn":"2025-09-13T20:55:39",
-      "description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "functions": [
-        {
-          "name": "echo",
-          "friendlyName": "echo",
-          "description": "amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-          "parse":"csv",
-          "delimeter":"|",
-          "keyDelimeter":":",
-          "parameters": [
-            {
-              "name": "message",
-              "payloadName": "message",
-              "type": "string",
-              "mandatory":true
-            }
-          ]
-        }
+        
       ]
     }
-   
-
   ]
 }

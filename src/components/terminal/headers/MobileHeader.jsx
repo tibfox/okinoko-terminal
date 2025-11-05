@@ -50,7 +50,9 @@ export default function MobileHeader({ title }) {
                   gap: "0.5rem",
                 }}
               >
-                <TxQueueIndicator />
+                <TxQueueIndicator 
+                isMobile = "true"
+                />
                 <BalanceDisplay account={`hive:${user}`} fontMult={1} />
                 <SettingsMenu />
       
