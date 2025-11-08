@@ -85,8 +85,8 @@ export default function AsciiArt() {
         className="rainbow-ascii"
         style={{
           fontFamily: "monospace",
-          fontSize: isMobile ? "7px" : "10px",
-          lineHeight: isMobile ? "7px" : "10px",
+          fontSize: isMobile ? "7px" : "7px",
+          lineHeight: isMobile ? "7px" : "7px",
           whiteSpace: "pre",
           textAlign: "center",
           margin: 0,

@@ -8,6 +8,8 @@ import ListButton from '../buttons/ListButton.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { useVscQuery } from '../../lib/useVscQuery.js'
 
+import { LatestGames } from "./GqlTest/GqlTest.jsx";
+
 
 export default function GameSelect({ user, contract, fn, onGameSelected, params, setParams,isMobile }) {
   
@@ -109,7 +111,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       { id: 3, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HIVE', type: 'TicTacToe5', state: 'waiting', board: '0000100200000000000000000' },
       { id: 4, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 4.001, firstMovePurchase: 0.000, asset: 'HIVE', type: 'Connect4', state: 'waiting', board: '000000000000000000000000000000000000000000' },
       { id: 5, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 5.000, firstMovePurchase: 0.000, asset: 'HIVE', type: 'Gomoku', state: 'waiting', board: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' },
-      { id: 8, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 0.002, firstMovePurchase: 0.001, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
+      { id: 0, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 0.100, firstMovePurchase: 0.020, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
       { id: 11, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 4.001, firstMovePurchase: 2.000, asset: 'HBD', type: 'Squava', state: 'waiting', board: '0000100200000000000000000' },
       { id: 12, name: 'Testgame #2', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 0.000, firstMovePurchase: 0.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
       { id: 13, name: 'Testgame #3', creator: 'hive:tasdadasdadadibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'', opponent: '', turn: '1', bet: 100.001, firstMovePurchase: 10.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
@@ -123,8 +125,12 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       { id: 7, name: 'Testgame 123', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:tibfox',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox', turn: '2', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'TicTacToe5', state: 'play', board: '0000100200000000000000000' },
       { id: 18, name: 'Testgame ABC', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:70000,createdOn: '2025-10-30 14:00:00', playerX:'hive:tibfox',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox', turn: '1', bet: 0.000, firstMovePurchase: 0.001, asset: 'HBD', type: 'TicTacToe5', state: 'play', board: '0000100200000000000000000' },
       { id: 6, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:diytube', turn: '2', bet: 0.010, firstMovePurchase: 0.001, asset: 'HIVE', type: 'Gomoku', state: 'play', board: '000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000010000000000000012000000000000012000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000' },
-      { id: 1, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:diytube', turn: '2', bet: 0.001, firstMovePurchase: 0.001, asset: 'HIVE', type: 'TicTacToe', state: 'play', board: '000000000' },
-      { id: 2, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Connect4', state: 'play', board: '000000000000001000000100000010000002200000' },
+      { id: 0, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',
+        lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diyhub.funds',playerY:'hive:tibfox.vsc',
+         opponent: 'hive:diyhub.funds', turn: '1', 
+         
+         bet: 0.001, firstMovePurchase: 0.001, asset: 'HIVE', type: 'TicTacToe', state: 'play', board: '000000000' },
+      { id: 100, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Connect4', state: 'play', board: '000000000000001000000100000010000002200000' },
       { id: 20, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '2', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Connect4', state: 'play', board: '000000000000001000000100000010000002200000' },
       { id: 9, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:tibfox.vsc',playerY:'hive:diytube', opponent: 'hive:tibfox.vsc', turn: '2', bet: 0.050, firstMovePurchase: 0.001, asset: 'HIVE', type: 'Gomoku', state: 'swap', board: '000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000010000000000000012000000000000012000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000' },
       { id: 10, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Squava', state: 'play', board: '0000100200000000000000000' },
@@ -469,7 +475,7 @@ style={{
               </div>
             )}
           </div>
-
+<LatestGames />
         </div>
 
       )}

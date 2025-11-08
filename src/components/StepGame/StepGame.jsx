@@ -11,6 +11,10 @@ import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHourglassStart, faCirclePlay, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+
+import { LatestGames } from "./GqlTest/GqlTest.jsx";
+
+
 export default function StepGame({
   contractId,
   fnName,
@@ -320,6 +324,7 @@ export default function StepGame({
         </div>
       </div>
 
+<LatestGames />
       <div
         style={{
           display: 'flex',

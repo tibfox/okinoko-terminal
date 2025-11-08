@@ -11,13 +11,22 @@
   "dependencies": {
     "@aioha/aioha": "^1.8.0",
     "@aioha/react-ui": "^1.8.0",
+    "@apollo/client": "^4.0.9",
     "@chakra-ui/react": "^3.27.1",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/free-brands-svg-icons": "^7.1.0",
     "@fortawesome/free-regular-svg-icons": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.0",
-    "preact": "^10.27.2"
+    "@urql/core": "^6.0.1",
+    "@urql/exchange-graphcache": "^8.1.0",
+    "graphql": "^16.12.0",
+    "graphql-ws": "^6.0.6",
+    "preact": "^10.27.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "subscriptions-transport-ws": "^0.11.0",
+    "urql": "^5.0.1"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.2",
