@@ -8,7 +8,6 @@ import ListButton from '../buttons/ListButton.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { useVscQuery } from '../../lib/useVscQuery.js'
 
-import { LatestGames } from "./GqlTest/GqlTest.jsx";
 
 
 export default function GameSelect({ user, contract, fn, onGameSelected, params, setParams,isMobile }) {
@@ -475,7 +474,7 @@ style={{
               </div>
             )}
           </div>
-<LatestGames />
+
         </div>
 
       )}
