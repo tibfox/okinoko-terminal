@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'preact/hooks'
-import { useVscQuery } from '../../lib/useVscQuery.js'
+import { useState, useEffect, useMemo } from 'preact/hooks'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ImageUploadField from '../common/ImageUploadField.jsx'
 import MetaInputField from '../common/MetaInputField.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
+import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
 
 export default function ExecuteForm({
   user,
@@ -16,33 +16,17 @@ export default function ExecuteForm({
   allMandatoryFilled,
 }) {
   const [isMobile, setIsMobile] = useState(false)
-  const [balances, setBalances] = useState({ hive: 0, hbd: 0 })
   const [insufficient, setInsufficient] = useState(false)
-  const { runQuery } = useVscQuery()
-
-  // ✅ Fetch balances (always prefix user with "hive:")
-  useEffect(() => {
-    async function fetchBalances() {
-      if (!user) return
-      const QUERY = `
-        query GetBalances($acc: String!) {
-          bal: getAccountBalance(account: $acc) {
-            hive
-            hbd
-          }
-        }
-      `
-      const hiveUser = user.startsWith('hive:') ? user : `hive:${user}`
-      const { data, error } = await runQuery(QUERY, { acc: hiveUser })
-      if (!error && data?.bal) {
-        setBalances({
-          hive: Number(data.bal.hive) / 1000,
-          hbd: Number(data.bal.hbd) / 1000,
-        })
-      }
+  const { balances: accountBalances } = useAccountBalances()
+  const balances = useMemo(() => {
+    if (!accountBalances) {
+      return { hive: 0, hbd: 0 }
     }
-    fetchBalances()
-  }, [user])
+    return {
+      hive: Number(accountBalances.hive ?? 0) / 1000,
+      hbd: Number(accountBalances.hbd ?? 0) / 1000,
+    }
+  }, [accountBalances])
 
   // Handle mobile layout
   useEffect(() => {

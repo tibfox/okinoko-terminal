@@ -1,18 +1,12 @@
-import { useState, useEffect, useMemo } from 'preact/hooks'
+import { useState, useEffect } from 'preact/hooks'
 import NeonSwitch from '../common/NeonSwitch.jsx'
-import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
+import { useVscQuery } from '../../lib/useVscQuery.js'
 
 export default function GameJoin({ game, user, setParams }) {
   const [pfm, setPfm] = useState(false)
+  const [balances, setBalances] = useState({ hive: 0, hbd: 0 })
   const [insufficient, setInsufficient] = useState(false)
-  const { balances: accountBalances } = useAccountBalances()
-  const balances = useMemo(() => {
-    if (!accountBalances) return { hive: 0, hbd: 0 }
-    return {
-      hive: Number(accountBalances.hive ?? 0) / 1000,
-      hbd: Number(accountBalances.hbd ?? 0) / 1000,
-    }
-  }, [accountBalances])
+  const { runQuery } = useVscQuery()
 
   // ✅ reset FMP every time game changes
   useEffect(() => {
@@ -22,6 +16,33 @@ export default function GameJoin({ game, user, setParams }) {
       __gameFmpEnabled: false,
     }))
   }, [game])
+
+  // ✅ Fetch wallet balances
+  useEffect(() => {
+    if (!user) return
+
+    async function fetchBalances() {
+      const query = `
+        query GetBalances($acc: String!) {
+          bal: getAccountBalance(account: $acc) {
+            hive
+            hbd
+          }
+        }
+      `
+      const hiveUser = user.startsWith('hive:') ? user : `hive:${user}`
+      const { data, error } = await runQuery(query, { acc: hiveUser })
+
+      if (!error && data?.bal) {
+        setBalances({
+          hive: Number(data.bal.hive) / 1000,
+          hbd: Number(data.bal.hbd) / 1000
+        })
+      }
+    }
+
+    fetchBalances()
+  }, [user])
 
   // ✅ Calculate required balance based on PFM toggle
   const required = pfm

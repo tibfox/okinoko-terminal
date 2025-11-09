@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useContext } from 'preact/hooks'
+import { useState, useEffect, useMemo, useRef, useContext, useCallback } from 'preact/hooks'
 import { KeyTypes } from '@aioha/aioha'
 import { useAioha } from '@aioha/providers/react'
 import { playBeep } from './beep.js'
@@ -174,8 +174,11 @@ export default function useExecuteHandler({ contract, fn, params }) {
         }
 
         if (action === "g_move") {
-          payload += `|${params?.__gameCell?.replace(',', '|')}`
-
+          const moveValue = params?.__gameCell ?? ''
+          const normalizedMove = moveValue.includes(',') || moveValue.includes(';') || moveValue.includes('|')
+            ? moveValue.replace(/,/g, '|').replace(/;/g, '|')
+            : moveValue
+          payload += `|${normalizedMove}`
         }
 
         const intents = []
@@ -308,111 +311,100 @@ export default function useExecuteHandler({ contract, fn, params }) {
     }
   }
 
-  /**
-   * ✅ Validate all mandatory params, including balance check
-   */
-  const allMandatoryFilled = useMemo(() => {
-    if (!fn) return false
+  const areMandatoryFilled = useCallback(
+    (inputParams = params) => {
+      if (!fn) return false
 
-    const gameAction = params?.__gameAction
+      if (fn?.parse === 'game') {
+        const action = inputParams?.__gameAction
+        if (!action) return false
 
-    // --- Create mode params ---
-    const betObj = params?.__gameCreateBet
-    const betAmount = betObj?.amount ? parseFloat(betObj.amount) : 0
-    const asset = betObj?.asset
-    const fmpEnabledCreate = params?.__gameFmpEnabled
-    const fmpAmountCreate = fmpEnabledCreate
-      ? parseFloat(params?.__gameCreateFmp || 0)
-      : 0
-
-    // --- Join mode params ---
-    const joinAmount = params?.__gameIntentAmount
-      ? parseFloat(params?.__gameIntentAmount)
-      : 0
-    const fmpEnabledJoin = params?.__gameFmpEnabled
-    const fmpAmountJoin = fmpEnabledJoin
-      ? parseFloat(params?.__gameFirstMovePurchase || 0)
-      : 0
-
-    // --- Common balance ---
-    const totalCreate = betAmount + (fmpEnabledCreate ? fmpAmountCreate : 0)
-    const totalJoin = joinAmount + (fmpEnabledJoin ? fmpAmountJoin : 0)
-    const available = asset === 'HIVE' ? balances.hive : balances.hbd
-
-    //
-    // === Custom override behavior ===
-    //
-    if (fn?.parse === "game") {
-
-      // ✅ JOIN game: require total = bet + fmp
-      if (gameAction === "g_join") {
-        console.log('Validating g_join mandatory params and balance')
-        if (totalJoin <= 0) {
-          console.log('g_join true: totalJoin <= 0')
-          return true
-        }
-        console.log('g_join required total:', totalJoin, ' available balance:', available)
-        return totalJoin <= available
-      }
-
-      if (gameAction === "g_move") {
-        const gameCell = params?.__gameCell
-        if (gameCell == null || isNaN(parseInt(gameCell))) {
-          console.log('g_move false: gameCell is invalid:', gameCell)
-          return false
-        } else {
-          console.log('g_move true: gameCell is valid:', gameCell)
-          return true
-        }
-      }
-
-      if (gameAction === "g_resign" || gameAction === "g_timeout") {
-
-      }
-
-      // ✅ CREATE game: if bet exists, enforce balance >= bet 
-      if (gameAction === "g_create") {
-        console.log('Validating g_create mandatory params and balance')
-        console.log('g_create required bet amount:', betAmount, ' available balance:', available)
-        console.log('g_create fmp enabled:', fmpEnabledCreate, ' fmp amount:', fmpAmountCreate)
-        if (fmpEnabledCreate && (isNaN(fmpAmountCreate) || fmpAmountCreate <= 0)) {
-          console.log('g_create true: fmp enabled but fmp amount is NaN')
+        const requiresGameId = action !== 'g_create'
+        if (requiresGameId && !inputParams?.__gameId) {
           return false
         }
-        if (betAmount == null) return true
-        return betAmount <= available
 
+        const betObj = inputParams?.__gameCreateBet
+        const betAmount = betObj?.amount ? parseFloat(betObj.amount) : 0
+        const betAsset = betObj?.asset
+        const fmpEnabledCreate = inputParams?.__gameFmpEnabled
+        const fmpAmountCreate = fmpEnabledCreate
+          ? parseFloat(inputParams?.__gameCreateFmp || 0)
+          : 0
+
+        const joinAmount = inputParams?.__gameIntentAmount
+          ? parseFloat(inputParams?.__gameIntentAmount)
+          : 0
+        const joinAsset = inputParams?.__gameIntentAsset
+        const fmpEnabledJoin = inputParams?.__gameFmpEnabled
+        const fmpAmountJoin = fmpEnabledJoin
+          ? parseFloat(inputParams?.__gameFirstMovePurchase || 0)
+          : 0
+
+        if (action === 'g_create') {
+          if (!inputParams?.__gameCreateType) return false
+
+          if (fmpEnabledCreate && (Number.isNaN(fmpAmountCreate) || fmpAmountCreate < 0)) {
+            return false
+          }
+
+          if (betAmount > 0) {
+            if (!betAsset) return false
+            const available = betAsset === 'HIVE' ? balances.hive : balances.hbd
+            if (betAmount > available) return false
+          }
+          return true
+        }
+
+        if (action === 'g_join') {
+          if (!joinAsset) return false
+          if (Number.isNaN(joinAmount) || joinAmount <= 0) return false
+          const total = joinAmount + (fmpEnabledJoin ? Math.max(0, fmpAmountJoin) : 0)
+          const available = joinAsset === 'HIVE' ? balances.hive : balances.hbd
+          return total <= available
+        }
+
+        if (action === 'g_move') {
+          const moveVal = inputParams?.__gameCell
+          return typeof moveVal === 'string' && moveVal.length > 0
+        }
+
+        if (action === 'g_resign' || action === 'g_timeout') {
+          return true
+        }
+
+        return false
       }
-    }
 
-    return fn.parameters?.every((p) => {
-      if (!p.mandatory) return true
+      return (fn?.parameters ?? []).every((p) => {
+        if (!p.mandatory) return true
+        const val = inputParams?.[p.name]
 
-      const val = params[p.name]
+        if (p.type === 'vscIntent') {
+          if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) return false
 
-      // Handle vscIntent specifically
-      if (p.type === 'vscIntent') {
-        if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) return false
+          const amount = parseFloat(String(val.amount).replace(',', '.'))
+          const available = val.asset === 'HIVE' ? balances.hive : balances.hbd
+          if (amount > available) return false
+          return true
+        }
 
-        const amount = parseFloat(String(val.amount).replace(',', '.'))
-        const available = val.asset === 'HIVE' ? balances.hive : balances.hbd
+        return val !== '' && val !== undefined && val !== null
+      })
+    },
+    [fn, balances, params],
+  )
 
-        // ❌ Insufficient balance
-        if (amount > available) return false
-        return true
-      }
-
-      // Regular check
-      return val !== '' && val !== undefined && val !== null
-    })
-  }, [params, fn, balances])
+  const allMandatoryFilled = areMandatoryFilled()
 
   /**
    * Executes the contract function
    */
-  async function handleSend() {
+  async function handleSend(overrideParams = null) {
+    const effectiveParams = overrideParams ? { ...params, ...overrideParams } : params
+    const mandatoryOk = areMandatoryFilled(effectiveParams)
 
-    if (!contract || !fn || !allMandatoryFilled) {
+    if (!contract || !fn || !mandatoryOk) {
       if (!contract) {
         console.warn('[useExecuteHandler] ❌ send aborted — missing contract')
         return
@@ -423,9 +415,9 @@ export default function useExecuteHandler({ contract, fn, params }) {
         return
       }
 
-      if (!allMandatoryFilled) {
+      if (!mandatoryOk) {
         console.warn('[useExecuteHandler] ❌ send aborted — required params are missing or insufficient balance')
-        console.warn('params:', params)
+        console.warn('params:', effectiveParams)
         console.warn('fn.parameters:', fn.parameters)
         console.warn('balances:', balances)
         return
@@ -447,7 +439,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
     setWaiting(false)
 
     try {
-      const { payload, intents, action } = buildPayload(fn, params)
+      const { payload, intents, action } = buildPayload(fn, effectiveParams)
 
       console.log('[useExecuteHandler] Payload:', payload, ' Intents:', intents, ' Action:', action)
       const res = await aioha.vscCallContract(

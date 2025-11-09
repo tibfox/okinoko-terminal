@@ -1,37 +1,18 @@
 import { h } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { useVscQuery } from '../../lib/useVscQuery.js'
 import RcCircleGraph from './RcCircleGraph.jsx'
 import Menu from "../buttons/MenuButton.jsx" 
-
-const QUERY_ACC_BAL = `
-  query AccBal($acc: String!) {
-    bal: getAccountBalance(account: $acc) {
-      hbd
-      hbd_savings
-      hive
-      hive_consensus
-      consensus_unstaking
-      pending_hbd_unstaking
-    }
-    rc: getAccountRC(account: $acc) {
-      amount
-      max_rcs
-    }
-  }
-`
+import { useAccountBalances } from './AccountBalanceProvider.jsx'
 
 export default function BalanceDisplay({ account, fontMult = 1 }) {
-  const { runQuery } = useVscQuery()
-  const [rc, setRc] = useState(null)
-  const [bal, setBal] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { balances: bal, rc, loading, refresh } = useAccountBalances()
   const [hovered, setHovered] = useState(false)
   const [fakePercent, setFakePercent] = useState(0)
 
-  // Fake loading bar animation
+  const showSkeleton = loading && (!bal || !rc)
+
   useEffect(() => {
-    if (!loading) return
+    if (!showSkeleton) return
     let t = 0
     const interval = setInterval(() => {
       const sineValue = (Math.sin(t) + 1) / 2
@@ -39,24 +20,13 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
       t += 0.15
     }, 50)
     return () => clearInterval(interval)
-  }, [loading])
+  }, [showSkeleton])
 
-  // Load account + RC
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      setLoading(true)
-
-      const { data, error } = await runQuery(QUERY_ACC_BAL, { acc: account })
-      if (!cancelled && !error && data?.rc && data?.bal) {
-        setRc(data.rc)
-        setBal(data.bal)
-      }
-      setLoading(false)
+  const handleMenuToggle = (isOpen) => {
+    if (isOpen) {
+      refresh({ force: true })
     }
-    if (account) load()
-    return () => { cancelled = true }
-  }, [account])
+  }
 
   const format = (n, forceDecimals = false) => {
     const num = Number(n)
@@ -66,7 +36,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
     return num.toLocaleString("en-US", options).replace(/,/g, ".")
   }
 
-  if (loading) {
+  if (showSkeleton) {
     return (
       <RcCircleGraph
         rcPercent={fakePercent}
@@ -98,6 +68,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
       }
       style={{ minWidth: "240px" }}
       menuStyle={{ background: "#000" }}
+      onToggle={handleMenuToggle}
     >
       <table style={{ borderCollapse: "collapse", color: "var(--color-primary)", fontSize: `${0.85 * fontMult}rem` }}>
         <tbody>

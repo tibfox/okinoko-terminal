@@ -150,44 +150,44 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
     opponentName = fullUser === playerX ? playerY : playerX
   }
   const handleResignClick = (cells) => {
+    // Convert to payload format "__gameMove"
+    setParams(prev => ({
+      ...prev,
+      __gameAction: 'g_resign'
+    }))
     const confirmResign = window.confirm("Are you sure you want to resign from this game? This action cannot be undone.")
-    if (!confirmResign) return
-    setSelected(cells)
-    onSelectionChange?.(cells)
-    handleResign?.({
-      __gameId: game?.id ?? null,
-      __gameAction: 'g_resign',
-      __gameCell: undefined,
-    })
+    if (confirmResign) {
+      // Update selection to trigger resign action
+      setSelected(cells)
+      onSelectionChange?.(cells)
+      handleResign()
+    }
   }
   const handleTimeoutClick = (cells) => {
+    // Convert to payload format "__gameMove"
+    setParams(prev => ({
+      ...prev,
+      __gameAction: 'g_timeout'
+    }))
     const confirmTimeout = window.confirm("Are you sure you want to timeout your opponent? This action cannot be undone.")
-    if (!confirmTimeout) return
-    setSelected(cells)
-    onSelectionChange?.(cells)
-    handleTimeout?.({
-      __gameId: game?.id ?? null,
-      __gameAction: 'g_timeout',
-      __gameCell: undefined,
-    })
+    if (confirmTimeout) {
+      // Update selection to trigger timeout action
+      setSelected(cells)
+      onSelectionChange?.(cells)
+      handleTimeout()
+    }
   }
   // helper to sync selection and params
   const updateSelection = (cells) => {
     setSelected(cells)
     onSelectionChange?.(cells)
     // Convert to payload format "__gameMove"
-    let paramMove = ''
-    if (cells.length > 1) {
-      paramMove = cells.map(s => `${s.r},${s.c}`).join(';')
-    } else if (cells.length === 1) {
-      const { r, c } = cells[0]
-      if (allowMultiple) {
-        paramMove = `${r}|${c}`
-      } else if (size) {
-        const indexValue = r * size.cols + c
-        paramMove = `${indexValue}`
-      }
-    }
+    // Convert selection array to string "r,c" or "r1,c1;r2,c2" for swap mode
+    const paramMove = cells.length > 1
+      ? cells.map(s => `${s.r},${s.c}`).join(';')
+      : cells.length === 1
+        ? `${cells[0].r}|${cells[0].c}`
+        : ''
     setParams(prev => ({
       ...prev,
       __gameCell: paramMove || undefined   // clear if empty

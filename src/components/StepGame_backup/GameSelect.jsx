@@ -1,14 +1,14 @@
 
 // GameSelect.jsx
-import { useState, useEffect, useMemo, useRef } from 'preact/hooks'
+import { useState, useEffect, useMemo } from 'preact/hooks'
 import { useQuery, useSubscription } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ListButton from '../buttons/ListButton.jsx'
 
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
+import { useVscQuery } from '../../lib/useVscQuery.js'
 import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY, IAR_EVENTS_SUBSCRIPTION } from '../../data/inarow_gql.js'
-import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
 
 const GAME_TYPE_IDS = {
   TicTacToe: 1,
@@ -61,13 +61,10 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const normalizedUser = useMemo(() => ensureHiveAddress(user), [user])
   const gameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
   const normalizedGameType = gameTypeId != null ? Number(gameTypeId) : null
-  const lobbyReadyRef = useRef(false)
-  const activeReadyRef = useRef(false)
 
   const [lobbyResult, reexecuteLobby] = useQuery({
     query: LOBBY_QUERY,
     pause: !gameTypeId,
-    requestPolicy: 'network-only',
     variables:
       gameTypeId !== null && gameTypeId !== undefined
         ? { gameType: toNumericVar(gameTypeId) }
@@ -76,7 +73,6 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const [activeResult, reexecuteActive] = useQuery({
     query: ACTIVE_GAMES_FOR_PLAYER_QUERY,
     pause: !gameTypeId || !normalizedUser,
-    requestPolicy: 'network-only',
     variables:
       gameTypeId !== null &&
       gameTypeId !== undefined &&
@@ -102,10 +98,10 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
     },
     (_, event) => {
       if (event) {
-        if (reexecuteLobby && lobbyReadyRef.current) {
+        if (reexecuteLobby) {
           reexecuteLobby({ requestPolicy: 'network-only' })
         }
-        if (reexecuteActive && activeReadyRef.current) {
+        if (reexecuteActive) {
           reexecuteActive({ requestPolicy: 'network-only' })
         }
       }
@@ -116,14 +112,8 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   // UI mode: create | continue | join
   const [view, setView] = useState('continue')
 
-  const { balances: accountBalances } = useAccountBalances()
-  const balances = useMemo(() => {
-    if (!accountBalances) return { hive: 0, hbd: 0 }
-    return {
-      hive: Number(accountBalances.hive ?? 0) / 1000,
-      hbd: Number(accountBalances.hbd ?? 0) / 1000,
-    }
-  }, [accountBalances])
+  const [balances, setBalances] = useState({ hive: 0, hbd: 0 })
+  const { runQuery } = useVscQuery()
 
   useEffect(() => {
     if (!gameTypeId) {
@@ -210,28 +200,8 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
     setContinueGames(nextGames)
   }, [activeData, gameTypeId, normalizedUser])
 
-  const [hasLobbyLoaded, setHasLobbyLoaded] = useState(false)
-  const [hasActiveLoaded, setHasActiveLoaded] = useState(false)
-  useEffect(() => {
-    setHasLobbyLoaded(false)
-  }, [gameTypeId])
-  useEffect(() => {
-    setHasActiveLoaded(false)
-  }, [gameTypeId, normalizedUser])
-  useEffect(() => {
-    if (!hasLobbyLoaded && lobbyData && !lobbyFetching) {
-      setHasLobbyLoaded(true)
-    }
-    lobbyReadyRef.current = Boolean(lobbyData) && !lobbyFetching
-  }, [hasLobbyLoaded, lobbyData, lobbyFetching])
-  useEffect(() => {
-    if (!hasActiveLoaded && activeData && !activeFetching) {
-      setHasActiveLoaded(true)
-    }
-    activeReadyRef.current = Boolean(activeData) && !activeFetching
-  }, [hasActiveLoaded, activeData, activeFetching])
-  const lobbyLoading = !hasLobbyLoaded && Boolean(gameTypeId && lobbyFetching)
-  const activeLoading = !hasActiveLoaded && Boolean(gameTypeId && normalizedUser && activeFetching)
+  const lobbyLoading = Boolean(gameTypeId && lobbyFetching)
+  const activeLoading = Boolean(gameTypeId && normalizedUser && activeFetching)
 
   useEffect(() => {
     if (gameTypeId == null) {
@@ -248,6 +218,33 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       }
     })
   }, [gameTypeId, setParams])
+
+  // ✅ Fetch wallet balances
+  useEffect(() => {
+    if (!user) return
+
+    async function fetchBalances() {
+      const query = `
+        query GetBalances($acc: String!) {
+          bal: getAccountBalance(account: $acc) {
+            hive
+            hbd
+          }
+        }
+      `
+      const hiveUser = user.startsWith('hive:') ? user : `hive:${user}`
+      const { data, error } = await runQuery(query, { acc: hiveUser })
+
+      if (!error && data?.bal) {
+        setBalances({
+          hive: Number(data.bal.hive) / 1000,
+          hbd: Number(data.bal.hbd) / 1000
+        })
+      }
+    }
+
+    fetchBalances()
+  }, [user])
 
   const formatAmount = (val) => {
     if (val === null || val === undefined) return '-'

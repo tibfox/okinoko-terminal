@@ -9,6 +9,7 @@ export default function Menu({
   closeOnOutsideClick = true,
   style = {},
   menuStyle = {},
+  onToggle,
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -40,7 +41,16 @@ export default function Menu({
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
-      <div ref={btnRef} onClick={() => setOpen(o => !o)}>
+      <div
+        ref={btnRef}
+        onClick={() =>
+          setOpen((prev) => {
+            const next = !prev
+            onToggle?.(next)
+            return next
+          })
+        }
+      >
         {typeof trigger === "function" ? trigger(open) : trigger}
       </div>
 

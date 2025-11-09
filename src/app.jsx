@@ -11,6 +11,7 @@ import StepConnect from './components/StepConnect/StepConnect.jsx'
 import StepSelect from './components/StepSelect/StepSelect.jsx'
 import StepExecute from './components/StepExecute/StepExecute.jsx'
 import StepGame from './components/StepGame/StepGame.jsx'
+import { AccountBalanceProvider } from './components/terminal/AccountBalanceProvider.jsx'
 
 const aioha = initAioha({
   hiveauth: {
@@ -84,7 +85,9 @@ export function App() {
 
   return (
     <AiohaProvider aioha={aioha}>
-      {renderPage()}
+      <AccountBalanceProvider>
+        {renderPage()}
+      </AccountBalanceProvider>
     </AiohaProvider>
   )
 }
