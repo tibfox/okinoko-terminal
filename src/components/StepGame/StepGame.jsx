@@ -1,5 +1,5 @@
 // StepGame.jsx
-import { useMemo, useState, useEffect } from 'preact/hooks'
+import { useMemo, useState, useEffect, useCallback } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
@@ -11,8 +11,6 @@ import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHourglassStart, faCirclePlay, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
-
-import { LatestGames } from "./GqlTest/GqlTest.jsx";
 
 
 export default function StepGame({
@@ -146,6 +144,20 @@ export default function StepGame({
     await handleSend()
   }
 
+  const handleGameStateChange = useCallback(
+    ({ playerX, playerY, hasOpponent, isMyTurn: currentTurn }) => {
+      const fullUser = user && (user.startsWith('hive:') ? user : `hive:${user}`)
+      if (fullUser && hasOpponent && playerX && playerY) {
+        setOpponentName(fullUser === playerX ? playerY : playerX)
+      } else if (!hasOpponent) {
+        setOpponentName(null)
+      }
+      if (typeof currentTurn === 'boolean') {
+        setIsMyTurn(currentTurn)
+      }
+    },
+    [user],
+  )
 
   // const isGameMode = !!activeGame
   // const isSendEnabled = isGameMode
@@ -318,13 +330,11 @@ export default function StepGame({
               handleResign={handleSend}
               handleTimeout={handleSend}
               isMobile={isMobile}
-
-
+              onStateChange={handleGameStateChange}
             />)}
         </div>
       </div>
 
-<LatestGames />
       <div
         style={{
           display: 'flex',

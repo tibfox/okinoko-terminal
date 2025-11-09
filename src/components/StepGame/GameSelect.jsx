@@ -1,12 +1,55 @@
 
 // GameSelect.jsx
-import { useState, useEffect } from 'preact/hooks'
+import { useState, useEffect, useMemo } from 'preact/hooks'
+import { useQuery, useSubscription } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ListButton from '../buttons/ListButton.jsx'
 
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { useVscQuery } from '../../lib/useVscQuery.js'
+import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY, IAR_EVENTS_SUBSCRIPTION } from '../../data/inarow_gql.js'
+
+const GAME_TYPE_IDS = {
+  TicTacToe: 1,
+  Connect4: 2,
+  Gomoku: 3,
+  TicTacToe5: 4,
+  Squava: 5,
+  GomokuFreestyle: 6,
+}
+
+const GAME_TYPE_NAMES = Object.entries(GAME_TYPE_IDS).reduce((acc, [name, id]) => {
+  acc[id] = name
+  return acc
+}, {})
+
+const typeNameFromId = (id) => GAME_TYPE_NAMES[id] || 'Unknown'
+const ensureHiveAddress = (value) =>
+  !value ? null : value.startsWith('hive:') ? value : `hive:${value}`
+const toNumericVar = (value) =>
+  value === null || value === undefined ? null : value.toString()
+const normalizeAmount = (value) => {
+  if (value === null || value === undefined) return null
+  const num = Number(value)
+  return Number.isNaN(num) ? null : num / 1000
+}
+
+const deriveGameTypeId = (fnName) => {
+  if (!fnName) return null
+  const trimmed = fnName.trim()
+  if (/^\d+$/.test(trimmed)) {
+    return Number(trimmed)
+  }
+  const colonIdx = trimmed.lastIndexOf(':')
+  if (colonIdx !== -1) {
+    const maybe = trimmed.slice(colonIdx + 1)
+    if (/^\d+$/.test(maybe)) {
+      return Number(maybe)
+    }
+  }
+  return GAME_TYPE_IDS[trimmed] ?? null
+}
 
 
 
@@ -15,6 +58,56 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const [newGames, setNewGames] = useState([])
   const [continueGames, setContinueGames] = useState([])
   const [fmpActive, setPfmActive] = useState(false)
+  const normalizedUser = useMemo(() => ensureHiveAddress(user), [user])
+  const gameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
+  const normalizedGameType = gameTypeId != null ? Number(gameTypeId) : null
+
+  const [lobbyResult, reexecuteLobby] = useQuery({
+    query: LOBBY_QUERY,
+    pause: !gameTypeId,
+    variables:
+      gameTypeId !== null && gameTypeId !== undefined
+        ? { gameType: toNumericVar(gameTypeId) }
+        : undefined,
+  })
+  const [activeResult, reexecuteActive] = useQuery({
+    query: ACTIVE_GAMES_FOR_PLAYER_QUERY,
+    pause: !gameTypeId || !normalizedUser,
+    variables:
+      gameTypeId !== null &&
+      gameTypeId !== undefined &&
+      normalizedUser
+        ? { user: normalizedUser, gameType: toNumericVar(gameTypeId) }
+        : undefined,
+  })
+  const {
+    data: lobbyData,
+    fetching: lobbyFetching,
+    error: lobbyError,
+  } = lobbyResult
+  const {
+    data: activeData,
+    fetching: activeFetching,
+    error: activeError,
+  } = activeResult
+
+  useSubscription(
+    {
+      query: IAR_EVENTS_SUBSCRIPTION,
+      pause: !gameTypeId,
+    },
+    (_, event) => {
+      if (event) {
+        if (reexecuteLobby) {
+          reexecuteLobby({ requestPolicy: 'network-only' })
+        }
+        if (reexecuteActive) {
+          reexecuteActive({ requestPolicy: 'network-only' })
+        }
+      }
+      return event
+    },
+  )
 
   // UI mode: create | continue | join
   const [view, setView] = useState('continue')
@@ -22,7 +115,109 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const [balances, setBalances] = useState({ hive: 0, hbd: 0 })
   const { runQuery } = useVscQuery()
 
+  useEffect(() => {
+    if (!gameTypeId) {
+      setNewGames([])
+      return
+    }
+    const rows = (lobbyData?.okinoko_iarv2_waiting_for_join ?? []).filter((row) => {
+      if (normalizedGameType != null && Number(row.type) !== normalizedGameType) {
+        return false
+      }
+      if (normalizedUser && row.creator === normalizedUser) {
+        return false
+      }
+      return true
+    })
+    const nextGames = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      creator: row.creator,
+      bet: normalizeAmount(row.betamount),
+      asset: row.betasset,
+      firstMovePurchase: normalizeAmount(row.fmcosts),
+      type: typeNameFromId(row.type),
+      playerX: row.creator,
+      playerY: null,
+      opponent: null,
+      nextTurnPlayer: row.creator,
+      turn: '1',
+      state: 'waiting',
+      board: null,
+      lastMoveMinutesAgo: 0,
+      lastMoveOn: row.created_block ?? null,
+    }))
+    setNewGames(nextGames)
+  }, [lobbyData, gameTypeId])
 
+  useEffect(() => {
+    if (!gameTypeId || !normalizedUser) {
+      setContinueGames([])
+      return
+    }
+    const rows = (activeData?.okinoko_iarv2_active_with_turn ?? []).filter((row) =>
+      normalizedGameType == null ? true : Number(row.type) === normalizedGameType,
+    )
+    const nextGames = rows
+      .filter((row) =>
+        normalizedUser ? row.creator === normalizedUser || row.joiner === normalizedUser : true,
+      )
+      .map((row) => {
+      const playerX = row.x_player
+      const playerY = row.o_player
+      let opponent = null
+      if (normalizedUser) {
+        if (normalizedUser === row.creator) {
+          opponent = row.joiner || null
+        } else if (normalizedUser === row.joiner) {
+          opponent = row.creator || null
+        } else {
+          opponent = row.creator || row.joiner
+        }
+      } else {
+        opponent = row.creator || row.joiner
+      }
+      const nextTurnPlayer = row.next_turn_player
+      return {
+        id: row.id,
+        name: row.name,
+        creator: row.creator,
+        opponent,
+        playerX,
+        playerY,
+        bet: normalizeAmount(row.betamount),
+        asset: row.betasset,
+        firstMovePurchase: normalizeAmount(row.fmc),
+        type: typeNameFromId(row.type),
+        turn: nextTurnPlayer === playerX ? '1' : '2',
+        nextTurnPlayer,
+        state: 'play',
+        board: null,
+        lastMoveBy: row.last_move_by,
+        lastMoveMinutesAgo: 0,
+      }
+    })
+    setContinueGames(nextGames)
+  }, [activeData, gameTypeId, normalizedUser])
+
+  const lobbyLoading = Boolean(gameTypeId && lobbyFetching)
+  const activeLoading = Boolean(gameTypeId && normalizedUser && activeFetching)
+
+  useEffect(() => {
+    if (gameTypeId == null) {
+      return
+    }
+    setParams((prev = {}) => {
+      const nextType = String(gameTypeId)
+      if (prev.__gameCreateType === nextType) {
+        return prev
+      }
+      return {
+        ...prev,
+        __gameCreateType: nextType,
+      }
+    })
+  }, [gameTypeId, setParams])
 
   // ✅ Fetch wallet balances
   useEffect(() => {
@@ -51,9 +246,36 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
     fetchBalances()
   }, [user])
 
+  const formatAmount = (val) => {
+    if (val === null || val === undefined) return '-'
+    const num = typeof val === 'number' ? val : Number(val)
+    return Number.isNaN(num) ? '-' : num.toFixed(3)
+  }
+  const formatAsset = (asset) => (asset ? String(asset).toUpperCase() : '-')
+
   // Reusable Game Table Component
-  const GameTable = ({ type, games, onClick }) => {
-    if (!games?.length) return null
+  const GameTable = ({ type, games, onClick, loading, error }) => {
+    if (loading) {
+      return <p>Loading {type === 'join' ? 'lobby' : 'active'} games…</p>
+    }
+    if (error) {
+      return (
+        <p style={{ color: 'var(--color-error, #ff5c8d)' }}>
+          Failed to load {type === 'join' ? 'lobby' : 'active'} games.
+        </p>
+      )
+    }
+    if (!games?.length) {
+      return (
+        <p>
+          {type === 'join'
+            ? 'No games available to join right now.'
+            : 'No ongoing games for you yet.'}
+        </p>
+      )
+    }
+
+    const opponentHeader = type === 'join' ? 'Creator' : 'Next Turn'
 
     return (
       <>
@@ -63,7 +285,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>ID</th>
-                <th style={{ width: '35%' }}>{type == 'join'?'Creator':'Opponent'}</th>
+                <th style={{ width: '35%' }}>{opponentHeader}</th>
                 <th style={{ width: '15%' }}>Bet</th>
                 <th style={{ width: '13%' }}>Asset</th>
                 <th style={{ width: '15%' }}>FMP</th>
@@ -89,10 +311,18 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       class="game-row"
     >
       <td>{g.id}</td>
-      <td >{type == 'join' ? g.creator:(g.creator != (user.startsWith('hive:') ? user : `hive:${user}`) ? g.creator : g.opponent)}</td>
-      <td>{g.bet}</td>
-      <td>{g.asset}</td>
-      <td>{g.firstMovePurchase>0?g.firstMovePurchase:'-' }</td>
+      <td>
+        {type === 'join'
+          ? g.creator
+          : g.opponent
+            ? (normalizedUser && g.nextTurnPlayer === normalizedUser
+                ? '▸ your turn'
+                : (g.nextTurnPlayer || g.opponent))
+            : '⋯ waiting'}
+      </td>
+      <td>{formatAmount(g.bet)}</td>
+      <td>{formatAsset(g.asset)}</td>
+      <td>{formatAmount(g.firstMovePurchase)}</td>
     </tr>
   ))}
 </tbody>
@@ -104,43 +334,6 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
     )
   }
 
-  // Mock data
-  useEffect(() => {
-    const allNewGames = [
-      { id: 3, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HIVE', type: 'TicTacToe5', state: 'waiting', board: '0000100200000000000000000' },
-      { id: 4, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 4.001, firstMovePurchase: 0.000, asset: 'HIVE', type: 'Connect4', state: 'waiting', board: '000000000000000000000000000000000000000000' },
-      { id: 5, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 5.000, firstMovePurchase: 0.000, asset: 'HIVE', type: 'Gomoku', state: 'waiting', board: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' },
-      { id: 0, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 0.100, firstMovePurchase: 0.020, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-      { id: 11, name: 'Testgame', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 4.001, firstMovePurchase: 2.000, asset: 'HBD', type: 'Squava', state: 'waiting', board: '0000100200000000000000000' },
-      { id: 12, name: 'Testgame #2', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'',opponent: '', turn: '1', bet: 0.000, firstMovePurchase: 0.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-      { id: 13, name: 'Testgame #3', creator: 'hive:tasdadasdadadibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'', opponent: '', turn: '1', bet: 100.001, firstMovePurchase: 10.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-      { id: 14, name: 'Testgame #4', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'', opponent: '', turn: '1', bet: 100.001, firstMovePurchase: 10.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-      { id: 15, name: 'Testgame #5', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'', opponent: '', turn: '1', bet: 100.001, firstMovePurchase: 10.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-      { id: 16, name: 'Testgame #6', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'', opponent: '', turn: '1', bet: 100.001, firstMovePurchase: 10.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-      { id: 17, name: 'Testgame #7', creator: 'hive:tibfox', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'',playerY:'', opponent: '', turn: '1', bet: 100.001, firstMovePurchase: 10.000, asset: 'HBD', type: 'TicTacToe', state: 'waiting', board: '000000000' },
-    ]
-
-    const allContinueGames = [
-      { id: 7, name: 'Testgame 123', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:tibfox',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox', turn: '2', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'TicTacToe5', state: 'play', board: '0000100200000000000000000' },
-      { id: 18, name: 'Testgame ABC', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:70000,createdOn: '2025-10-30 14:00:00', playerX:'hive:tibfox',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox', turn: '1', bet: 0.000, firstMovePurchase: 0.001, asset: 'HBD', type: 'TicTacToe5', state: 'play', board: '0000100200000000000000000' },
-      { id: 6, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:diytube', turn: '2', bet: 0.010, firstMovePurchase: 0.001, asset: 'HIVE', type: 'Gomoku', state: 'play', board: '000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000010000000000000012000000000000012000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000' },
-      { id: 0, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',
-        lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diyhub.funds',playerY:'hive:tibfox.vsc',
-         opponent: 'hive:diyhub.funds', turn: '1', 
-         
-         bet: 0.001, firstMovePurchase: 0.001, asset: 'HIVE', type: 'TicTacToe', state: 'play', board: '000000000' },
-      { id: 100, name: 'Testgame', creator: 'hive:tibfox.vsc', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Connect4', state: 'play', board: '000000000000001000000100000010000002200000' },
-      { id: 20, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '2', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Connect4', state: 'play', board: '000000000000001000000100000010000002200000' },
-      { id: 9, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:tibfox.vsc',playerY:'hive:diytube', opponent: 'hive:tibfox.vsc', turn: '2', bet: 0.050, firstMovePurchase: 0.001, asset: 'HIVE', type: 'Gomoku', state: 'swap', board: '000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000010000000000000012000000000000012000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000' },
-      { id: 10, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '1', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Squava', state: 'play', board: '0000100200000000000000000' },
-       { id: 19, name: 'Testgame', creator: 'hive:diytube', lastMoveOn: '2025-10-30 14:00:00',lastMoveMinutesAgo:700,createdOn: '2025-10-30 14:00:00', playerX:'hive:diytube',playerY:'hive:tibfox.vsc', opponent: 'hive:tibfox.vsc', turn: '2', bet: 1.001, firstMovePurchase: 0.001, asset: 'HBD', type: 'Squava', state: 'play', board: '0000100200000000000000000' },
-    ]
-
-    const typeKey = fn?.name
-    setNewGames(allNewGames.filter(g => !typeKey || g.type === typeKey))
-    setContinueGames(allContinueGames.filter(g => !typeKey || g.type === typeKey))
-    
-  }, [fn])
 
  
   const handleJoin = game => onGameSelected?.(game, 'g_join')
@@ -257,6 +450,9 @@ style={{
               __gameId: null,
             }))
             onGameSelected?.(null, null)
+            if (reexecuteActive) {
+              reexecuteActive({ requestPolicy: 'network-only' })
+            }
           }}>Continue</ListButton>
        
         <ListButton 
@@ -290,6 +486,9 @@ style={{
               __gameId: null,
             }))
             onGameSelected?.(null, null)
+            if (reexecuteLobby) {
+              reexecuteLobby({ requestPolicy: 'network-only' })
+            }
           }}>Lobby</ListButton>
 
         
@@ -322,7 +521,7 @@ style={{
             setParams(prev => ({
               __gameAction: 'g_create',
               __gameId: null,
-              __gameCreateType:"1"
+              __gameCreateType: gameTypeId != null ? String(gameTypeId) : (prev?.__gameCreateType ?? '')
             }))
             onGameSelected?.(null, 'g_create')
           }}>Create Game</ListButton>
@@ -485,6 +684,8 @@ style={{
           type="continue"
           games={continueGames}
           onClick={handleLoad}
+          loading={activeLoading}
+          error={activeError}
         />
       )}
 
@@ -494,9 +695,10 @@ style={{
           type="join"
           games={newGames}
           onClick={handleJoin}
+          loading={lobbyLoading}
+          error={lobbyError}
         />
       )}
     </div>
   )
 }
-

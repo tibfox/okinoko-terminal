@@ -1,4 +1,4 @@
-const ENDPOINT = 'https://vsc.okinoko.io/api/v1/graphql'
+const ENDPOINT = 'https://vscapi.okinoko.io/api/v1/graphql'
 
 // returns { status: 'pending' | 'success' | 'error', result: string | null }
 export async function checkTxStatus(txid) {
