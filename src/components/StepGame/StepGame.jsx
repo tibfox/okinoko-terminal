@@ -14,6 +14,7 @@ import ActionFooter from './components/ActionFooter.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 import { usePendingTransaction } from './hooks/usePendingTransaction.js'
 import { useGameSelection } from './hooks/useGameSelection.js'
+import { deriveGameTypeId } from './gameTypes.js'
 
 export default function StepGame({
   contractId,
@@ -90,9 +91,7 @@ export default function StepGame({
   //   ? selectedCells.length > 0 && !pending   // Only depend on selected cell
   //   : allMandatoryFilled && !pending         // Original behavior for non-game flow
   const isSendEnabled = allMandatoryFilled && !pending         // Original behavior for non-game flow
-
-
-
+  const derivedGameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
 
   return (
     <TerminalContainer title={fn.friendlyName}>
@@ -182,6 +181,7 @@ export default function StepGame({
               handleTimeout={handleSend}
               isMobile={isMobile}
               onStateChange={handleStateChange}
+              defaultGameTypeId={derivedGameTypeId}
             />)}
         </div>
       </div>

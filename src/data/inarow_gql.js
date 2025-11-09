@@ -103,7 +103,57 @@ export const GAME_EVENTS_SUBSCRIPTION = gql`
     okinoko_iarv2_all_events(where: { id: { _eq: $gameId } }) {
       event_type
       id
+      by
+      winner
+      resigner
+      timedout
       indexer_block_height
+    }
+  }
+`;
+
+export const PLAYER_LEADERBOARD_QUERY = gql`
+  query PlayerLeaderboard(
+    $gameType: numeric!
+    $orderBy: [okinoko_iarv2_player_stats_by_type_order_by!]!
+    $limit: Int = 25
+  ) {
+    okinoko_iarv2_player_stats_by_type(
+      where: { type: { _eq: $gameType } }
+      order_by: $orderBy
+      limit: $limit
+    ) {
+      player
+      type
+      games_played
+      wins
+      draws
+      losses
+      active_games
+      win_ratio
+    }
+  }
+`;
+
+export const PLAYER_LEADERBOARD_SEASON_QUERY = gql`
+  query PlayerLeaderboardSeason(
+    $gameType: numeric!
+    $orderBy: [okinoko_iarv2_player_stats_by_type_current_season_order_by!]!
+    $limit: Int = 25
+  ) {
+    okinoko_iarv2_player_stats_by_type_current_season(
+      where: { type: { _eq: $gameType } }
+      order_by: $orderBy
+      limit: $limit
+    ) {
+      player
+      type
+      games_played
+      wins
+      draws
+      losses
+      active_games
+      win_ratio
     }
   }
 `;

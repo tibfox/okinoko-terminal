@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'preact/hooks'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
+import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 export default function GameJoin({ game, user, setParams }) {
   const [pfm, setPfm] = useState(false)
@@ -86,7 +87,12 @@ export default function GameJoin({ game, user, setParams }) {
      <table style={{ tableLayout: 'auto', borderCollapse: 'collapse' }}>
   <tbody>
     <tr>
-      <td><strong>Bet:</strong></td>
+      <td>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <strong>Bet:</strong>
+          <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+        </span>
+      </td>
       <td style={{ paddingLeft: 24 }}>
         {(game?.bet ?? 0).toFixed(3)} {game?.asset}
       </td>
@@ -108,7 +114,12 @@ export default function GameJoin({ game, user, setParams }) {
 
     {/* total row */}
     <tr>
-      <td style={{ verticalAlign: 'top' }}><strong>Total to Join:</strong></td>
+      <td style={{ verticalAlign: 'top' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <strong>Total to Join:</strong>
+          <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+        </span>
+      </td>
       <td style={{ paddingLeft: 24 }}>
         <strong>{required.toFixed(3)} {asset}{' '}</strong>
         {insufficient && <span style={{ color: 'red' }}>(Insufficient balance)</span>}

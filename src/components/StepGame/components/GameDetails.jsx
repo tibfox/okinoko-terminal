@@ -1,6 +1,7 @@
 import NeonButton from '../../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCirclePlay, faHourglassStart, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import GamblingInfoIcon from '../../common/GamblingInfoIcon.jsx'
 
 export default function GameDetails({
   game,
@@ -49,7 +50,10 @@ export default function GameDetails({
               </tr>
               <tr>
                 <td style={{ paddingRight: '10px' }}>
-                  <strong>Prize Pool:</strong>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <strong>Prize Pool:</strong>
+                    <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+                  </span>
                 </td>
                 <td>{prizePool}</td>
               </tr>

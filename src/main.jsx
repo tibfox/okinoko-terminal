@@ -9,6 +9,10 @@ import './styles/animations.css'
 import { createClient, Provider, cacheExchange, fetchExchange, subscriptionExchange } from '@urql/preact';
 import { createClient as createWSClient } from 'graphql-ws';
 
+import { TransactionProvider } from './transactions/provider';
+import { PopupProvider } from "./popup/PopupProvider.jsx";
+
+
 const HASURA_HTTP = import.meta.env.VITE_HASURA_HTTP || 'https://vscapi.okinoko.io/hasura/v1/graphql';
 const HASURA_WS = import.meta.env.VITE_HASURA_WS || 'wss://vscapi.okinoko.io/hasura/v1/graphql';
 
@@ -51,8 +55,6 @@ const client = createClient({
   preferGetMethod: false, 
 });
 
-import { TransactionProvider } from './transactions/provider';
-import { PopupProvider } from "./popup/PopupProvider.jsx";
 
 render(
      <Provider value={client}>

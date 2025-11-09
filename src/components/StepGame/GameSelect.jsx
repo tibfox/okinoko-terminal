@@ -9,22 +9,9 @@ import ListButton from '../buttons/ListButton.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY, IAR_EVENTS_SUBSCRIPTION } from '../../data/inarow_gql.js'
 import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
+import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
+import { GAME_TYPE_IDS, typeNameFromId, deriveGameTypeId } from './gameTypes.js'
 
-const GAME_TYPE_IDS = {
-  TicTacToe: 1,
-  Connect4: 2,
-  Gomoku: 3,
-  TicTacToe5: 4,
-  Squava: 5,
-  GomokuFreestyle: 6,
-}
-
-const GAME_TYPE_NAMES = Object.entries(GAME_TYPE_IDS).reduce((acc, [name, id]) => {
-  acc[id] = name
-  return acc
-}, {})
-
-const typeNameFromId = (id) => GAME_TYPE_NAMES[id] || 'Unknown'
 const ensureHiveAddress = (value) =>
   !value ? null : value.startsWith('hive:') ? value : `hive:${value}`
 const toNumericVar = (value) =>
@@ -34,24 +21,6 @@ const normalizeAmount = (value) => {
   const num = Number(value)
   return Number.isNaN(num) ? null : num / 1000
 }
-
-const deriveGameTypeId = (fnName) => {
-  if (!fnName) return null
-  const trimmed = fnName.trim()
-  if (/^\d+$/.test(trimmed)) {
-    return Number(trimmed)
-  }
-  const colonIdx = trimmed.lastIndexOf(':')
-  if (colonIdx !== -1) {
-    const maybe = trimmed.slice(colonIdx + 1)
-    if (/^\d+$/.test(maybe)) {
-      return Number(maybe)
-    }
-  }
-  return GAME_TYPE_IDS[trimmed] ?? null
-}
-
-
 
 export default function GameSelect({ user, contract, fn, onGameSelected, params, setParams,isMobile }) {
   
@@ -289,7 +258,12 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
               <tr>
                 <th style={{ width: '10%' }}>ID</th>
                 <th style={{ width: '35%' }}>{opponentHeader}</th>
-                <th style={{ width: '15%' }}>Bet</th>
+                <th style={{ width: '15%' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    Bet
+                    <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+                  </span>
+                </th>
                 <th style={{ width: '13%' }}>Asset</th>
                 <th style={{ width: '15%' }}>FMP</th>
               </tr>
@@ -350,8 +324,20 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
 
   const parsed = parseFloat(String(current.amount || '').replace(',', '.'))
   const exceeds = !isNaN(parsed) && parsed > available
+  const betDefined = !Number.isNaN(parsed) && parsed > 0
   const fmpParsed = parseFloat(String(fmpAmount || '').replace(',', '.'))
   const fmpInvalid = fmpActive && (isNaN(fmpParsed) || fmpParsed <= 0)
+
+  useEffect(() => {
+    if (betDefined || !fmpActive) {
+      return
+    }
+    setPfmActive(false)
+    setParams(prev => ({
+      ...prev,
+      __gameFmpEnabled: false
+    }))
+  }, [betDefined, fmpActive, setParams])
 
 
   const onAmountChange = (e) => {
@@ -557,20 +543,23 @@ style={{
               marginTop: '20px'
             }}
           >
-            <FloatingLabelInput
-              type="text"
-              inputMode="decimal"
-              placeholder="Amount"
-              label="Bet (optional)"
-              value={current.amount}
-              onChange={onAmountChange}
-              onBlur={onAmountBlur}
-              style={{
-                flex: '0 0 50%',
-                borderColor: exceeds ? 'red' : 'var(--color-primary-lighter)',
-                boxShadow: exceeds ? '0 0 8px red' : 'none',
-              }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '0 0 50%' }}>
+              <FloatingLabelInput
+                type="text"
+                inputMode="decimal"
+                placeholder="Amount"
+                label="Bet (optional)"
+                value={current.amount}
+                onChange={onAmountChange}
+                onBlur={onAmountBlur}
+                style={{
+                  flex: 1,
+                  borderColor: exceeds ? 'red' : 'var(--color-primary-lighter)',
+                  boxShadow: exceeds ? '0 0 8px red' : 'none',
+                }}
+              />
+              <GamblingInfoIcon size={16} style={{ marginLeft: 0 }} />
+            </div>
 
             <select
               className="vsc-input"
@@ -609,73 +598,75 @@ style={{
               {available.toFixed(3)} {current.asset}
             </span>
           </div>
-          <div
-            style={{
+          {betDefined && (
+            <div
+              style={{
 
-              marginTop: '20px'
-            }}
-          >
-            <NeonSwitch
-              name="Enable to buy off the first move from you?"
-              checked={fmpActive}
-              onChange={(val) => {
-                // Update UI switch
-                setPfmActive(val)
-
-                // Also store in params used by transaction logic
-                setParams(prev => ({
-                  ...prev,
-                  __gameFmpEnabled: val
-                }))
-              }}
-            />
-            {fmpActive && (
-
-              <div style={{
                 marginTop: '20px'
-              }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '8px',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
+              }}
+            >
+              <NeonSwitch
+                name="Enable to buy off the first move from you?"
+                checked={fmpActive}
+                onChange={(val) => {
+                  // Update UI switch
+                  setPfmActive(val)
 
-                  <FloatingLabelInput
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="Amount"
-                    label="First Move Payment (optional)"
-                    value={fmpAmount}
-                    onChange={onFmpAmountChange}
-                    onBlur={onFmpAmountBlur}
-                    style={{
-                      flex: '0 0 70%',
-                      borderColor: fmpInvalid ? 'red' : 'var(--color-primary-lighter)',
-                      boxShadow: fmpInvalid ? '0 0 8px red' : 'none',
-                    }}
-                  />
+                  // Also store in params used by transaction logic
+                  setParams(prev => ({
+                    ...prev,
+                    __gameFmpEnabled: val
+                  }))
+                }}
+              />
+              {fmpActive && (
 
-                  <span
-                    style={{
-                      flex: '0 0 auto',
-                      fontSize: '0.8rem',
-                      color: fmpInvalid ? 'red' : 'var(--color-primary-lighter)',
-                    }}
-                  >
-                    {fmpAmount} {current.asset}
-                  </span>
-                </div>
                 <div style={{
                   marginTop: '20px'
                 }}>
-                  This amount will be sent to your wallet in return of the first move in the game.
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+
+                    <FloatingLabelInput
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Amount"
+                      label="First Move Payment (optional)"
+                      value={fmpAmount}
+                      onChange={onFmpAmountChange}
+                      onBlur={onFmpAmountBlur}
+                      style={{
+                        flex: '0 0 70%',
+                        borderColor: fmpInvalid ? 'red' : 'var(--color-primary-lighter)',
+                        boxShadow: fmpInvalid ? '0 0 8px red' : 'none',
+                      }}
+                    />
+
+                    <span
+                      style={{
+                        flex: '0 0 auto',
+                        fontSize: '0.8rem',
+                        color: fmpInvalid ? 'red' : 'var(--color-primary-lighter)',
+                      }}
+                    >
+                      {fmpAmount} {current.asset}
+                    </span>
+                  </div>
+                  <div style={{
+                    marginTop: '20px'
+                  }}>
+                    This amount will be sent to your wallet in return of the first move in the game.
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
         </div>
 

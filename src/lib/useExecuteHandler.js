@@ -174,11 +174,8 @@ export default function useExecuteHandler({ contract, fn, params }) {
         }
 
         if (action === "g_move") {
-          const moveValue = params?.__gameCell ?? ''
-          const normalizedMove = moveValue.includes(',') || moveValue.includes(';') || moveValue.includes('|')
-            ? moveValue.replace(/,/g, '|').replace(/;/g, '|')
-            : moveValue
-          payload += `|${normalizedMove}`
+          payload += `|${params?.__gameCell?.replace(',', '|')}`
+
         }
 
         const intents = []
@@ -357,9 +354,15 @@ export default function useExecuteHandler({ contract, fn, params }) {
         }
 
         if (action === 'g_join') {
+          const normalizedJoinAmount = Number.isNaN(joinAmount) ? 0 : Math.max(0, joinAmount)
+          const normalizedFmp = fmpEnabledJoin ? Math.max(0, Number.isNaN(fmpAmountJoin) ? 0 : fmpAmountJoin) : 0
+          const total = normalizedJoinAmount + normalizedFmp
+
+          if (total === 0) {
+            return true
+          }
+
           if (!joinAsset) return false
-          if (Number.isNaN(joinAmount) || joinAmount <= 0) return false
-          const total = joinAmount + (fmpEnabledJoin ? Math.max(0, fmpAmountJoin) : 0)
           const available = joinAsset === 'HIVE' ? balances.hive : balances.hbd
           return total <= available
         }
