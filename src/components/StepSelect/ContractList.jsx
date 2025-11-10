@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'preact/hooks'
 import ListButton from '../buttons/ListButton.jsx'
 
 import DescriptionBox from '../common/DescriptionBox.jsx'
@@ -12,16 +11,13 @@ import { faFileContract } from '@fortawesome/free-solid-svg-icons';
  * Displays all available contracts.
  * On mobile, shows metadata + short description for the selected one.
  */
-export default function ContractList({ contracts, contractId, setContractId, setFnName,setContractDoneCallback }) {
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 900)
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
+export default function ContractList({
+  contracts,
+  contractId,
+  setContractId,
+  setFnName,
+  isMobile,
+}) {
   const selectedContract = contracts.find((c) => c.vscId === contractId)
 
   return (
@@ -112,11 +108,10 @@ export default function ContractList({ contracts, contractId, setContractId, set
           </table>
 
           {/* Short Description */}
-           <DescriptionBox
-                      text={selectedContract.description}
-                      onDone={() => setContractDoneCallback(true)}
-                      isMobile={isMobile}
-                    />
+          <DescriptionBox
+            text={selectedContract.description}
+            isMobile={isMobile}
+          />
         </div>
       )}
     </div>

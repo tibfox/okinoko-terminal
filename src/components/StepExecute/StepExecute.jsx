@@ -8,7 +8,10 @@ import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { loadPendingTx } from '../../lib/txBridge.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft, faChevronRight,faBolt } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faBolt } from '@fortawesome/free-solid-svg-icons'
+import MobileTabs from '../common/MobileTabs.jsx'
+import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
+import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 
 
 export default function StepExecute({
@@ -19,16 +22,9 @@ export default function StepExecute({
   setStep,
 }) {
   const { user } = useAioha()
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useDeviceBreakpoint()
   const [activePage, setActivePage] = useState('form')
   const [resumedTx, setResumedTx] = useState(null)
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 900)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
 
   // ✅ load pending tx only after everything mounts
   useEffect(() => {
@@ -67,49 +63,24 @@ export default function StepExecute({
     await handleSend()
   }
 
+  const mobileTabs = useMemo(
+    () => [
+      { id: 'form', label: 'INPUT' },
+      { id: 'preview', label: 'Preview & Logs' },
+    ],
+    []
+  )
+
   return (
     <TerminalContainer title="Input & Execute Function">
-      {isMobile && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '8px',
-            marginBottom: '10px',
-          }}
-        >
-          <NeonButton
-            onClick={() => setActivePage('form')}
-            style={{ opacity: activePage === 'form' ? 1 : 0.5 }}
-          >
-            INPUT
-          </NeonButton>
-          <NeonButton
-            onClick={() => setActivePage('preview')}
-            style={{ opacity: activePage === 'preview' ? 1 : 0.5 }}
-          >
-            Preview & Logs
-          </NeonButton>
-        </div>
-      )}
+      <MobileTabs
+        visible={isMobile}
+        tabs={mobileTabs}
+        activeTab={activePage}
+        onChange={setActivePage}
+      />
 
-      {/* ✅ Show TX resume banner */}
-      {resumedTx && (
-        <div
-          style={{
-            background: 'rgba(0,255,136,0.1)',
-            border: '1px solid var(--color-primary-darker)',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            fontFamily: 'monospace',
-            fontSize: '0.85rem',
-            marginBottom: '10px',
-            color: '#00ff88',
-          }}
-        >
-          🧩 Resumed transaction: <b>{resumedTx.fnName}</b> on <b>{resumedTx.contractId}</b>
-        </div>
-      )}
+      <ResumedTransactionBanner tx={resumedTx} />
 
       <div
         style={{
@@ -173,11 +144,9 @@ export default function StepExecute({
       >
         <NeonButton onClick={() => setStep(1)}>
           <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
-          Back</NeonButton>
-        <NeonButton
-          //  disabled={pending || !allMandatoryFilled}
-          onClick={handleSendAndForward}
-        >
+          Back
+        </NeonButton>
+        <NeonButton onClick={handleSendAndForward}>
             {pending ? (
               'Sending…'
             ) : (

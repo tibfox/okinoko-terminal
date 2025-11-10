@@ -7,14 +7,24 @@ import GameSelect from './GameSelect.jsx'
 import GameField from './GameField.jsx'
 import GameJoin from './GameJoin.jsx'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
-import MobileTabs from './components/MobileTabs.jsx'
-import ResumedTransactionBanner from './components/ResumedTransactionBanner.jsx'
+import MobileTabs from '../common/MobileTabs.jsx'
+import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
 import GameDetails from './components/GameDetails.jsx'
 import ActionFooter from './components/ActionFooter.jsx'
-import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
+import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import { usePendingTransaction } from './hooks/usePendingTransaction.js'
 import { useGameSelection } from './hooks/useGameSelection.js'
 import { deriveGameTypeId } from './gameTypes.js'
+
+const resolveBrowseLabel = (activeGame, mode) => {
+  if (!activeGame) return 'BROWSE'
+  return mode === 'g_join' ? 'BROWSE' : 'INFO'
+}
+
+const resolvePreviewLabel = (activeGame, mode) => {
+  if (!activeGame) return 'DETAILS'
+  return mode === 'g_join' ? 'GAME INFO' : 'BOARD'
+}
 
 export default function StepGame({
   contractId,
@@ -93,13 +103,26 @@ export default function StepGame({
   const isSendEnabled = allMandatoryFilled && !pending         // Original behavior for non-game flow
   const derivedGameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
 
+  const mobileTabs = useMemo(
+    () => [
+      {
+        id: 'form',
+        label: resolveBrowseLabel(activeGame, displayMode),
+      },
+      {
+        id: 'preview',
+        label: resolvePreviewLabel(activeGame, displayMode),
+      },
+    ],
+    [activeGame, displayMode]
+  )
+
   return (
     <TerminalContainer title={fn.friendlyName}>
       <MobileTabs
         visible={isMobile}
-        activePage={activePage}
-        activeGame={activeGame}
-        displayMode={displayMode}
+        tabs={mobileTabs}
+        activeTab={activePage}
         onChange={setActivePage}
       />
 

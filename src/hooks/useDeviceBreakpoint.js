@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'preact/hooks'
 
 /**
- * Tracks whether the viewport width is below the provided breakpoint.
- * Keeps StepGame concerned with game logic while this hook encapsulates the resize plumbing.
+ * Keeps responsive logic isolated so screens can stay focused on their domain.
+ * Returns true when the viewport is below the given breakpoint (defaults to 900px).
  */
 export function useDeviceBreakpoint(breakpoint = 900) {
   const [isMobile, setIsMobile] = useState(false)

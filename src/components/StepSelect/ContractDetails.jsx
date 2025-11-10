@@ -1,32 +1,23 @@
-import React, { useEffect, useState } from 'react'
 import DescriptionBox from '../common/DescriptionBox.jsx'
 import FunctionList from './FunctionList.jsx'
 
 export default function ContractDetails({
+  isMobile,
   selectedContract,
   selectedFunction,
   fnName,
   setFnName,
-  setContractDoneCallback,
 }) {
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 900)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
   if (!selectedContract) {
     return <p>Select a contract to view details.</p>
   }
+
+  const isGameContract = selectedContract?.functions?.[0]?.parse === 'game'
 
   return (
     <div
       className="neon-scroll"
       style={{
-
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
@@ -36,8 +27,12 @@ export default function ContractDetails({
     >
       {!isMobile && (
         <>
-          <h3 className="cyber-tile"  style={{maxWidth: '60%'}}>&nbsp;Contract Metadata</h3>
-          <table style={{ borderSpacing: '0px 0px', borderCollapse: 'separate' }}>
+          <h3 className="cyber-tile" style={{ maxWidth: '60%' }}>
+            &nbsp;Contract Metadata
+          </h3>
+          <table
+            style={{ borderSpacing: '0px 0px', borderCollapse: 'separate' }}
+          >
             <tbody>
               <tr>
                 <td><strong>Contract Owner:</strong></td>
@@ -75,18 +70,14 @@ export default function ContractDetails({
             </tbody>
           </table>
 
-          <DescriptionBox
-            text={selectedContract.description}
-            onDone={() => setContractDoneCallback(true)}
-
-          />
+          <DescriptionBox text={selectedContract.description} />
         </>
       )}
 
       {/* --- Functions Section --- */}
       {!isMobile && (
         <>
-          {selectedContract.functions[0].parse == "game" ? (
+          {isGameContract ? (
             <h3 className="cyber-tile" style={{ maxWidth: '30%' }}>
               &nbsp;Games
             </h3>
@@ -102,13 +93,10 @@ export default function ContractDetails({
         fnName={fnName}
         setFnName={setFnName}
       />
-
-      {/* Selected function description */}
-        
-        
-      
-      {/* Selected function description */}
-      <DescriptionBox text={selectedFunction?.description} isMobile={isMobile} onDone={() => setContractDoneCallback(true)} />
+      <DescriptionBox
+        text={selectedFunction?.description}
+        isMobile={isMobile}
+      />
     </div>
   )
 }

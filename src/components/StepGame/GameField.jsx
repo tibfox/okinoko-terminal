@@ -341,26 +341,31 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
         )
       })()}
       {isMobile ? (
-        <center>
-          {isMyTurn ?
+        // <center>
+        //   {isMyTurn ?
+        <div
+            style={{ display: 'flex', justifyContent: 'space-between' }}
+        >
             <NeonButton
               onClick={() => handleResignClick([])}
-              style={{ marginBottom: '10px', minWidth: '65%' }}>
+              style={{ marginBottom: '10px', minWidth: '45%' }}>
               <FontAwesomeIcon icon={faFlag} style={{marginRight: '10px'}}/>
               Resign
             </NeonButton>
-            : <NeonButton
+            
+             <NeonButton
               disabled={!hasOpponent || daysAgo < 7}
               onClick={() => handleTimeoutClick([])}
-              style={{ marginBottom: '10px', minWidth: '65%' }}>
+              style={{ marginBottom: '10px', minWidth: '45%' }}>
                 <FontAwesomeIcon icon={faHourglassStart} style={{marginRight: '10px'}}/>
               Claim Timeout
             </NeonButton>
-          }</center>
+            </div>
+          // }</center>
       ) : (<center>
         <div>
           <NeonButton
-            disabled={!hasOpponent || !isMyTurn}
+            // disabled={!hasOpponent || !isMyTurn}
             onClick={() => handleResignClick([])}
             style={{ marginBottom: '10px', marginRight: '10px', minWidth: '120px' }}>
             <FontAwesomeIcon icon={faFlag} style={{marginRight: '10px'}} />
@@ -411,13 +416,17 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
           )
         })()}
         <div style={{
-          height: '100%',
-          aspectRatio: `${size.cols} / ${size.rows}`,
+          width: '100%',
           maxWidth: '100%',
+          maxHeight: '100%',
+          aspectRatio: `${size.cols} / ${size.rows}`,
           display: 'grid',
-          gridTemplateColumns: `repeat(${size.cols}, 1fr)`,
-          gridTemplateRows: `repeat(${size.rows}, 1fr)`,
-          gap: '4px'
+          gridTemplateColumns: `repeat(${size.cols}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${size.rows}, minmax(0, 1fr))`,
+          gap: '10px',
+          justifyContent: 'start',
+          alignContent: 'start',
+          placeContent: 'start',
         }}>
           {Array.from({ length: size.rows * size.cols }).map((_, i) => {
             const r = Math.floor(i / size.cols)
@@ -572,7 +581,7 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
                     : selectedCell
                       ? 'var(--color-primary-darkest)'
                       : '#555',
-                  fontSize: 'clamp(0.6rem, 2.5vw, 2.5rem)',
+                  fontSize: isMobile?'clamp(0.6rem, 10vw, 10rem)':'clamp(0.6rem, 2.5vw, 2.5rem)',
                   cursor: clickable ? 'pointer' : 'not-allowed',
                   transition: 'box-shadow 120ms ease, background 120ms ease'
                 }}

@@ -6,6 +6,13 @@ import { useVscQuery } from './useVscQuery.js'
 
 import { TransactionContext } from '../transactions/context';
 
+const successBeep = 800
+const successLength = 100
+const failureBeep = 270
+const failureLength = 400
+const TONE_COUNT = 2
+const TONE_PAUSE = 300 // ms between tones to keep the cue snappy
+
 
 const RC_LIMIT_DEFAULT = 10000
 
@@ -24,6 +31,19 @@ export default function useExecuteHandler({ contract, fn, params }) {
     const saved = sessionStorage.getItem('terminalLogs')
     return saved ? JSON.parse(saved) : []
   })
+  const playFailureChime = useCallback(() => {
+    const interval = failureLength + TONE_PAUSE
+    for (let i = 0; i < TONE_COUNT; i += 1) {
+      setTimeout(() => playBeep(failureBeep-i*80, failureLength+i*failureLength, 'sawtooth'), i * interval)
+    }
+  }, [])
+
+  const playSuccessChime = useCallback(() => {
+    const interval = successLength + TONE_PAUSE
+    for (let i = 0; i < TONE_COUNT; i += 1) {
+      setTimeout(() => playBeep(successBeep+i*80, successLength+i*successLength, 'sawtooth'), i * interval)
+    }
+  }, [])
 
   const hiveUser = user?.startsWith('hive:') ? user : user ? `hive:${user}` : ''
 
@@ -455,7 +475,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
       )
 
       if (res?.success) {
-        playBeep(880, 50, 'square')
+        playBeep(successBeep, successLength, 'sawtooth')
         const txid = res.result
         appendLog(`⬢ L1: Broadcast successful!`)
         appendLog(`🗒 L1: TXID: ${txid}`)
@@ -470,11 +490,11 @@ export default function useExecuteHandler({ contract, fn, params }) {
           payload: payload,
           onStatus: (status, result) => {
             if (status === 'success') {
-              playBeep(880, 80, 'square')
+              playSuccessChime()
               appendLog('⬢ Magi: contract executed successfully.')
               if (result) appendLog('🗒 Magi: Return: ' + result)
             } else {
-              playBeep(250, 250, 'sawtooth')
+              playFailureChime()
               appendLog('✘ Magi: contract failed.')
               appendLog('🗒 Magi: Return: ' + JSON.stringify(result))
             }
@@ -485,11 +505,11 @@ export default function useExecuteHandler({ contract, fn, params }) {
         appendLog('🗒 L1: Transaction confirmed!')
         appendLog('⧖ Magi: Waiting for contract execution…')
       } else {
-        playBeep(250, 200, 'sawtooth')
+        playFailureChime()
         appendLog(`✘ L1: Broadcast failed: ${res?.error || 'Unknown error'}`)
       }
     } catch (e) {
-      playBeep(250, 200, 'sawtooth')
+      playFailureChime()
       appendLog(`✘ L1: Error: ${e?.message || e}`)
     } finally {
       setPending(false)

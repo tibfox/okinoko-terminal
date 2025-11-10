@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import ContractList from './ContractList.jsx'
 import ContractDetails from './ContractDetails.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import MobileTabs from '../common/MobileTabs.jsx'
+import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
+import { useAioha } from '@aioha/react-ui'
+
+const STORAGE_KEY = 'stepSelectActivePage'
+const IN_A_ROW_VSC_ID = 'vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh'
+const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
+
+const getStoredPage = () => {
+  if (typeof window === 'undefined') return 'list'
+  return sessionStorage.getItem(STORAGE_KEY) || 'list'
+}
 
 export default function StepSelect({
   contractId,
@@ -15,58 +27,68 @@ export default function StepSelect({
   setStep,
 }) {
   const contracts = contractsCfg.contracts || []
-  const selectedContract = contracts.find((c) => c.vscId === contractId)
-  const selectedFunction = selectedContract?.functions?.find(
-    (f) => f.name === fnName
-  )
-  const [contractDone, setContractDone] = useState(false)
-
-  // responsive flags
-  const [isMobile, setIsMobile] = useState(null)
-  const [activePage, setActivePage] = useState(() => {
-  return sessionStorage.getItem("activePage") || "list"
-})
-
-useEffect(() => {
-  sessionStorage.setItem("activePage", activePage)
-}, [activePage])
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 900)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
+  const { user } = useAioha()
+  const isMobile = useDeviceBreakpoint()
+  const [activePage, setActivePage] = useState(getStoredPage)
   const [showPopup, setShowPopup] = useState(false)
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    sessionStorage.setItem(STORAGE_KEY, activePage)
+  }, [activePage])
 
-  // ✅ Prevent flicker
-  if (isMobile === null) return null
+  const normalizedUser = (user || '').replace(/^hive:/i, '').toLowerCase()
+  const canSeeInARow = ALLOWED_GAMER_HANDLES.includes(normalizedUser)
 
+  const visibleContracts = useMemo(() => {
+    if (canSeeInARow) return contracts
+    return contracts.filter((c) => c.vscId !== IN_A_ROW_VSC_ID)
+  }, [contracts, canSeeInARow])
 
-  // ✅ Handle "Next" button click
+  useEffect(() => {
+    if (canSeeInARow) return
+    if (contractId === IN_A_ROW_VSC_ID) {
+      const fallback = visibleContracts[0]?.vscId || ''
+      setContractId(fallback)
+      setFnName('')
+    }
+  }, [canSeeInARow, contractId, setContractId, setFnName, visibleContracts])
+
+  const selectedContract = useMemo(
+    () => visibleContracts.find((c) => c.vscId === contractId),
+    [visibleContracts, contractId]
+  )
+
+  const selectedFunction = useMemo(
+    () => selectedContract?.functions?.find((f) => f.name === fnName),
+    [selectedContract, fnName]
+  )
+
   const handleNext = () => {
     if (!selectedContract) return
 
-    if (isMobile) {
-      // On mobile — if function not selected yet, go to "Functions" page
-      if (!selectedFunction) {
-        setActivePage('details')
-        return
-      }
+    if (isMobile && !selectedFunction) {
+      setActivePage('details')
+      return
     }
 
-    // On desktop (or mobile with function selected)
-    if (selectedFunction.parse == "game") {
-    setStep(3)
-    console.log("page 3")
-    }else{
-      setStep(2)
-    console.log("page 2")
-    }
-    
+    const nextStep = selectedFunction?.parse === 'game' ? 3 : 2
+    setStep(nextStep)
   }
+
+  const mobileTabs = useMemo(
+    () => [
+      { id: 'list', label: 'Contracts' },
+      {
+        id: 'details',
+        label:
+          selectedContract?.functions?.[0]?.parse === 'game'
+            ? 'Games'
+            : 'Functions',
+      },
+    ],
+    [selectedContract]
+  )
 
   return (
     <TerminalContainer title="Select Contract Function">
@@ -137,30 +159,12 @@ useEffect(() => {
         </div>
       )}
 
-      {/* --- Mobile toggle buttons --- */}
-      {isMobile && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '8px',
-            marginBottom: '12px',
-          }}
-        >
-          <NeonButton
-            onClick={() => setActivePage('list')}
-            style={{ opacity: activePage === 'list' ? 1 : 0.5 }}
-          >
-            Contracts
-          </NeonButton>
-          <NeonButton
-            onClick={() => setActivePage('details')}
-            style={{ opacity: activePage === 'details' ? 1 : 0.5 }}
-          >
-          {selectedContract?.functions[0].parse == "game"?"Games": "Functions"}
-          </NeonButton>
-        </div>
-      )}
+      <MobileTabs
+        visible={isMobile}
+        tabs={mobileTabs}
+        activeTab={activePage}
+        onChange={setActivePage}
+      />
 
       {/* --- Main Content --- */}
       <div
@@ -190,14 +194,14 @@ useEffect(() => {
           }}
         >
           <ContractList
-            contracts={contracts}
+            isMobile={isMobile}
+            contracts={visibleContracts}
             contractId={contractId}
             setContractId={(id) => {
               setContractId(id)
               setFnName('')
             }}
             setFnName={setFnName}
-            setContractDoneCallback={setContractDone}
           />
         </div>
 
@@ -215,11 +219,11 @@ useEffect(() => {
           }}
         >
           <ContractDetails
+            isMobile={isMobile}
             selectedContract={selectedContract}
             selectedFunction={selectedFunction}
             fnName={fnName}
             setFnName={setFnName}
-            setContractDoneCallback={setContractDone}
           />
         </div>
       </div>
@@ -232,18 +236,19 @@ useEffect(() => {
           gap: '12px',
           flexShrink: 0,
           justifyContent: 'space-between',
-          width:'100%'
+          width: '100%',
         }}
       >
         <NeonButton onClick={() => setStep(0)}>
-          <FontAwesomeIcon icon={faChevronLeft} style={{marginRight: '10px'}}/>
-           Back</NeonButton>
+          <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
+          Back
+        </NeonButton>
         <NeonButton
           disabled={!selectedContract || (!isMobile && !selectedFunction)}
-          onClick={handleNext} // ✅ Use new function
+          onClick={handleNext}
         >
-          Next 
-          <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
+          Next
+          <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
         </NeonButton>
       </div>
     </TerminalContainer>
