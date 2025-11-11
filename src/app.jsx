@@ -12,6 +12,8 @@ import StepSelect from './components/StepSelect/StepSelect.jsx'
 import StepExecute from './components/StepExecute/StepExecute.jsx'
 import StepGame from './components/StepGame/StepGame.jsx'
 import { AccountBalanceProvider } from './components/terminal/AccountBalanceProvider.jsx'
+import SecondaryTerminal from './components/terminal/SecondaryTerminal.jsx'
+import TransactionsTerminal from './components/terminal/TransactionsTerminal.jsx'
 
 const aioha = initAioha({
   hiveauth: {
@@ -86,7 +88,11 @@ export function App() {
   return (
     <AiohaProvider aioha={aioha}>
       <AccountBalanceProvider>
-        {renderPage()}
+        <>
+          {renderPage()}
+          <SecondaryTerminal />
+          <TransactionsTerminal />
+        </>
       </AccountBalanceProvider>
     </AiohaProvider>
   )

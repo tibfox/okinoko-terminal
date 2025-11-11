@@ -3,21 +3,27 @@ import SlotText from "../../animations/SlotText.jsx";
 import { useAioha } from "@aioha/react-ui";
 import TxQueueIndicator from "../TxQueueIndicator.jsx";
 import SettingsMenu from "../SettingsMenu.jsx";
+import { useResponsiveTitleSize } from "../../../hooks/useResponsiveTitleSize.js";
 
 export default function DesktopHeader({
   title,
+  titleOnMinimize,
   onDragPointerDown,
   isMinimized = false,
 }) {
   const { user } = useAioha();
+  const displayTitle = (isMinimized ? titleOnMinimize : title)
+    .toUpperCase()
+    .replace(/Ō/g, "ō");
+  const { wrapperRef, fontSize, isClamped } = useResponsiveTitleSize({
+    text: displayTitle,
+  });
+
+  const showGlyphFallback = isMinimized && isClamped;
 
   const handleDragPointerDown = (event) => {
     onDragPointerDown?.(event);
   };
-
-  const displayTitle = (isMinimized ? "Terminal" : title)
-    .toUpperCase()
-    .replace(/Ō/g, "ō");
 
   return (
     <div style={{ position: "relative", marginBottom: "40px" }}>
@@ -40,21 +46,22 @@ export default function DesktopHeader({
             marginRight: "auto",
             cursor: "grab",
             overflow: "hidden",
+            fontSize: `${fontSize}px`,
+            lineHeight: 1.05,
           }}
           onPointerDown={handleDragPointerDown}
+          ref={wrapperRef}
         >
-          {isMinimized ? (
+          {isMinimized && !showGlyphFallback ? (
             <h1
               className="cyber-tile"
               style={{
                 margin: 0,
-                lineHeight: 1.05,
                 fontFamily: "'Share Tech Mono',monospace",
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
                 textOverflow: "ellipsis",
                 overflow: "hidden",
-                fontSize: "1.1rem",
                 letterSpacing: "0.15em",
                 display: "block",
               }}
@@ -70,8 +77,8 @@ export default function DesktopHeader({
               charDuration={30}
               pad={false}
               style={{
-                lineHeight: 1.05,
                 display: "block",
+                lineHeight: 1.05,
               }}
             />
           )}

@@ -1,19 +1,26 @@
 import { createContext } from 'preact'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'preact/hooks'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 
-const COOKIE_NAME = 'okinoko_terminal_window'
+const COOKIE_NAME = 'okinoko_terminal_windows'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
-const defaultState = {
+const defaultWindowState = {
   isMinimized: false,
   dimensions: null,
+  position: null,
+  zIndex: 0,
 }
 
+const createDefaultState = (overrides = {}) => ({
+  ...defaultWindowState,
+  ...overrides,
+})
+
 const TerminalWindowContext = createContext({
-  isMinimized: defaultState.isMinimized,
-  setIsMinimized: () => {},
-  dimensions: defaultState.dimensions,
-  setDimensions: () => {},
+  windows: {},
+  ensureWindow: () => {},
+  updateWindow: () => {},
+  bringToFront: () => {},
 })
 
 const readCookieState = () => {
@@ -46,44 +53,79 @@ const writeCookieState = (state) => {
 }
 
 export function TerminalWindowProvider({ children }) {
-  const [state, setState] = useState(defaultState)
+  const [windows, setWindows] = useState({})
+  const layerCounterRef = useRef(1)
 
   useEffect(() => {
     const saved = readCookieState()
-    if (saved) {
-      setState((prev) => ({
-        ...prev,
-        ...saved,
-      }))
+    if (!saved) {
+      return
+    }
+
+    const applySavedState = (stateMap) => {
+      const normalized = Object.entries(stateMap).reduce((acc, [id, value]) => {
+        acc[id] = createDefaultState(value)
+        return acc
+      }, {})
+      const maxZ = Object.values(normalized).reduce((max, entry) => Math.max(max, entry.zIndex ?? 0), 0)
+      layerCounterRef.current = Math.max(1, maxZ)
+      setWindows(normalized)
+    }
+
+    if (saved.isMinimized !== undefined) {
+      applySavedState({ primary: saved })
+    } else if (typeof saved === 'object') {
+      applySavedState(saved)
     }
   }, [])
 
   useEffect(() => {
-    writeCookieState(state)
-  }, [state.isMinimized, state.dimensions])
+    if (Object.keys(windows).length === 0) {
+      return
+    }
+    writeCookieState(windows)
+  }, [windows])
 
-  const setIsMinimized = useCallback((value) => {
-    setState((prev) => ({
-      ...prev,
-      isMinimized: typeof value === 'function' ? value(prev.isMinimized) : value,
-    }))
+  const ensureWindow = useCallback((id, defaults = {}) => {
+    setWindows((prev) => {
+      if (prev[id]) {
+        return prev
+      }
+      const nextZ = layerCounterRef.current + 1
+      layerCounterRef.current = nextZ
+      return {
+        ...prev,
+        [id]: { ...createDefaultState(defaults), zIndex: nextZ },
+      }
+    })
   }, [])
 
-  const setDimensions = useCallback((value) => {
-    setState((prev) => ({
-      ...prev,
-      dimensions: typeof value === 'function' ? value(prev.dimensions) : value,
-    }))
+  const updateWindow = useCallback((id, updater) => {
+    setWindows((prev) => {
+      const prevState = prev[id] ?? createDefaultState()
+      const nextState =
+        typeof updater === 'function'
+          ? updater(prevState)
+          : { ...prevState, ...updater }
+      return { ...prev, [id]: nextState }
+    })
+  }, [])
+
+  const bringToFront = useCallback((id) => {
+    setWindows((prev) => {
+      const prevState = prev[id]
+      if (!prevState) {
+        return prev
+      }
+      const nextZ = layerCounterRef.current + 1
+      layerCounterRef.current = nextZ
+      return { ...prev, [id]: { ...prevState, zIndex: nextZ } }
+    })
   }, [])
 
   const contextValue = useMemo(
-    () => ({
-      isMinimized: state.isMinimized,
-      setIsMinimized,
-      dimensions: state.dimensions,
-      setDimensions,
-    }),
-    [state.isMinimized, state.dimensions, setIsMinimized, setDimensions],
+    () => ({ windows, ensureWindow, updateWindow, bringToFront }),
+    [windows, ensureWindow, updateWindow, bringToFront],
   )
 
   return (
@@ -93,4 +135,57 @@ export function TerminalWindowProvider({ children }) {
   )
 }
 
-export const useTerminalWindow = () => useContext(TerminalWindowContext)
+export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
+  const {
+    windows,
+    ensureWindow,
+    updateWindow,
+    bringToFront: contextBringToFront,
+  } = useContext(TerminalWindowContext)
+  const defaultsKey = useMemo(() => JSON.stringify(defaults), [defaults])
+  const parsedDefaults = useMemo(() => (defaultsKey ? JSON.parse(defaultsKey) : {}), [defaultsKey])
+
+  useEffect(() => {
+    ensureWindow(windowId, parsedDefaults)
+  }, [windowId, parsedDefaults, ensureWindow])
+
+  const windowState = windows[windowId] ?? createDefaultState(parsedDefaults)
+
+  const setIsMinimized = useCallback(
+    (value) => {
+      updateWindow(windowId, (prev) => ({
+        ...prev,
+        isMinimized: typeof value === 'function' ? value(prev.isMinimized) : value,
+      }))
+    },
+    [windowId, updateWindow],
+  )
+
+  const setDimensions = useCallback(
+    (value) => {
+      updateWindow(windowId, (prev) => ({
+        ...prev,
+        dimensions: typeof value === 'function' ? value(prev.dimensions) : value,
+      }))
+    },
+    [windowId, updateWindow],
+  )
+
+  const setPosition = useCallback(
+    (value) => {
+      updateWindow(windowId, (prev) => ({
+        ...prev,
+        position: typeof value === 'function' ? value(prev.position) : value,
+      }))
+    },
+    [windowId, updateWindow],
+  )
+
+  return {
+    ...windowState,
+    setIsMinimized,
+    setDimensions,
+    setPosition,
+    bringToFront: () => contextBringToFront(windowId),
+  }
+}

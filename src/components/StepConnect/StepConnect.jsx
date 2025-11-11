@@ -30,34 +30,34 @@ export default function StepConnect({ setStep }) {
   }
   const terminalTitle = 'Welcome to the ŌKIՈOKO TERMINAL'
   return (
-    <TerminalContainer title={terminalTitle}>
+    <TerminalContainer
+      title={terminalTitle}
+      backgroundColor="rgba(0, 0, 0, 0.5)"
+      titleOnMinimize="Terminal"
+    >
       <div
         style={{
-          // display: 'flex',
-          // flexDirection: 'column',
-          // alignItems: 'center',
-          // justifyContent: 'flex-start',
-          // height: '100%',
-          // width: '100%',
-          // overflowY: 'auto',
-          // // padding: isMobile ? '1rem 0.5rem' : '2rem',
-          // textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          gridTemplateColumns: isMobile ? 'none' : '1fr 2fr',
-          gap: '0',
-          flex: 1,                  // ✅ allow content to stretch full height
-          minHeight: 0,             // ✅ prevent collapsing inside flex parent
-          height: '100%',           // ✅ enforce terminal height
+          gap: '1.5rem',
+          flex: 1,
+          minHeight: 0,
+          height: '100%',
           width: '100%',
-
-          // overflow: 'hidden',
         }}
       >
         {/* Intro (includes ASCII on desktop only) */}
         <ConnectIntro />
-        <AsciiArt />
+
+        <div
+          style={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            display: isMobile ? 'none' : 'flex',
+          }}
+        >
+          <AsciiArt />
+        </div>
 
         {/* Connection / Actions */}
         <div

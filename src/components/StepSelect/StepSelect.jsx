@@ -91,7 +91,11 @@ export default function StepSelect({
   )
 
   return (
-    <TerminalContainer title="Select Contract Function">
+    <TerminalContainer title="Select Contract Function"
+    titleOnMinimize="Contract"
+    backgroundColor="rgba(0, 0, 0, 0.5)"
+    >
+      
       <p
         style={{
           textAlign: 'justify',

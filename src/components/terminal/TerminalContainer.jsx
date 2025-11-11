@@ -1,5 +1,6 @@
 import DesktopHeader from './headers/DesktopHeader.jsx'
 import MobileHeader from './headers/MobileHeader.jsx'
+import CompactHeader from './headers/CompactHeader.jsx'
 
 import { useState, useEffect, useRef } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -10,17 +11,42 @@ const DESKTOP_MIN_WIDTH = 460
 const DESKTOP_MAX_WIDTH = 1400
 const DESKTOP_MIN_HEIGHT = 600
 const DESKTOP_MAX_HEIGHT = 980
+const DESKTOP_WIDTH_RATIO = 0.66
+const DESKTOP_HEIGHT_RATIO = 0.8
+const DEFAULT_VIEWPORT_PADDING = 32
 
-export default function TerminalContainer({ title, children }) {
+export default function TerminalContainer({
+  title,
+  titleOnMinimize,
+  children,
+  windowId = 'primary',
+  initialState = {},
+  desktopBounds: desktopBoundsProp = {},
+  desktopDefaultSize: desktopDefaultSizeProp = {},
+  viewportPadding = DEFAULT_VIEWPORT_PADDING,
+  backgroundColor,
+  className = '',
+  style: styleOverrides = {},
+  headerVariant = 'default',
+  compactTitleOnMinimize,
+}) {
   const [isMobile, setIsMobile] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
-  const [isDetached, setIsDetached] = useState(false)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const { isMinimized, setIsMinimized, dimensions, setDimensions } = useTerminalWindow()
+  const {
+    isMinimized,
+    setIsMinimized,
+    dimensions,
+    setDimensions,
+    position,
+    setPosition,
+    zIndex,
+    bringToFront,
+  } = useTerminalWindow(windowId, initialState)
 
+  const canUseWindow = typeof window !== 'undefined'
   const dragOffsetRef = useRef({ x: 0, y: 0 })
-  const positionRef = useRef({ x: 0, y: 0 })
+  const positionRef = useRef(position ?? { x: 0, y: 0 })
   const resizeStartRef = useRef({ width: 0, height: 0, x: 0, y: 0 })
   const containerRef = useRef(null)
 
@@ -34,27 +60,45 @@ export default function TerminalContainer({ title, children }) {
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
   const getDesktopBounds = () => {
-    const dynamicMaxWidth = Math.max(
-      DESKTOP_MIN_WIDTH,
-      Math.min(DESKTOP_MAX_WIDTH, window.innerWidth - 32),
-    )
-    const dynamicMaxHeight = Math.max(
-      DESKTOP_MIN_HEIGHT,
-      Math.min(DESKTOP_MAX_HEIGHT, window.innerHeight - 32),
-    )
+    const baseBounds = {
+      minWidth: desktopBoundsProp.minWidth ?? DESKTOP_MIN_WIDTH,
+      maxWidth: desktopBoundsProp.maxWidth ?? DESKTOP_MAX_WIDTH,
+      minHeight: desktopBoundsProp.minHeight ?? DESKTOP_MIN_HEIGHT,
+      maxHeight: desktopBoundsProp.maxHeight ?? DESKTOP_MAX_HEIGHT,
+    }
+
+    if (!canUseWindow) {
+      return baseBounds
+    }
+
+    const widthLimit = window.innerWidth - viewportPadding
+    const heightLimit = window.innerHeight - viewportPadding
+    const dynamicMaxWidth = clamp(widthLimit, baseBounds.minWidth, baseBounds.maxWidth)
+    const dynamicMaxHeight = clamp(heightLimit, baseBounds.minHeight, baseBounds.maxHeight)
 
     return {
-      minWidth: DESKTOP_MIN_WIDTH,
+      minWidth: baseBounds.minWidth,
       maxWidth: dynamicMaxWidth,
-      minHeight: DESKTOP_MIN_HEIGHT,
+      minHeight: baseBounds.minHeight,
       maxHeight: dynamicMaxHeight,
     }
   }
 
   const getDefaultDesktopSize = () => {
     const bounds = getDesktopBounds()
-    const width = clamp(Math.round(window.innerWidth * 0.66), bounds.minWidth, bounds.maxWidth)
-    const height = clamp(Math.round(window.innerHeight * 0.8), bounds.minHeight, bounds.maxHeight)
+    if (!canUseWindow) {
+      return {
+        width: desktopDefaultSizeProp.width ?? bounds.minWidth,
+        height: desktopDefaultSizeProp.height ?? bounds.minHeight,
+      }
+    }
+
+    const widthRatio = desktopDefaultSizeProp.widthRatio ?? DESKTOP_WIDTH_RATIO
+    const heightRatio = desktopDefaultSizeProp.heightRatio ?? DESKTOP_HEIGHT_RATIO
+    const widthTarget = desktopDefaultSizeProp.width ?? Math.round(window.innerWidth * widthRatio)
+    const heightTarget = desktopDefaultSizeProp.height ?? Math.round(window.innerHeight * heightRatio)
+    const width = clamp(widthTarget, bounds.minWidth, bounds.maxWidth)
+    const height = clamp(heightTarget, bounds.minHeight, bounds.maxHeight)
     return { width, height }
   }
 
@@ -65,16 +109,19 @@ export default function TerminalContainer({ title, children }) {
 
     if (isMobile) {
       positionRef.current = { x: 0, y: 0 }
-      setPosition({ x: 0, y: 0 })
       setIsDragging(false)
       setIsResizing(false)
-      setIsDetached(false)
       return
     }
 
     setDimensions((current) => current ?? getDefaultDesktopSize())
-    setIsDetached(false)
   }, [isMobile, setDimensions])
+
+  useEffect(() => {
+    if (position) {
+      positionRef.current = position
+    }
+  }, [position])
 
   useEffect(() => {
     if (!isDragging) {
@@ -117,8 +164,7 @@ export default function TerminalContainer({ title, children }) {
       y: event.clientY - rect.top,
     }
 
-    if (!isDetached) {
-      setIsDetached(true)
+    if (!position) {
       positionRef.current = { x: rect.left, y: rect.top }
       setPosition({ x: rect.left, y: rect.top })
     }
@@ -171,8 +217,7 @@ export default function TerminalContainer({ title, children }) {
       y: event.clientY,
     }
 
-    if (!isDetached) {
-      setIsDetached(true)
+    if (!position) {
       positionRef.current = { x: rect.left, y: rect.top }
       setPosition({ x: rect.left, y: rect.top })
     }
@@ -183,17 +228,21 @@ export default function TerminalContainer({ title, children }) {
   }
 
   const toggleMinimize = () => setIsMinimized((prev) => !prev)
+  const handleActivate = () => {
+    if (!isMobile) {
+      bringToFront()
+    }
+  }
 
   if (isMobile === null) {
     return null
   }
 
-  const canUseWindow = typeof window !== 'undefined'
   const mobileWidth = '100vw'
   const desktopWidth = dimensions ? `${dimensions.width}px` : '66vw'
   const desktopHeight = dimensions ? `${dimensions.height}px` : undefined
   const desktopBounds = !isMobile && canUseWindow ? getDesktopBounds() : null
-  const isFloating = !isMobile && isDetached
+  const isFloating = !isMobile && Boolean(position)
   const MINIMIZED_DESKTOP_WIDTH = `${Math.round(DESKTOP_MIN_WIDTH * 0.5)}px`
   const MINIMIZED_DESKTOP_HEIGHT = 65
 
@@ -209,10 +258,15 @@ export default function TerminalContainer({ title, children }) {
       ? `${MINIMIZED_DESKTOP_HEIGHT}px`
       : desktopHeight
 
+  const isPrimaryWindow = windowId === 'primary'
+  const resolvedBackground = backgroundColor ?? (isPrimaryWindow ? 'rgba(0, 0, 0, 0.5)' : undefined)
+  const resolvedBackdrop = isPrimaryWindow ? 'blur(6px)' : undefined
+
   return (
     <div
       ref={containerRef}
-      className="terminal"
+      className={['terminal', className].filter(Boolean).join(' ')}
+      onPointerDownCapture={handleActivate}
       style={{
         position: isFloating ? 'fixed' : 'relative',
         top: isFloating ? `${position.y}px` : undefined,
@@ -249,14 +303,27 @@ export default function TerminalContainer({ title, children }) {
         transition: isDragging || isResizing ? 'none' : 'transform 120ms ease-out',
         cursor: !isMobile && isDragging ? 'grabbing' : undefined,
         boxShadow: isFloating ? '0 0 25px var(--color-primary-darkest)' : undefined,
+        zIndex: isFloating ? zIndex || 1 : undefined,
+        ...(resolvedBackground ? { background: resolvedBackground } : {}),
+        ...(resolvedBackdrop ? { backdropFilter: resolvedBackdrop } : {}),
+        ...styleOverrides,
       }}
     >
       {!isMobile ? (
-        <DesktopHeader
-          title={title}
-          onDragPointerDown={handleDragStart}
-          isMinimized={isMinimized}
-        />
+        headerVariant === 'compact' ? (
+          <CompactHeader
+            title={isMinimized ? (compactTitleOnMinimize ?? titleOnMinimize ?? title) : title}
+            onDragPointerDown={handleDragStart}
+            isMinimized={isMinimized}
+          />
+        ) : (
+          <DesktopHeader
+            title={title}
+            titleOnMinimize={titleOnMinimize}
+            onDragPointerDown={handleDragStart}
+            isMinimized={isMinimized}
+          />
+        )
       ) : (
         <MobileHeader title={title} />
       )}

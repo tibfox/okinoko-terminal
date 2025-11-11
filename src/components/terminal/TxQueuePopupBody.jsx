@@ -57,7 +57,7 @@
           maxHeight: "60vh",
           overflowY: "auto",
           marginTop: "10px",
-          color: "var(--color-primary)",
+          color: "var(--color-primary-lighter)",
         }}
       >
         <div

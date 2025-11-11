@@ -59,15 +59,13 @@ const client = createClient({
 
 render(
   <TerminalWindowProvider>
-  <Provider value={client}>
-    <TransactionProvider>
-      <PopupProvider>
-        
+    <Provider value={client}>
+      <TransactionProvider>
+        <PopupProvider>
           <App />
-        
-      </PopupProvider>
-    </TransactionProvider>
-  </Provider>
+        </PopupProvider>
+      </TransactionProvider>
+    </Provider>
   </TerminalWindowProvider>,
   document.getElementById('app'),
 )

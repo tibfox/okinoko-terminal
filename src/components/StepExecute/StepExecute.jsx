@@ -72,7 +72,10 @@ export default function StepExecute({
   )
 
   return (
-    <TerminalContainer title="Input & Execute Function">
+    <TerminalContainer title="Input & Execute Function"
+    titleOnMinimize="Execute"
+    backgroundColor="rgba(0, 0, 0, 0.5)"
+    >
       <MobileTabs
         visible={isMobile}
         tabs={mobileTabs}

@@ -121,7 +121,10 @@ export default function StepGame({
   )
 
   return (
-    <TerminalContainer title={fn.friendlyName}>
+    <TerminalContainer title={fn.friendlyName}
+    titleOnMinimize="Function"
+    backgroundColor="rgba(0, 0, 0, 0.5)"
+    >
       <MobileTabs
         visible={isMobile}
         tabs={mobileTabs}
