@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks'
+import { useEffect, useMemo, useState, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {  faCheckCircle,   faHourglass } from '@fortawesome/free-solid-svg-icons'
@@ -37,17 +37,37 @@ const TABS = [
   { id: 'witnesses', label: 'Witnesses' },
 ]
 
+const LOCAL_NODE_INFO_QUERY = /* GraphQL */ `
+  query LocalNodeInfo {
+    localNodeInfo {
+      last_processed_block
+    }
+  }
+`
+
+const FIND_WITNESS_NODES_QUERY = /* GraphQL */ `
+  query FindWitnessNodes($height: Uint64!) {
+    witnessNodes(height: $height) {
+      account
+      enabled
+    }
+  }
+`
+
+const ACCOUNT_CONSENSUS_QUERY = /* GraphQL */ `
+  query AccountConsensus($acc: String!) {
+    getAccountBalance(account: $acc) {
+      hive_consensus
+    }
+  }
+`
+
 const POLL_INTERVAL_MS = 5000
 const MAX_ROWS = 40
 
 const DUMMY_BLOCKS = [
   { height: 0, producer: 'pending', txCount: 0, note: 'Live feed coming soon' },
   { height: 0, producer: 'pending', txCount: 0, note: 'Live feed coming soon' },
-]
-
-const DUMMY_WITNESSES = [
-  { name: 'Rotation pending', status: '—', lastBlock: '—', note: 'Live metrics soon' },
-  { name: 'Rotation pending', status: '—', lastBlock: '—', note: 'Live metrics soon' },
 ]
 
 const FINAL_STATUSES = new Set(['CONFIRMED', 'FAILED'])
@@ -102,6 +122,16 @@ const formatLocalTime = (value) => {
   })
 }
 
+const formatWeight = (value) => {
+  if (!Number.isFinite(value)) {
+    return '—'
+  }
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  })
+}
+
 const cellStyle = {
   padding: '0.35rem 0.5rem',
   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
@@ -144,6 +174,9 @@ const getOperationLabel = (tx) => {
 export default function MonitorPanel() {
   const [activeTab, setActiveTab] = useState('txs')
   const [transactions, setTransactions] = useState([])
+  const [witnesses, setWitnesses] = useState([])
+  const [witnessLoading, setWitnessLoading] = useState(false)
+  const [witnessError, setWitnessError] = useState(null)
   const txQueryContext = useMemo(
     () => ({
       url: TRANSACTION_API_HTTP,
@@ -154,6 +187,31 @@ export default function MonitorPanel() {
       },
     }),
     [TRANSACTION_API_HTTP],
+  )
+
+  const runTxQuery = useCallback(
+    async (query, variables = {}) => {
+      if (!txQueryContext?.url) {
+        return null
+      }
+      const response = await fetch(txQueryContext.url, {
+        method: 'POST',
+        headers: txQueryContext.fetchOptions.headers,
+        body: JSON.stringify({
+          query,
+          variables,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error(`Request failed with ${response.status}`)
+      }
+      const payload = await response.json()
+      if (payload.errors?.length) {
+        throw new Error(payload.errors[0]?.message ?? 'GraphQL error')
+      }
+      return payload
+    },
+    [txQueryContext],
   )
 
   const [{ data, fetching, error }, reexecuteQuery] = useQuery({
@@ -179,6 +237,72 @@ export default function MonitorPanel() {
 
     setTransactions((prev) => mergeTransactions(prev, incoming))
   }, [data])
+
+  const fetchWitnesses = useCallback(async () => {
+    setWitnessLoading(true)
+    setWitnessError(null)
+    try {
+      const nodeInfoResult = await runTxQuery(LOCAL_NODE_INFO_QUERY)
+      const height = nodeInfoResult?.data?.localNodeInfo?.last_processed_block
+      if (!height) {
+        setWitnesses([])
+        setWitnessLoading(false)
+        return
+      }
+
+      const witnessResult = await runTxQuery(FIND_WITNESS_NODES_QUERY, { height })
+      const nodes = witnessResult?.data?.witnessNodes ?? []
+      const enabledNodes = nodes.filter((node) => node?.enabled)
+
+      const weights = await Promise.all(
+        enabledNodes.map(async (node) => {
+          const acc = node?.account
+          if (!acc) {
+            return null
+          }
+          try {
+            const balanceResult = await runTxQuery(ACCOUNT_CONSENSUS_QUERY, { acc: `hive:${acc}` })
+            const hiveConsensus = Number(balanceResult?.data?.getAccountBalance?.hive_consensus ?? 0)
+            return {
+              account: acc,
+              weight: hiveConsensus / 1000,
+              hiveConsensus,
+            }
+          } catch {
+            return {
+              account: acc,
+              weight: 0,
+              hiveConsensus: 0,
+            }
+          }
+        }),
+      )
+
+      const cleaned = weights.filter(Boolean).sort((a, b) => b.hiveConsensus - a.hiveConsensus)
+      setWitnesses(cleaned)
+    } catch (err) {
+      setWitnessError(err)
+      setWitnesses([])
+    } finally {
+      setWitnessLoading(false)
+    }
+  }, [runTxQuery])
+
+  useEffect(() => {
+    let cancelled = false
+    const wrapFetch = async () => {
+      if (cancelled) {
+        return
+      }
+      await fetchWitnesses()
+    }
+    wrapFetch()
+    const id = setInterval(fetchWitnesses, POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [fetchWitnesses])
 
   const renderTxTable = () => {
     if (error) {
@@ -254,7 +378,46 @@ export default function MonitorPanel() {
     </div>
   )
 
-  const activeContent = useMemo(() => {
+  const renderWitnessTable = () => {
+    if (witnessError) {
+      return (
+        <div style={{ color: '#ff6464', fontSize: '0.9rem' }}>
+          Failed to load witness data. Retrying...
+        </div>
+      )
+    }
+
+    if (!witnesses.length && witnessLoading) {
+      return <div style={{ fontSize: '0.9rem' }}>Loading witness data...</div>
+    }
+
+    if (!witnesses.length) {
+      return <div style={{ fontSize: '0.9rem' }}>No witness data yet.</div>
+    }
+
+    return (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Witness</th>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Weight</th>
+            </tr>
+          </thead>
+          <tbody>
+            {witnesses.map((witness) => (
+              <tr key={witness.account}>
+                <td style={cellStyle}>{witness.account}</td>
+                <td style={cellStyle}>{formatWeight(witness.weight)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  const renderActiveContent = () => {
     switch (activeTab) {
       case 'blocks':
         return renderDummyTable(DUMMY_BLOCKS, [
@@ -264,17 +427,12 @@ export default function MonitorPanel() {
           { key: 'note', label: 'Status' },
         ])
       case 'witnesses':
-        return renderDummyTable(DUMMY_WITNESSES, [
-          { key: 'name', label: 'Witness' },
-          { key: 'status', label: 'Status' },
-          { key: 'lastBlock', label: 'Last Block' },
-          { key: 'note', label: 'Notes' },
-        ])
+        return renderWitnessTable()
       case 'txs':
       default:
         return renderTxTable()
     }
-  }, [activeTab, transactions, fetching, error])
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, minHeight: 0 }}>
@@ -300,7 +458,7 @@ export default function MonitorPanel() {
         ))}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0 }}>{activeContent}</div>
+      <div style={{ flex: 1, minHeight: 0 }}>{renderActiveContent()}</div>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import StepGame from './components/StepGame/StepGame.jsx'
 import { AccountBalanceProvider } from './components/terminal/providers/AccountBalanceProvider.jsx'
 import SecondaryTerminal from './components/terminal/SubTerminals/SecondaryTerminal.jsx'
 import TransactionsTerminal from './components/terminal/SubTerminals/TransactionsTerminal.jsx'
+import AccountDataTerminal from './components/terminal/SubTerminals/AccountDataTerminal.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 
 const aioha = initAioha({
@@ -97,6 +98,7 @@ export function App() {
             <>
               <SecondaryTerminal />
               <TransactionsTerminal />
+              <AccountDataTerminal />
             </>
           )}
         </>
