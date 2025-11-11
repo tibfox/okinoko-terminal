@@ -1,10 +1,10 @@
 import { h } from "preact";
 import { useContext, useEffect, useState } from "preact/hooks";
-import { TransactionContext } from "../../transactions/context.js";
+import { TransactionContext } from "../../../transactions/context.js";
 import TxQueuePopupBody from "./TxQueuePopupBody.jsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLayerGroup } from "@fortawesome/free-solid-svg-icons";
-import Menu from "../buttons/MenuButton.jsx";
+import Menu from "../../buttons/MenuButton.jsx";
 
 export default function TxQueueIndicator({ isMobile }) {
   const { state } = useContext(TransactionContext);

@@ -11,9 +11,9 @@ import StepConnect from './components/StepConnect/StepConnect.jsx'
 import StepSelect from './components/StepSelect/StepSelect.jsx'
 import StepExecute from './components/StepExecute/StepExecute.jsx'
 import StepGame from './components/StepGame/StepGame.jsx'
-import { AccountBalanceProvider } from './components/terminal/AccountBalanceProvider.jsx'
-import SecondaryTerminal from './components/terminal/SecondaryTerminal.jsx'
-import TransactionsTerminal from './components/terminal/TransactionsTerminal.jsx'
+import { AccountBalanceProvider } from './components/terminal/providers/AccountBalanceProvider.jsx'
+import SecondaryTerminal from './components/terminal/SubTerminals/SecondaryTerminal.jsx'
+import TransactionsTerminal from './components/terminal/SubTerminals/TransactionsTerminal.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 
 const aioha = initAioha({

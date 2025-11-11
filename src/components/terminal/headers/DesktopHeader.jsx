@@ -1,7 +1,7 @@
-import BalanceDisplay from "../AccountDisplay.jsx";
+import BalanceDisplay from "../components/AccountDisplay.jsx";
 import SlotText from "../../animations/SlotText.jsx";
 import { useAioha } from "@aioha/react-ui";
-import SettingsMenu from "../SettingsMenu.jsx";
+import SettingsMenu from "../components/SettingsMenu.jsx";
 import { useResponsiveTitleSize } from "../../../hooks/useResponsiveTitleSize.js";
 
 export default function DesktopHeader({

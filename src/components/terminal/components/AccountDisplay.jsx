@@ -1,8 +1,8 @@
 import { h } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import RcCircleGraph from './RcCircleGraph.jsx'
-import Menu from "../buttons/MenuButton.jsx" 
-import { useAccountBalances } from './AccountBalanceProvider.jsx'
+import Menu from "../../buttons/MenuButton.jsx" 
+import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
 
 export default function BalanceDisplay({ account, fontMult = 1 }) {
   const { balances: bal, rc, loading, refresh } = useAccountBalances()

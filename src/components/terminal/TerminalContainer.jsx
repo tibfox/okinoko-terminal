@@ -5,7 +5,7 @@ import CompactHeader from './headers/CompactHeader.jsx'
 import { useState, useEffect, useRef } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faWindowMinimize, faWindowMaximize, faCaretDown } from '@fortawesome/free-solid-svg-icons'
-import { useTerminalWindow } from './TerminalWindowProvider.jsx'
+import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
 
 const DESKTOP_MIN_WIDTH = 460
 const DESKTOP_MAX_WIDTH = 1400

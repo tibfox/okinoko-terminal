@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'preact/hooks'
 import NeonSwitch from '../common/NeonSwitch.jsx'
-import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
+import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 export default function GameJoin({ game, user, setParams }) {

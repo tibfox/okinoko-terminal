@@ -1,11 +1,11 @@
 import { h } from "preact";
 import { useContext } from "preact/hooks";
-import ColorPickerButton from "./headers/ColorPickerButton.jsx";
+import ColorPickerButton from "../headers/ColorPickerButton.jsx";
 import SoundToggleButton from "./SoundToggleButton.jsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
-import Menu from "../buttons/MenuButton.jsx";
-import { PopupContext } from "../../popup/context.js";
+import Menu from "../../buttons/MenuButton.jsx";
+import { PopupContext } from "../../../popup/context.js";
 
 export default function SettingsMenu() {
   const popup = useContext(PopupContext);

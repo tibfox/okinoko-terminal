@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
-import TerminalContainer from './TerminalContainer.jsx'
-import TxQueuePopupBody from './TxQueuePopupBody.jsx'
+import TerminalContainer from '../TerminalContainer.jsx'
+import TxQueuePopupBody from '../components/TxQueuePopupBody.jsx'
 
 const DEFAULT_WIDTH = 420
 const DEFAULT_HEIGHT = 380
@@ -44,7 +44,7 @@ export default function TransactionsTerminal() {
         minWidth: 360,
         maxWidth: 560,
         minHeight: 260,
-        maxHeight: 600,
+        maxHeight: 1024,
       }}
       desktopDefaultSize={{
         width: DEFAULT_WIDTH,

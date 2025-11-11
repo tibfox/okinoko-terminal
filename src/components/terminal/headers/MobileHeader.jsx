@@ -1,10 +1,10 @@
 import { h } from 'preact'
 import { useState, useRef, useEffect } from 'preact/hooks'
 import SlotText from '../../animations/SlotText.jsx'
-import TxQueueIndicator from "../TxQueueIndicator.jsx";
-import SettingsMenu from "../SettingsMenu.jsx";
+import TxQueueIndicator from "../components/TxQueueIndicator.jsx";
+import SettingsMenu from "../components/SettingsMenu.jsx";
 
-import BalanceDisplay from '../AccountDisplay.jsx'
+import BalanceDisplay from '../components/AccountDisplay.jsx'
 import { useAioha } from '@aioha/react-ui'
 
 

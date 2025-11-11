@@ -8,14 +8,12 @@ import './styles/components.css'
 import './styles/animations.css'
 import { createClient, Provider, cacheExchange, fetchExchange, subscriptionExchange } from '@urql/preact';
 import { createClient as createWSClient } from 'graphql-ws';
+import { HASURA_HTTP, HASURA_WS } from './lib/graphqlEndpoints.js'
 
 import { TransactionProvider } from './transactions/provider';
 import { PopupProvider } from "./popup/PopupProvider.jsx";
-import { TerminalWindowProvider } from './components/terminal/TerminalWindowProvider.jsx';
+import { TerminalWindowProvider } from './components/terminal/providers/TerminalWindowProvider.jsx';
 
-
-const HASURA_HTTP = import.meta.env.VITE_HASURA_HTTP || 'https://vscapi.okinoko.io/hasura/v1/graphql';
-const HASURA_WS = import.meta.env.VITE_HASURA_WS || 'wss://vscapi.okinoko.io/hasura/v1/graphql';
 
 const wsClient = typeof window !== 'undefined'
   ? createWSClient({

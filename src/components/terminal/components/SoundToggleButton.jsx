@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { playBeep, setSoundEnabled, getSoundEnabled } from '../../lib/beep.js'
+import { playBeep, setSoundEnabled, getSoundEnabled } from '../../../lib/beep.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faVolumeXmark,faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
 

@@ -3,7 +3,7 @@ import NeonSwitch from '../common/NeonSwitch.jsx'
 import ImageUploadField from '../common/ImageUploadField.jsx'
 import MetaInputField from '../common/MetaInputField.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
-import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
+import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 
 export default function ExecuteForm({
   user,

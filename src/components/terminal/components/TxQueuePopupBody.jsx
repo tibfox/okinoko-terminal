@@ -1,6 +1,6 @@
   // src/components/TxQueuePopupBody.jsx
   import { useContext, useEffect, useState } from "preact/hooks";
-  import { TransactionContext } from "../../transactions/context.js";
+  import { TransactionContext } from "../../../transactions/context.js";
   import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
   import {
     faHourglassHalf,

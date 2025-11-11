@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
-import TerminalContainer from './TerminalContainer.jsx'
+import TerminalContainer from '../TerminalContainer.jsx'
+import MonitorPanel from './MonitorPanel.jsx'
 
 export default function SecondaryTerminal() {
   const [initialState, setInitialState] = useState(null)
@@ -41,7 +42,7 @@ export default function SecondaryTerminal() {
         minWidth: 360,
         maxWidth: 720,
         minHeight: 240,
-        maxHeight: 520,
+        maxHeight: 1024,
       }}
       desktopDefaultSize={{
         width: 520,
@@ -56,16 +57,7 @@ export default function SecondaryTerminal() {
       headerVariant="compact"
       compactTitleOnMinimize="Mon"
     >
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <p style={{ margin: 0 }}>
-          Auxiliary terminal ready. Drag me anywhere, resize, or leave minimized for quick access.
-        </p>
-        <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
-          <li>Future: live metrics</li>
-          <li>Future: notifications</li>
-          <li>Future: quick scripts</li>
-        </ul>
-      </div>
+      <MonitorPanel />
     </TerminalContainer>
   )
 }

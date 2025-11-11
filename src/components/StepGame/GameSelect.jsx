@@ -8,7 +8,7 @@ import ListButton from '../buttons/ListButton.jsx'
 
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY, IAR_EVENTS_SUBSCRIPTION } from '../../data/inarow_gql.js'
-import { useAccountBalances } from '../terminal/AccountBalanceProvider.jsx'
+import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import { GAME_TYPE_IDS, typeNameFromId, deriveGameTypeId } from './gameTypes.js'
 

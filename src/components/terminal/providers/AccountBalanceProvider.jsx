@@ -1,7 +1,7 @@
 import { createContext } from 'preact'
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { useAioha } from '@aioha/react-ui'
-import { useVscQuery } from '../../lib/useVscQuery.js'
+import { useVscQuery } from '../../../lib/useVscQuery.js'
 
 const AccountBalanceContext = createContext({
   loading: false,
