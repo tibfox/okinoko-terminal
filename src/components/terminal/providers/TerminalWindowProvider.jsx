@@ -21,6 +21,8 @@ const TerminalWindowContext = createContext({
   ensureWindow: () => {},
   updateWindow: () => {},
   bringToFront: () => {},
+  triggerLayoutReset: () => {},
+  layoutResetToken: 0,
 })
 
 const readCookieState = () => {
@@ -55,6 +57,7 @@ const writeCookieState = (state) => {
 export function TerminalWindowProvider({ children }) {
   const [windows, setWindows] = useState({})
   const layerCounterRef = useRef(1)
+  const [layoutResetToken, setLayoutResetToken] = useState(0)
 
   useEffect(() => {
     const saved = readCookieState()
@@ -123,9 +126,20 @@ export function TerminalWindowProvider({ children }) {
     })
   }, [])
 
+  const triggerLayoutReset = useCallback(() => {
+    setLayoutResetToken((token) => token + 1)
+  }, [])
+
   const contextValue = useMemo(
-    () => ({ windows, ensureWindow, updateWindow, bringToFront }),
-    [windows, ensureWindow, updateWindow, bringToFront],
+    () => ({
+      windows,
+      ensureWindow,
+      updateWindow,
+      bringToFront,
+      triggerLayoutReset,
+      layoutResetToken,
+    }),
+    [windows, ensureWindow, updateWindow, bringToFront, triggerLayoutReset, layoutResetToken],
   )
 
   return (
@@ -141,6 +155,8 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     ensureWindow,
     updateWindow,
     bringToFront: contextBringToFront,
+    triggerLayoutReset,
+    layoutResetToken,
   } = useContext(TerminalWindowContext)
   const defaultsKey = useMemo(() => JSON.stringify(defaults), [defaults])
   const parsedDefaults = useMemo(() => (defaultsKey ? JSON.parse(defaultsKey) : {}), [defaultsKey])
@@ -187,5 +203,7 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     setDimensions,
     setPosition,
     bringToFront: () => contextBringToFront(windowId),
+    triggerLayoutReset,
+    layoutResetToken,
   }
 }

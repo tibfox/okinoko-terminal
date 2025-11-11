@@ -2,9 +2,10 @@ import DesktopHeader from './headers/DesktopHeader.jsx'
 import MobileHeader from './headers/MobileHeader.jsx'
 import CompactHeader from './headers/CompactHeader.jsx'
 
-import { useState, useEffect, useRef } from 'preact/hooks'
+import { useState, useEffect, useMemo, useRef } from 'preact/hooks'
+import { createPortal } from 'preact/compat'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faWindowMinimize, faWindowMaximize, faCaretDown } from '@fortawesome/free-solid-svg-icons'
+import { faWindowMinimize, faWindowMaximize, faCaretDown, faRotateLeft } from '@fortawesome/free-solid-svg-icons'
 import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
 
 const DESKTOP_MIN_WIDTH = 460
@@ -14,6 +15,9 @@ const DESKTOP_MAX_HEIGHT = 980
 const DESKTOP_WIDTH_RATIO = 0.66
 const DESKTOP_HEIGHT_RATIO = 0.8
 const DEFAULT_VIEWPORT_PADDING = 32
+const GRID_ROW_COUNT = 30
+const DEFAULT_GRID_CELL_SIZE = 40
+const MIN_GRID_CELL_SIZE = 24
 
 export default function TerminalContainer({
   title,
@@ -33,6 +37,7 @@ export default function TerminalContainer({
   const [isMobile, setIsMobile] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
+  const [gridCellSize, setGridCellSize] = useState(DEFAULT_GRID_CELL_SIZE)
   const {
     isMinimized,
     setIsMinimized,
@@ -42,6 +47,8 @@ export default function TerminalContainer({
     setPosition,
     zIndex,
     bringToFront,
+    triggerLayoutReset,
+    layoutResetToken,
   } = useTerminalWindow(windowId, initialState)
 
   const canUseWindow = typeof window !== 'undefined'
@@ -49,6 +56,13 @@ export default function TerminalContainer({
   const positionRef = useRef(position ?? { x: 0, y: 0 })
   const resizeStartRef = useRef({ width: 0, height: 0, x: 0, y: 0 })
   const containerRef = useRef(null)
+  const resetTokenRef = useRef(layoutResetToken)
+  const initialStateRef = useRef(initialState)
+  const initialStateKey = useMemo(() => JSON.stringify(initialState ?? {}), [initialState])
+
+  useEffect(() => {
+    initialStateRef.current = initialState
+  }, [initialStateKey])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900)
@@ -58,6 +72,21 @@ export default function TerminalContainer({
   }, [])
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+  const getSafeGridSize = () => gridCellSize || DEFAULT_GRID_CELL_SIZE
+  const snapToGrid = (value) => {
+    if (!Number.isFinite(value)) {
+      return 0
+    }
+    const size = getSafeGridSize()
+    if (size <= 0) {
+      return value
+    }
+    return Math.round(value / size) * size
+  }
+  const snapPositionToGrid = (nextPosition) => ({
+    x: snapToGrid(nextPosition.x),
+    y: snapToGrid(nextPosition.y),
+  })
 
   const getDesktopBounds = () => {
     const baseBounds = {
@@ -83,6 +112,25 @@ export default function TerminalContainer({
       maxHeight: dynamicMaxHeight,
     }
   }
+
+  useEffect(() => {
+    if (!canUseWindow) {
+      return
+    }
+
+    const updateGridSize = () => {
+      const viewportHeight = window.innerHeight || GRID_ROW_COUNT * MIN_GRID_CELL_SIZE
+      const computed = Math.max(
+        MIN_GRID_CELL_SIZE,
+        Math.floor(viewportHeight / GRID_ROW_COUNT) || MIN_GRID_CELL_SIZE,
+      )
+      setGridCellSize(computed)
+    }
+
+    updateGridSize()
+    window.addEventListener('resize', updateGridSize)
+    return () => window.removeEventListener('resize', updateGridSize)
+  }, [canUseWindow])
 
   const getDefaultDesktopSize = () => {
     const bounds = getDesktopBounds()
@@ -129,13 +177,14 @@ export default function TerminalContainer({
     }
 
     const handlePointerMove = (event) => {
-      const nextPosition = {
+      const rawPosition = {
         x: event.clientX - dragOffsetRef.current.x,
         y: event.clientY - dragOffsetRef.current.y,
       }
+      const snappedPosition = snapPositionToGrid(rawPosition)
 
-      positionRef.current = nextPosition
-      setPosition(nextPosition)
+      positionRef.current = snappedPosition
+      setPosition(snappedPosition)
     }
 
     const handlePointerUp = () => setIsDragging(false)
@@ -147,7 +196,7 @@ export default function TerminalContainer({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [isDragging])
+  }, [isDragging, gridCellSize])
 
   const handleDragStart = (event) => {
     if (isMobile || isResizing || event.button !== 0) {
@@ -185,8 +234,10 @@ export default function TerminalContainer({
 
       const nextWidth = clamp(resizeStartRef.current.width + deltaX, bounds.minWidth, bounds.maxWidth)
       const nextHeight = clamp(resizeStartRef.current.height + deltaY, bounds.minHeight, bounds.maxHeight)
+      const snappedWidth = clamp(snapToGrid(nextWidth), bounds.minWidth, bounds.maxWidth)
+      const snappedHeight = clamp(snapToGrid(nextHeight), bounds.minHeight, bounds.maxHeight)
 
-      setDimensions({ width: nextWidth, height: nextHeight })
+      setDimensions({ width: snappedWidth, height: snappedHeight })
     }
 
     const handlePointerUp = () => setIsResizing(false)
@@ -198,7 +249,7 @@ export default function TerminalContainer({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [isResizing, setDimensions])
+  }, [isResizing, setDimensions, gridCellSize])
 
   const handleResizeStart = (event) => {
     if (isMobile || isMinimized || event.button !== 0) {
@@ -226,6 +277,36 @@ export default function TerminalContainer({
     event.preventDefault()
     event.stopPropagation()
   }
+
+  const resolveInitialLayout = () => {
+    const overrides = initialStateRef.current ?? {}
+    return {
+      isMinimized: overrides.isMinimized ?? false,
+      dimensions: overrides.dimensions ?? getDefaultDesktopSize(),
+      position: overrides.position ?? null,
+    }
+  }
+
+  const handleResetLayout = () => {
+    if (isMobile) {
+      return
+    }
+    const { isMinimized: defaultMinimized, dimensions: defaultDimensions, position: defaultPosition } =
+      resolveInitialLayout()
+
+    setIsMinimized(defaultMinimized)
+    setDimensions(defaultDimensions)
+    setPosition(defaultPosition)
+    positionRef.current = defaultPosition ?? { x: 0, y: 0 }
+  }
+
+  useEffect(() => {
+    if (layoutResetToken === resetTokenRef.current) {
+      return
+    }
+    resetTokenRef.current = layoutResetToken
+    handleResetLayout()
+  }, [layoutResetToken])
 
   const toggleMinimize = () => setIsMinimized((prev) => !prev)
   const handleActivate = () => {
@@ -261,153 +342,216 @@ export default function TerminalContainer({
   const isPrimaryWindow = windowId === 'primary'
   const resolvedBackground = backgroundColor ?? (isPrimaryWindow ? 'rgba(0, 0, 0, 0.5)' : undefined)
   const resolvedBackdrop = isPrimaryWindow ? 'blur(6px)' : undefined
+  const shouldShowGrid = !isMobile && (isDragging || isResizing)
+  const activeGridCellSize = shouldShowGrid ? getSafeGridSize() : null
+  const gridOverlay =
+    shouldShowGrid && activeGridCellSize && canUseWindow
+      ? createPortal(
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              pointerEvents: 'none',
+              zIndex: 0,
+              backgroundImage: `
+                linear-gradient(color-mix(in srgb, var(--color-primary-lighter) 50%, transparent) 1px, transparent 1px),
+                linear-gradient(90deg, color-mix(in srgb, var(--color-primary-lighter) 50%, transparent) 1px, transparent 1px)
+              `,
+              backgroundSize: `${activeGridCellSize}px ${activeGridCellSize}px`,
+              opacity: 0.35,
+              transition: 'opacity 120ms ease-out',
+            }}
+          />,
+          document.body,
+        )
+      : null
+  const resetLayoutButton =
+    windowId === 'primary' && !isMobile && canUseWindow
+      ? createPortal(
+          <button
+            type="button"
+            onClick={triggerLayoutReset}
+            onPointerDown={(event) => event.stopPropagation()}
+            aria-label="Reset layout"
+            title="Reset layout"
+            style={{
+              position: 'fixed',
+              top: '0.75rem',
+              right: '0.75rem',
+              width: '2rem',
+              height: '2rem',
+              borderRadius: '6px',
+              border: '2px solid var(--color-primary-darkest)',
+              background: '#000',
+              color: 'var(--color-primary-darker)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 0 18px var(--color-primary-darkest)',
+              zIndex: 4,
+            }}
+          >
+            <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.9rem' }} />
+          </button>,
+          document.body,
+        )
+      : null
 
   return (
-    <div
-      ref={containerRef}
-      className={['terminal', className].filter(Boolean).join(' ')}
-      onPointerDownCapture={handleActivate}
-      style={{
-        position: isFloating ? 'fixed' : 'relative',
-        top: isFloating ? `${position.y}px` : undefined,
-        left: isFloating ? `${position.x}px` : undefined,
-        width: resolvedWidth,
-        height: resolvedHeight,
-        maxWidth: isMobile
-          ? mobileWidth
-          : isMinimized
-            ? MINIMIZED_DESKTOP_WIDTH
-            : desktopBounds
-              ? `${desktopBounds.maxWidth}px`
-              : desktopWidth,
-        minWidth: isMobile
-          ? mobileWidth
-          : isMinimized
-            ? MINIMIZED_DESKTOP_WIDTH
-            : desktopBounds
-              ? `${desktopBounds.minWidth}px`
-              : desktopWidth,
-        flex: isMinimized ? '0 0 auto' : 1,
-        display: 'flex',
-        flexDirection: 'column',
-        margin: isMobile ? '0' : isFloating ? '0' : 'auto',
-        padding: isMobile
-          ? '3.5rem 1.5rem'
-          : isMinimized
-            ? '0.75rem 1rem'
-            : '1rem 1rem',
-        overflow: isMobile ? 'hidden' : 'visible',
-        overflowY: isMobile ? (isMinimized ? 'visible' : 'auto') : 'visible',
-        boxSizing: 'border-box',
-        minHeight: isMinimized ? 'auto' : undefined,
-        transition: isDragging || isResizing ? 'none' : 'transform 120ms ease-out',
-        cursor: !isMobile && isDragging ? 'grabbing' : undefined,
-        boxShadow: isFloating ? '0 0 25px var(--color-primary-darkest)' : undefined,
-        zIndex: isFloating ? zIndex || 1 : undefined,
-        ...(resolvedBackground ? { background: resolvedBackground } : {}),
-        ...(resolvedBackdrop ? { backdropFilter: resolvedBackdrop } : {}),
-        ...styleOverrides,
-      }}
-    >
-      {!isMobile ? (
-        headerVariant === 'compact' ? (
-          <CompactHeader
-            title={isMinimized ? (compactTitleOnMinimize ?? titleOnMinimize ?? title) : title}
-            onDragPointerDown={handleDragStart}
-            isMinimized={isMinimized}
-          />
-        ) : (
-          <DesktopHeader
-            title={title}
-            titleOnMinimize={titleOnMinimize}
-            onDragPointerDown={handleDragStart}
-            isMinimized={isMinimized}
-          />
-        )
-      ) : (
-        <MobileHeader title={title} />
-      )}
-
+    <>
       <div
-        className="terminal-body"
+        ref={containerRef}
+        className={['terminal', className].filter(Boolean).join(' ')}
+        onPointerDownCapture={handleActivate}
         style={{
-          flex: isMinimized ? '0' : 1,
-          display: isMinimized ? 'none' : 'flex',
+          position: isFloating ? 'fixed' : 'relative',
+          top: isFloating ? `${position.y}px` : undefined,
+          left: isFloating ? `${position.x}px` : undefined,
+          width: resolvedWidth,
+          height: resolvedHeight,
+          maxWidth: isMobile
+            ? mobileWidth
+            : isMinimized
+              ? MINIMIZED_DESKTOP_WIDTH
+              : desktopBounds
+                ? `${desktopBounds.maxWidth}px`
+                : desktopWidth,
+          minWidth: isMobile
+            ? mobileWidth
+            : isMinimized
+              ? MINIMIZED_DESKTOP_WIDTH
+              : desktopBounds
+                ? `${desktopBounds.minWidth}px`
+                : desktopWidth,
+          flex: isMinimized ? '0 0 auto' : 1,
+          display: 'flex',
           flexDirection: 'column',
-          overflow: isMinimized ? 'hidden' : 'auto',
-          minHeight: 0,
-          maxHeight: isMobile ? '80vh' : isMinimized ? 'auto' : '100%',
-          height: isMobile ? undefined : '100%',
-          paddingBottom: isMobile ? '0.1rem' : '0',
+          margin: isMobile ? '0' : isFloating ? '0' : 'auto',
+          padding: isMobile
+            ? '3.5rem 1.5rem'
+            : isMinimized
+              ? '0.75rem 1rem'
+              : '1rem 1rem',
+          overflow: isMobile ? 'hidden' : 'visible',
+          overflowY: isMobile ? (isMinimized ? 'visible' : 'auto') : 'visible',
+          boxSizing: 'border-box',
+          minHeight: isMinimized ? 'auto' : undefined,
+          transition: isDragging || isResizing ? 'none' : 'transform 120ms ease-out',
+          cursor: !isMobile && isDragging ? 'grabbing' : undefined,
+          boxShadow: isFloating ? '0 0 25px var(--color-primary-darkest)' : undefined,
+          zIndex: isFloating ? zIndex || 2 : 1,
+          ...(resolvedBackground ? { background: resolvedBackground } : {}),
+          ...(resolvedBackdrop ? { backdropFilter: resolvedBackdrop } : {}),
+          ...styleOverrides,
         }}
       >
-        {children}
+        {!isMobile ? (
+          headerVariant === 'compact' ? (
+            <CompactHeader
+              title={isMinimized ? (compactTitleOnMinimize ?? titleOnMinimize ?? title) : title}
+              onDragPointerDown={handleDragStart}
+              isMinimized={isMinimized}
+            />
+          ) : (
+            <DesktopHeader
+              title={title}
+              titleOnMinimize={titleOnMinimize}
+              onDragPointerDown={handleDragStart}
+              isMinimized={isMinimized}
+            />
+          )
+        ) : (
+          <MobileHeader title={title} />
+        )}
+
+        <div
+          className="terminal-body"
+          style={{
+            flex: isMinimized ? '0' : 1,
+            display: isMinimized ? 'none' : 'flex',
+            flexDirection: 'column',
+            overflow: isMinimized ? 'hidden' : 'auto',
+            minHeight: 0,
+            maxHeight: isMobile ? '80vh' : isMinimized ? 'auto' : '100%',
+            height: isMobile ? undefined : '100%',
+            paddingBottom: isMobile ? '0.1rem' : '0',
+          }}
+        >
+          {children}
+        </div>
+
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={toggleMinimize}
+            onPointerDown={(event) => event.stopPropagation()}
+            aria-label={isMinimized ? 'Restore terminal' : 'Minimize terminal'}
+            title={isMinimized ? 'Restore terminal' : 'Minimize terminal'}
+            style={{
+              position: 'absolute',
+              top: '-0.5rem',
+              right: '-0.65rem',
+              width: '1.5rem',
+              height: '1.5rem',
+              borderRadius: '4px',
+              border: '2px solid var(--color-primary-darkest)',
+              background: '#000',
+              color: 'var(--color-primary-darker)',
+              fontSize: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 20px var(--color-primary-darkest)',
+              zIndex: 5,
+            }}
+          >
+            <FontAwesomeIcon
+              icon={isMinimized ? faWindowMaximize : faWindowMinimize}
+              style={{ fontSize: '0.75rem' }}
+            />
+          </button>
+        )}
+
+        {!isMobile && !isMinimized && (
+          <button
+            type="button"
+            onPointerDown={handleResizeStart}
+            aria-label="Resize terminal window"
+            title="Resize terminal window"
+            style={{
+              position: 'absolute',
+              width: '1.5rem',
+              height: '1.5rem',
+              right: '-0.65rem',
+              bottom: '-0.65rem',
+              border: '2px solid var(--color-primary-darkest)',
+              borderRadius: '4px',
+              background: '#000',
+              color: 'var(--color-primary-darker)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'se-resize',
+              userSelect: 'none',
+              boxShadow: '0 0 20px var(--color-primary-darkest)',
+              zIndex: 4,
+            }}
+          >
+            <FontAwesomeIcon
+              icon={faCaretDown}
+              style={{ transform: 'rotate(-45deg)', fontSize: '1rem' }}
+            />
+          </button>
+        )}
       </div>
-
-      {!isMobile && (
-        <button
-          type="button"
-          onClick={toggleMinimize}
-          onPointerDown={(event) => event.stopPropagation()}
-          aria-label={isMinimized ? 'Restore terminal' : 'Minimize terminal'}
-          title={isMinimized ? 'Restore terminal' : 'Minimize terminal'}
-          style={{
-            position: 'absolute',
-            top: '-0.5rem',
-            right: '-0.65rem',
-            width: '1.5rem',
-            height: '1.5rem',
-            borderRadius: '4px',
-            border: '2px solid var(--color-primary-darkest)',
-            background: '#000',
-            color: 'var(--color-primary-darker)',
-            fontSize: 0,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 20px var(--color-primary-darkest)',
-            zIndex: 5,
-          }}
-        >
-          <FontAwesomeIcon
-            icon={isMinimized ? faWindowMaximize : faWindowMinimize}
-            style={{ fontSize: '0.75rem' }}
-          />
-        </button>
-      )}
-
-      {!isMobile && !isMinimized && (
-        <button
-          type="button"
-          onPointerDown={handleResizeStart}
-          aria-label="Resize terminal window"
-          title="Resize terminal window"
-          style={{
-            position: 'absolute',
-            width: '1.5rem',
-            height: '1.5rem',
-            right: '-0.65rem',
-            bottom: '-0.65rem',
-            border: '2px solid var(--color-primary-darkest)',
-            borderRadius: '4px',
-            background: '#000',
-            color: 'var(--color-primary-darker)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'se-resize',
-            userSelect: 'none',
-            boxShadow: '0 0 20px var(--color-primary-darkest)',
-            zIndex: 4,
-          }}
-        >
-          <FontAwesomeIcon
-            icon={faCaretDown}
-            style={{ transform: 'rotate(-45deg)', fontSize: '1rem' }}
-          />
-        </button>
-      )}
-    </div>
+      {gridOverlay}
+      {resetLayoutButton}
+    </>
   )
 }

@@ -42,7 +42,7 @@ export default function TransactionsTerminal() {
       initialState={initialState}
       desktopBounds={{
         minWidth: 360,
-        maxWidth: 560,
+        maxWidth: 720,
         minHeight: 260,
         maxHeight: 1024,
       }}

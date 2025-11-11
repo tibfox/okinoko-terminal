@@ -21,6 +21,12 @@ const FIND_TRANSACTION_QUERY = /* GraphQL */ `
       required_posting_auths
       status
       op_types
+      ops {
+        required_auths
+        type
+        index
+        data
+      }
     }
   }
 `
@@ -116,6 +122,25 @@ const renderStatusIcon = (status) => {
   }
 }
 
+const getOperationLabel = (tx) => {
+  const primaryType = tx?.op_types?.[0]
+  if (typeof primaryType === 'string' && primaryType.toLowerCase() === 'call_contract') {
+    const opData = tx?.ops?.[0]?.data
+    if (opData) {
+      try {
+        const parsedData = typeof opData === 'string' ? JSON.parse(opData) : opData
+        if (parsedData?.action) {
+          return parsedData.action
+        }
+      } catch {
+        // ignore JSON parse errors and fall back to op type
+      }
+    }
+  }
+
+  return primaryType ?? tx?.type ?? '—'
+}
+
 export default function MonitorPanel() {
   const [activeTab, setActiveTab] = useState('txs')
   const [transactions, setTransactions] = useState([])
@@ -191,7 +216,7 @@ export default function MonitorPanel() {
               <tr key={tx.id}>
                 <td style={{ ...cellStyle, width: '2rem', textAlign: 'center' }}>{renderStatusIcon(tx.status)}</td>
                 <td style={cellStyle}>{tx.required_auths?.[0] ?? '—'}</td>
-                <td style={cellStyle}>{tx.op_types?.[0] ?? tx.type ?? '—'}</td>
+                <td style={cellStyle}>{getOperationLabel(tx)}</td>
                 <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
                 <td style={cellStyle}>{formatLocalTime(tx.anchr_ts)}</td>
               </tr>
