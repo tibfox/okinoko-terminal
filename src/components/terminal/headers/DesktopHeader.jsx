@@ -1,7 +1,6 @@
 import BalanceDisplay from "../AccountDisplay.jsx";
 import SlotText from "../../animations/SlotText.jsx";
 import { useAioha } from "@aioha/react-ui";
-import TxQueueIndicator from "../TxQueueIndicator.jsx";
 import SettingsMenu from "../SettingsMenu.jsx";
 import { useResponsiveTitleSize } from "../../../hooks/useResponsiveTitleSize.js";
 
@@ -95,7 +94,6 @@ export default function DesktopHeader({
               gap: "0.5rem",
             }}
           >
-            <TxQueueIndicator isMobile="false" />
             <BalanceDisplay account={`hive:${user}`} fontMult={1} />
             <SettingsMenu />
           </div>

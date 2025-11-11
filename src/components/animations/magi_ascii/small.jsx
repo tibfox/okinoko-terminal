@@ -1,80 +1,29 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useTerminalWindow } from "../../terminal/TerminalWindowProvider.jsx";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { magiAsciiArt } from "./art.js";
 
-const art = String.raw`
-
-                                   ####                                   
-                                #####.####                                
-                             ########<...####                             
-                          ###########<<-....####                          
-                      ###############<<<*......)####                      
-                   ##################<<<<>........:####                   
-                #####################<<<<<<...........####                
-             ####@@@=.###############<<<<<<<.............####             
-         %####@@@@@@@)...{###########<<<<<<<<...............{###%         
-      ####%@@@@@@@@@@@#.....#########<<<<<<<<<.................*####      
-   ####@@@@@@@@@@@@@@@@%.==##########<<<<<<<<<<==:................:####   
-####@@@@@@@@@@@@@@@@@%#*==###########<<<<<<<<<<<====+.................####
-##=@@@@@@@@@@@@@@@#####==############<<<<<<<<<<<<======+................##
-##====}@@@@@@@@#######==#############<<<<<<<<<<<<<=========.............##
-##=======*@@#########)=##############<<<<<<<<<<<<<<===========..........##
-##===========########=###############<<<<<<<<<<<<<<<=========...........##
-##==============####=################<<<<<<<<<<<<<<<<+====..............##
-##=================}#################<<<<<<<<<<<<<<<<<*.................##
-##@@@=================<##############<<<<<<<<<<<<<<+.................@@@##
-##@@@@@@+================+###########<<<<<<<<<<<.................:@@@@@@##
-##@@@@@@@@@]=================########<<<<<<<<.................<@@@@@@@@@##
-##@@@@@@@@@@@@%=================#####<<<<<.................%@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@=================}#<>.................@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@@@@================................#@@@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@@@=^@@*============............-##~.@@@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@@@#==@@@@}=========.........(####..#@@@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@@@@===@@@@@@@======......#######...@@@@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@@@@>=======+%@@@===...###{........+@@@@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@@@@@@@===============...............@@@@@@@@@@@@@@@@@@@@##
-##@@@@@@@@@@@@@@.===@@=============##...............@@===.@@@@@@@@@@@@@@##
-##@@@@@@@@@@@.~======@@==========####..............@@======~.@@@@@@@@@@@##
-##@@@@@@@@..==========+====+#########><<<<<<<<:....+==========..@@@@@@@@##
-##@@@@[...=========+###############==..<<<<<<<<<<<<<<<+=========...]@@@@##
-##@-...+===========#############+====....:<<<<<<<<<<<<<===========+...-@##
-####@@@@============[#########===##)=.+<<...<<<<<<<<<>============@@@@####
-   ####@@@============#####]====#####<<<<<....*<<<<<============@@@####   
-      ####%@[==========+####===>#####<<<<<=...<<<<+==========[@%####      
-         #####@==========####==######<<<<<<..<<<<==========@#####         
-             ####+=========##########<<<<<<<<<<=========+####             
-                ####@@@@@@@@%########<<<<<<<<]@@@@@@@@####                
-                   ####@@@@@@@#######<<<<<<<@@@@@@@####                   
-                      ####%@@@@@#####<<<<<@@@@@%####                      
-                          ####@@@####<<<<@@@####                          
-                             ####@@##<<@@####                             
-                                ####%{####                                
-                                   ####                                   
-
-`;
-const artLines = art.split("\n").filter(Boolean);
+const artLines = magiAsciiArt.split("\n").filter(Boolean);
 const artColumns = Math.max(...artLines.map((line) => line.length));
 const artRows = artLines.length;
+const ART_ASPECT = artColumns / artRows;
 
 const MIN_FONT = 4;
-const MAX_FONT = 14;
-const CHAR_WIDTH_RATIO = 1.2; // monospace approximation
+const MAX_FONT_DESKTOP = 14;
+const CHAR_WIDTH_RATIO = 0.65; // monospace approximation tuned for desktop scaling
 
 export default function AsciiArt() {
-  const [isMobile, setIsMobile] = useState(null); // prevent first-frame flicker
   const [availableSize, setAvailableSize] = useState({ width: 0, height: 0 });
   const wrapperRef = useRef(null);
-  const { dimensions } = useTerminalWindow();
 
-  // Efficient mobile detection
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 900px)");
+  // // Efficient mobile detection
+  // useEffect(() => {
+  //   const mq = window.matchMedia("(max-width: 900px)");
 
-    const handler = (e) => setIsMobile(e.matches);
-    setIsMobile(mq.matches); // initial value
+  //   const handler = (e) => setIsMobile(e.matches);
+  //   setIsMobile(mq.matches); // initial value
 
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  //   mq.addEventListener("change", handler);
+  //   return () => mq.removeEventListener("change", handler);
+  // }, []);
 
   useEffect(() => {
     const node = wrapperRef.current;
@@ -107,35 +56,24 @@ export default function AsciiArt() {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  if (isMobile === null) return null; // wait for detection
+  // if (isMobile === null) return null; // wait for detection
 
   const fontSize = useMemo(() => {
-    const fallbackWidth = availableSize.width;
-    const fallbackHeight = availableSize.height;
-    const availableWidth = isMobile ? fallbackWidth : dimensions?.width ?? fallbackWidth;
-    const availableHeight = isMobile ? fallbackHeight : dimensions?.height ?? fallbackHeight;
-
-    const width = (() => {
-      if (availableWidth && fallbackWidth) return Math.min(availableWidth, fallbackWidth);
-      return availableWidth || fallbackWidth;
-    })();
-
-    const height = (() => {
-      if (availableHeight && fallbackHeight) return Math.min(availableHeight, fallbackHeight);
-      return availableHeight || fallbackHeight;
-    })();
+    const width = availableSize.width;
+    const height = availableSize.height;
 
     if (!width || !height) {
       return 7;
     }
 
-    const widthBased = width / (artColumns * CHAR_WIDTH_RATIO);
+    const widthForCalc = Math.min(width, height * ART_ASPECT * CHAR_WIDTH_RATIO);
+    const widthBased = widthForCalc / (artColumns * CHAR_WIDTH_RATIO);
     const heightBased = height / artRows;
     const rawSize = Math.min(widthBased, heightBased);
-    const maxCap = isMobile ? 12 : MAX_FONT;
+    const maxCap = MAX_FONT_DESKTOP;
 
     return Math.max(MIN_FONT, Math.min(rawSize, maxCap));
-  }, [availableSize, isMobile, dimensions]);
+  }, [availableSize]);
 
   return (
     <div
@@ -168,7 +106,7 @@ export default function AsciiArt() {
           color: "transparent",
         }}
       >
-        {art}
+        {magiAsciiArt}
       </pre>
     </div>
   );

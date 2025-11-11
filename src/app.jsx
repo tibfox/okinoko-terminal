@@ -14,6 +14,7 @@ import StepGame from './components/StepGame/StepGame.jsx'
 import { AccountBalanceProvider } from './components/terminal/AccountBalanceProvider.jsx'
 import SecondaryTerminal from './components/terminal/SecondaryTerminal.jsx'
 import TransactionsTerminal from './components/terminal/TransactionsTerminal.jsx'
+import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 
 const aioha = initAioha({
   hiveauth: {
@@ -29,6 +30,8 @@ export function App() {
   const [contractId, setContractId] = useState('')
     const [fnName, setFnName] = useState('')
     const [params, setParams] = useState({})
+  const isMobile = useDeviceBreakpoint()
+  const showDesktopTerminals = isMobile === false
 
     if (import.meta.env.VITE_EXPOSE_ERUDA === 'true') {
   import('eruda').then((eruda) => {
@@ -90,8 +93,12 @@ export function App() {
       <AccountBalanceProvider>
         <>
           {renderPage()}
-          <SecondaryTerminal />
-          <TransactionsTerminal />
+          {showDesktopTerminals && (
+            <>
+              <SecondaryTerminal />
+              <TransactionsTerminal />
+            </>
+          )}
         </>
       </AccountBalanceProvider>
     </AiohaProvider>

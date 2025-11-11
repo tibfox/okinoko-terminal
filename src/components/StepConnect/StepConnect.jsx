@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useAioha } from '@aioha/react-ui'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import ConnectIntro from './ConnectIntro.jsx'
-import AsciiArt from '../animations/magi_ascii/small.jsx'
+import DesktopAsciiArt from '../animations/magi_ascii/small.jsx'
+import MobileAsciiArt from '../animations/magi_ascii/small.mobile.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { playBeep } from '../../lib/beep.js'
 import { AiohaPage } from '../aioha-page.jsx'
@@ -12,7 +13,7 @@ import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
  * StepConnect (Responsive)
  * -------------------------
  * Desktop → full intro (text + ASCII handled by ConnectIntro)
- * Mobile → scrollable layout, ASCII hidden automatically
+ * Mobile  → scrollable layout with resized ASCII art
  */
 export default function StepConnect({ setStep }) {
   const { user } = useAioha()
@@ -28,6 +29,7 @@ export default function StepConnect({ setStep }) {
   if (isMobile === null) {
     return null
   }
+  const mobileAsciiHeight = '40vh'
   const terminalTitle = 'Welcome to the ŌKIՈOKO TERMINAL'
   return (
     <TerminalContainer
@@ -46,17 +48,20 @@ export default function StepConnect({ setStep }) {
           width: '100%',
         }}
       >
-        {/* Intro (includes ASCII on desktop only) */}
+        {/* Intro copy */}
         <ConnectIntro />
 
         <div
           style={{
-            flex: '1 1 auto',
-            minHeight: 0,
-            display: isMobile ? 'none' : 'flex',
+            flex: isMobile ? '0 0 auto' : '1 1 auto',
+            minHeight: isMobile ? mobileAsciiHeight : 0,
+            maxHeight: isMobile ? mobileAsciiHeight : 'none',
+            height: isMobile ? mobileAsciiHeight : '100%',
+            display: 'flex',
+            padding: isMobile ? '0 0.5rem' : 0,
           }}
         >
-          <AsciiArt />
+          {isMobile ? <MobileAsciiArt /> : <DesktopAsciiArt />}
         </div>
 
         {/* Connection / Actions */}

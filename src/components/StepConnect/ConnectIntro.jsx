@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react'
  * ConnectIntro
  * --------------
  * Desktop → paragraph + ASCII art
- * Mobile → paragraph only (no ASCII)
+ * Mobile  → paragraph with scaled-down ASCII alongside StepConnect
  */
 export default function ConnectIntro() {
   const [isMobile, setIsMobile] = useState(null) // ✅ null = unknown initially

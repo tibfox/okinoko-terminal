@@ -22,7 +22,7 @@ export default function SecondaryTerminal() {
       ...fallback,
       position: {
         x: Math.max(40, window.innerWidth - width - 80),
-        y: 40,
+        y: 30,
       },
     })
   }, [])

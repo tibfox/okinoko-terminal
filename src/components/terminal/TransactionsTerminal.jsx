@@ -10,7 +10,7 @@ export default function TransactionsTerminal() {
 
   useEffect(() => {
     const fallback = {
-      isMinimized: false,
+      isMinimized: true,
       dimensions: { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
       position: null,
     }
@@ -20,9 +20,9 @@ export default function TransactionsTerminal() {
       return
     }
 
-    const padding = 96
+    const padding = 400
     const x = Math.max(24, window.innerWidth - DEFAULT_WIDTH - padding)
-    const y = Math.max(120, window.innerHeight - DEFAULT_HEIGHT - padding)
+    const y = 30
 
     setInitialState({
       ...fallback,

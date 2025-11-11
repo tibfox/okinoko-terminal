@@ -336,7 +336,8 @@ export default function TerminalContainer({
           flexDirection: 'column',
           overflow: isMinimized ? 'hidden' : 'auto',
           minHeight: 0,
-          maxHeight: isMobile ? '80vh' : isMinimized ? 'auto' : '80vh',
+          maxHeight: isMobile ? '80vh' : isMinimized ? 'auto' : '100%',
+          height: isMobile ? undefined : '100%',
           paddingBottom: isMobile ? '0.1rem' : '0',
         }}
       >
