@@ -10,6 +10,8 @@ export default function ActionFooter({
   onJoin,
   onMove,
   onBackToMode,
+  onBackToGameList,
+  showGameListButton = false,
 }) {
   const renderActionButton = () => {
     if (!displayMode) {
@@ -60,6 +62,10 @@ export default function ActionFooter({
     )
   }
 
+  const useGameListAction = Boolean(showGameListButton && onBackToGameList)
+  const backButtonLabel = useGameListAction ? 'Game List' : 'Game Mode'
+  const backButtonHandler = useGameListAction ? onBackToGameList : onBackToMode
+
   return (
     <div
       style={{
@@ -71,9 +77,9 @@ export default function ActionFooter({
         alignItems: 'center',
       }}
     >
-      <NeonButton onClick={onBackToMode}>
+      <NeonButton onClick={backButtonHandler}>
         <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
-        Game Mode
+        {backButtonLabel}
       </NeonButton>
       {renderActionButton()}
     </div>

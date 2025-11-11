@@ -4,11 +4,13 @@ export default function SlotText({
   text = 'VSC Terminal',
   className = '',
   tag: Tag = 'span',
+  style: customStyle = {},
   interval = 15,
   frameDelay = 50,
   baseDuration = 600,
   charDuration = 80,
   startDelay = 0,
+  pad = true,
 }) {
   const [displayChars, setDisplayChars] = useState(text.split(''))
   const loopRef = useRef(null)
@@ -64,11 +66,7 @@ export default function SlotText({
       className={`cyber-tile ${className}`}
       style={{
         display: 'inline-block',
-        whiteSpace: 'pre',
-        // fontFamily: 'monospace',
-        
-        // minWidth: `${text.length}ch`, // ensures stable width
-        // maxWidth: `${text.length}ch`, // ensures stable width
+        whiteSpace: 'nowrap',
         textAlign: 'center',
         verticalAlign: 'top',
         margin: 0,
@@ -76,14 +74,13 @@ export default function SlotText({
         fontFamily: "'Share Tech Mono',monospace",
         letterSpacing: '0.05em',
         lineHeight: 1.2,
-        // mobile stability fixes
-        // fontSize: 'clamp(0.8rem, 3vw, 1.5rem)',
         overflow: 'hidden',
+        textOverflow: 'ellipsis',
         textRendering: 'optimizeSpeed',
+        ...customStyle,
       }}
     >
-      &nbsp;{displayChars.join('')}&nbsp;
-
+      {pad ? ` ${displayChars.join('')} ` : displayChars.join('')}
     </Tag>
   )
 }

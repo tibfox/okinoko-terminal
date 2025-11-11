@@ -4,9 +4,14 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import { useQuery, useSubscription } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHourglassStart, faFlag } from '@fortawesome/free-solid-svg-icons';
-import { GAME_MOVES_QUERY, GAME_EVENTS_SUBSCRIPTION, GAME_MOVE_SUBSCRIPTION } from '../../data/inarow_gql.js'
+import { faHourglassStart, faFlag } from '@fortawesome/free-solid-svg-icons'
+import {
+  GAME_MOVES_QUERY,
+  GAME_EVENTS_SUBSCRIPTION,
+  GAME_MOVE_SUBSCRIPTION,
+} from '../../data/inarow_gql.js'
 import EmptyGamePanel from './components/EmptyGamePanel.jsx'
+import { getBoardDimensions } from './utils/boardDimensions.js'
 
 const BOARD_MAX_DIMENSION = 'min(90vmin, calc(100vh - 220px))'
 const toNumericVar = (value) =>
@@ -19,15 +24,23 @@ const hasFmp = (value) => {
   }
   return false
 }
-export default function GameField({ game, user, onSelectionChange, setParams, handleResign, handleTimeout, isMobile, onStateChange, defaultGameTypeId }) {
-  const size = useMemo(() => {
-    if (!game) return null
-    if (game.type === "TicTacToe") return { rows: 3, cols: 3 }
-    if (game.type === "TicTacToe5" || game.type === "Squava") return { rows: 5, cols: 5 }
-    if (game.type === "Connect4") return { rows: 6, cols: 7 }
-    if (game.type === "Gomoku") return { rows: 15, cols: 15 }
-    return null
-  }, [game?.type])
+
+const formatUserHandle = (value) =>
+  value ? value.replace(/^hive:/, '') : 'Unknown player'
+
+export default function GameField({
+  game,
+  user,
+  onSelectionChange,
+  setParams,
+  handleResign,
+  handleTimeout,
+  isMobile,
+  onStateChange,
+  defaultGameTypeId,
+  gameDescription,
+}) {
+  const size = useMemo(() => getBoardDimensions(game?.type), [game?.type])
   const allowMultiple = game?.state === 'swap'
   const [selected, setSelected] = useState([])
   const [fallingFrame, setFallingFrame] = useState(null) // { r, c } for C4 animation
@@ -51,47 +64,55 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
     requestPolicy: 'network-only',
   })
   const fullUser = user ? (user.startsWith('hive:') ? user : `hive:${user}`) : null
-  const applyTerminalEvent = useCallback((entry) => {
-    if (!entry || !fullUser) return
-    const formatHandle = (value) => (value ? value.replace(/^hive:/, '') : 'Unknown player')
-    const updateBanner = (text, tone) => setResultBanner({ text, tone })
+  const applyTerminalEvent = useCallback(
+    (entry) => {
+      if (!entry || !fullUser) return
+      const updateBanner = (text, tone) => setResultBanner({ text, tone })
 
-    switch (entry.event_type) {
-      case 'won': {
-        if (!entry.winner) return
-        const isMe = entry.winner === fullUser
-        updateBanner(
-          isMe ? 'You won the game!' : `${formatHandle(entry.winner)} won the game.`,
-          isMe ? 'positive' : 'negative'
-        )
-        break
+      switch (entry.event_type) {
+        case 'won': {
+          if (!entry.winner) return
+          const isMe = entry.winner === fullUser
+          updateBanner(
+            isMe
+              ? 'You won the game!'
+              : `${formatUserHandle(entry.winner)} won the game.`,
+            isMe ? 'positive' : 'negative',
+          )
+          break
+        }
+        case 'resign': {
+          if (!entry.resigner) return
+          const isMe = entry.resigner === fullUser
+          updateBanner(
+            isMe
+              ? 'You resigned from this game.'
+              : `${formatUserHandle(entry.resigner)} resigned. You win!`,
+            isMe ? 'negative' : 'positive',
+          )
+          break
+        }
+        case 'timeout': {
+          if (!entry.timedout) return
+          const isMe = entry.timedout === fullUser
+          updateBanner(
+            isMe
+              ? 'You lost on timeout.'
+              : `${formatUserHandle(entry.timedout)} timed out. You win!`,
+            isMe ? 'negative' : 'positive',
+          )
+          break
+        }
+        case 'draw': {
+          updateBanner('Game ended in a draw.', 'neutral')
+          break
+        }
+        default:
+          break
       }
-      case 'resign': {
-        if (!entry.resigner) return
-        const isMe = entry.resigner === fullUser
-        updateBanner(
-          isMe ? 'You resigned from this game.' : `${formatHandle(entry.resigner)} resigned. You win!`,
-          isMe ? 'negative' : 'positive'
-        )
-        break
-      }
-      case 'timeout': {
-        if (!entry.timedout) return
-        const isMe = entry.timedout === fullUser
-        updateBanner(
-          isMe ? 'You lost on timeout.' : `${formatHandle(entry.timedout)} timed out. You win!`,
-          isMe ? 'negative' : 'positive'
-        )
-        break
-      }
-      case 'draw': {
-        updateBanner('Game ended in a draw.', 'neutral')
-        break
-      }
-      default:
-        break
-    }
-  }, [fullUser])
+    },
+    [fullUser],
+  )
 
   useSubscription(
     {
@@ -253,7 +274,12 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
     return () => observer.disconnect()
   }, [])
   if (!game || !size) {
-    return <EmptyGamePanel defaultGameTypeId={defaultGameTypeId} />
+    return (
+      <EmptyGamePanel
+        defaultGameTypeId={defaultGameTypeId}
+        description={gameDescription}
+      />
+    )
   }
   const isSelected = (r, c) => selected.some(s => s.r === r && s.c === c)
   const findC4LandingRow = (col) => {
@@ -318,10 +344,8 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
       (fullUser === playerY && isPlayerYStone)
     return isMyStone ? 'var(--color-primary)' : 'var(--color-primary-darker)'
   }
-  const minsAgo = game.lastMoveMinutesAgo;
-  const daysAgo = Math.floor(minsAgo / (24 * 60));
-  const hoursAgo = Math.floor((minsAgo % (24 * 60)) / 60);
-  const minutesAgo = minsAgo % 60;
+  const minsAgo = game.lastMoveMinutesAgo
+  const daysAgo = Math.floor(minsAgo / (24 * 60))
   return (
     <div style={{
       height: '100%',
@@ -393,39 +417,42 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
           </NeonButton>
         </div>
       )}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
         {(() => {
-          const overlayBanner = resultBanner ?? (!hasOpponent ? { text: 'Waiting for another player to join…' } : null)
+          const overlayBanner =
+            resultBanner ?? (!hasOpponent ? { text: 'Waiting for another player to join…' } : null)
           if (!overlayBanner) return null
           return (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              color: 'var(--color-primary-lighter)',
-              fontSize: '1.15rem',
-              fontWeight: 600,
-              textAlign: 'center',
-              textShadow: '0 0 12px rgba(0,0,0,0.85)',
-              pointerEvents: 'none',
-              zIndex: 2,
-              background: 'rgba(0, 0, 0, 0.55)',
-              padding: '10px 18px',
-              borderRadius: '8px',
-              maxWidth: '80%',
-            }}
-          >
-            {overlayBanner.text}
-          </div>
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'var(--color-primary-lighter)',
+                fontSize: '1.15rem',
+                fontWeight: 600,
+                textAlign: 'center',
+                textShadow: '0 0 12px rgba(0,0,0,0.85)',
+                pointerEvents: 'none',
+                zIndex: 2,
+                background: 'rgba(0, 0, 0, 0.55)',
+                padding: '10px 18px',
+                borderRadius: '8px',
+                maxWidth: '80%',
+              }}
+            >
+              {overlayBanner.text}
+            </div>
           )
         })()}
         <div
@@ -618,6 +645,8 @@ export default function GameField({ game, user, onSelectionChange, setParams, ha
         </div>
       </div>
     </div>
-    </div>
+      </div>
+    
+
   )
 }

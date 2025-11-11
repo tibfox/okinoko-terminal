@@ -14,7 +14,7 @@
   } from "@fortawesome/free-solid-svg-icons";
 
   export default function TxQueuePopupBody() {
-    const { state, removeTransaction } = useContext(TransactionContext);
+    const { state, removeTransaction, clearTransactions } = useContext(TransactionContext);
 
     // Live tick so "Waiting Ns" updates
     const [tick, setTick] = useState(Date.now());
@@ -41,6 +41,16 @@
     // Keep your current truncation behavior (25 chars as in your snippet)
     const TRUNCATE = 18;
 
+    const handleDeleteAll = () => {
+      if (txs.length === 0) return;
+      const confirmed = window.confirm(
+        `Delete all ${txs.length} recent transaction${txs.length === 1 ? "" : "s"}?`
+      );
+      if (confirmed) {
+        clearTransactions();
+      }
+    };
+
     return (
       <div
         style={{
@@ -50,6 +60,35 @@
           color: "var(--color-primary)",
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "10px",
+            fontSize: "0.9rem",
+            fontWeight: "600"
+          }}
+        >
+          <span>{`Recent transactions (${txs.length})`}</span>
+          <button
+            type="button"
+            onClick={handleDeleteAll}
+            disabled={txs.length === 0}
+            style={{
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: "4px",
+              padding: "4px 10px",
+              background: "transparent",
+              color: "inherit",
+              opacity: txs.length === 0 ? 0.4 : 1,
+              cursor: txs.length === 0 ? "not-allowed" : "pointer"
+            }}
+          >
+            Delete all
+          </button>
+        </div>
+
         {txs.length === 0 && (
           <div style={{ fontStyle: "italic" }}>No recent transactions.</div>
         )}

@@ -74,42 +74,42 @@ export default function Menu({
         }}
       >
         {/* HEADER CARD */}
-            <div
-              class="cyber-popup"
-              style={{
-                position: "relative",
-                width: "100%",
-                zIndex: 2,
-                marginBottom: "-20px",
-                padding: "14px",
-              }}
-            >
-              <h5>{title}</h5>
-            </div>
-            <div
-              // class="cyber-popup"
-               style={{
-        flex: 1,
-        position: "relative",
-        width: "100%",
-        zIndex: 1,
-        padding: "14px",
-        background: "black",
-        border: "1px solid var(--color-primary-darkest)",
-      }}
-            >
-                <div style={{padding: '8px',marginTop:'10px'}}>
-              {/* If a render function is provided, call it each render */}
-{children}
-
-
-              {/* use `tick` to appease VDOM diff optimizers (forces repaint) */}
-              {/* <div style={{ display: "none" }}>{tick}</div> */}
-
-              </div>
-            </div>
+        <div
+          class="cyber-popup"
+          style={{
+            position: "relative",
+            width: "100%",
+            zIndex: 2,
+            marginBottom: "0px",
             
-            {/* <div class="cyber-tile"
+          }}
+        >
+          <h5>{title}</h5>
+        </div>
+        <div
+          // class="cyber-popup"
+          style={{
+            flex: 1,
+            position: "relative",
+            width: "100%",
+            zIndex: 1,
+            padding: "14px",
+            background: "black",
+            border: "1px solid var(--color-primary-darkest)",
+          }}
+        >
+          <div style={{ padding: '8px', marginTop: '10px' }}>
+            {/* If a render function is provided, call it each render */}
+            {children}
+
+
+            {/* use `tick` to appease VDOM diff optimizers (forces repaint) */}
+            {/* <div style={{ display: "none" }}>{tick}</div> */}
+
+          </div>
+        </div>
+
+        {/* <div class="cyber-tile"
           style={{
             background: "rgba(0,0,0,0.85)",
             padding: "10px",

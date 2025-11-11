@@ -79,9 +79,10 @@ select {
 
 .cyber-tile {
     --tile-width: 100%;
-    --tile-padding: 8px;
+    --tile-padding-hor: 20px;
+    --tile-padding-vert: 10px;
     --tile-edges: 20px;
-    --label-margins: calc(var(--tile-edges) - var(--tile-padding));
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
    --og-clip-path: polygon(
     var(--tile-edges) 0,                 /* cut top-left */
     100% 0,
@@ -94,16 +95,17 @@ select {
     width: var(--tile-width);
     min-height: 30px;
     clip-path: var(--og-clip-path);
-    padding: var(--tile-padding) !important;
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
     padding-bottom: var(--tile-edges);
     background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
 }
 
 .cyber-popup {
     --tile-width: 33%;
-    --tile-padding: 8px;
-    --tile-edges: 20px;
-    --label-margins: calc(var(--tile-edges) - var(--tile-padding));
+    --tile-padding-hor: 2px;
+    --tile-padding-vert: 4px;
+    --tile-edges: 15px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
    --og-clip-path: polygon(
   0 0,
   calc(100% - var(--tile-edges)) 0,              /* cut top-right */
@@ -115,7 +117,7 @@ select {
     width: var(--tile-width);
     min-height: 30px;
     clip-path: var(--og-clip-path);
-    padding: var(--tile-padding) !important;
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
     padding-bottom: var(--tile-edges);
    background-color: var(--cyber-bg, var(--color-primary-darkest));
 }
@@ -178,6 +180,14 @@ select {
   width: 100%;
   height: 42px;
   border: 1px solid var(--color-primary-darker);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .neon-list-btn:hover {
@@ -186,6 +196,32 @@ select {
 
 .neon-list-btn:disabled, .neon-btn.disabled {
   opacity: 0.4;
+}
+
+.terminal-trail {
+  position: fixed;
+  pointer-events: none;
+  color: var(--color-primary-lightest);
+  font-size: 0.9rem;
+  opacity: 0.85;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.6);
+  transform: translate(-50%, -50%);
+  --trail-move-x: 0px;
+  --trail-move-y: 0px;
+  animation: terminalTrailFade 0.45s ease-out forwards;
+  z-index: 9999;
+}
+
+@keyframes terminalTrailFade {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--trail-move-x)), calc(-50% + var(--trail-move-y)))
+      scale(0.35);
+  }
 }
 
 

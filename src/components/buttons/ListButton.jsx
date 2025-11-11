@@ -6,11 +6,12 @@ export default function ListButton({
   variant,
   onClick,
   beep = true, // ✅ default: button makes a beep
+  style = {},
   ...props
 }) {
   const handleClick = (e) => {
     if (beep) {
-      playBeep(360, 50, 'square') 
+      playBeep(360, 50, 'square')
     }
 
     // run user’s click handler too
@@ -21,6 +22,7 @@ export default function ListButton({
     <button
       className="neon-list-btn"
       onClick={handleClick}
+      style={style}
       {...props}
     >
       {children}

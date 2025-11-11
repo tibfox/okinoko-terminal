@@ -102,6 +102,9 @@ export default function StepGame({
   //   : allMandatoryFilled && !pending         // Original behavior for non-game flow
   const isSendEnabled = allMandatoryFilled && !pending         // Original behavior for non-game flow
   const derivedGameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
+  const showingGameDetails = Boolean(
+    activeGame && displayMode !== 'g_join' && displayMode !== 'g_create',
+  )
 
   const mobileTabs = useMemo(
     () => [
@@ -151,7 +154,7 @@ export default function StepGame({
             flex: 1,
           }}
         >
-          {!activeGame || displayMode == 'g_join' || displayMode == 'g_create' ? (
+          {!showingGameDetails ? (
             <GameSelect
               user={user}
               contract={contract}
@@ -168,11 +171,9 @@ export default function StepGame({
           ) : (
             <GameDetails
               game={activeGame}
-              description={fn.description}
               opponentName={opponentName}
               formattedAgo={formattedAgo}
               isMyTurn={isMyTurn}
-              onBack={unselectGame}
             />
           )}
 
@@ -205,6 +206,7 @@ export default function StepGame({
               isMobile={isMobile}
               onStateChange={handleStateChange}
               defaultGameTypeId={derivedGameTypeId}
+              gameDescription={fn?.description}
             />)}
         </div>
       </div>
@@ -217,6 +219,8 @@ export default function StepGame({
         onJoin={handleJoin}
         onMove={handleSendMoveDummy}
         onBackToMode={() => setStep(1)}
+        onBackToGameList={unselectGame}
+        showGameListButton={showingGameDetails}
       />
     </TerminalContainer>
   )

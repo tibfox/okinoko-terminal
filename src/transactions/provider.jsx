@@ -47,6 +47,8 @@ function reducer(state, action) {
       };
     case 'REMOVE':
       return { ...state, queue: state.queue.filter(tx => tx.id !== action.id) };
+    case 'CLEAR':
+      return { ...state, queue: [] };
     default:
       return state;
   }
@@ -114,9 +116,10 @@ export function TransactionProvider({ children }) {
 
   const addTransaction = (tx) => dispatch({ type: 'ADD', tx });
   const removeTransaction = (id) => dispatch({ type: 'REMOVE', id });
+  const clearTransactions = () => dispatch({ type: 'CLEAR' });
 
   return (
-    <TransactionContext.Provider value={{ state, addTransaction, removeTransaction }}>
+    <TransactionContext.Provider value={{ state, addTransaction, removeTransaction, clearTransactions }}>
       {children}
     </TransactionContext.Provider>
   );

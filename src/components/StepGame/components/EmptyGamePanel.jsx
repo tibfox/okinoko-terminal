@@ -17,9 +17,9 @@ const LEADERBOARD_FIELD_MAP = {
   active: 'active_games',
 }
 
-export default function EmptyGamePanel({ defaultGameTypeId }) {
-  const [activeTab, setActiveTab] = useState('info')
-  const [leaderboardScope, setLeaderboardScope] = useState('all')
+export default function EmptyGamePanel({ defaultGameTypeId, description }) {
+  const [activeTab, setActiveTab] = useState('leaderboard')
+  const [leaderboardScope, setLeaderboardScope] = useState('season')
   const [sortKey, setSortKey] = useState('ratio')
   const [sortDirection, setSortDirection] = useState('desc')
   const selectedType = defaultGameTypeId ?? DEFAULT_LEADERBOARD_GAME_TYPE
@@ -101,25 +101,29 @@ export default function EmptyGamePanel({ defaultGameTypeId }) {
     letterSpacing: '0.05em',
   })
 
+  const descriptionParagraphs =
+    description && description.trim().length > 0
+      ? description
+          .trim()
+          .split(/\r?\n\s*\r?\n/)
+          .map((text) => text.trim())
+      : [
+          'Select a game to view its description, rules, and any special actions you can perform.',
+        ]
+
   const infoTab = (
     <div>
-      <h2>Welcome to the Game Arena</h2>
-      <p>
-        No game selected yet — this is your staging area. From here, you can choose to <b>Create</b> a
-        new game, <b>Join</b> a game someone else started, or <b>Continue</b> a game you're already
-        part of. Pick an option to get started and dive into a match.
-      </p>
-      <div style={{ marginTop: '40px' }}>
-        <h4>First Move Payment (FMP)</h4>
-        <p>
-          Some game creators enable a feature called <b>First Move Payment</b>. If it's available, you can
-          choose to pay a small extra amount to secure the first turn. Why? Because in many strategy games,
-          going first offers a small tactical advantage. If you don't want it, leave it off and join the
-          game normally — it's completely optional.
+      {descriptionParagraphs.map((text, idx) => (
+        <p key={idx} style={{ lineHeight: 1.5 }}>
+          {text}
         </p>
-      </div>
-      <div style={{ marginTop: '40px' }}>
-        <h4>Enjoy your gaming!</h4>
+      ))}
+      <div style={{ marginTop: '24px' }}>
+        <h4>First Move Payment (FMP)</h4>
+        <p style={{ lineHeight: 1.5 }}>
+          When available, FMP lets you pay a small premium to guarantee the opening move. Leave it off
+          to join games normally.
+        </p>
       </div>
     </div>
   )
@@ -208,15 +212,15 @@ export default function EmptyGamePanel({ defaultGameTypeId }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'flex', gap: '8px' }}>
-        <button type="button" style={tabButtonStyle(activeTab === 'info')} onClick={() => setActiveTab('info')}>
-          Game Info
-        </button>
         <button
           type="button"
           style={tabButtonStyle(activeTab === 'leaderboard')}
           onClick={() => setActiveTab('leaderboard')}
         >
           Leaderboard
+        </button>
+        <button type="button" style={tabButtonStyle(activeTab === 'info')} onClick={() => setActiveTab('info')}>
+          Game Info
         </button>
       </div>
       {activeTab === 'leaderboard' && (

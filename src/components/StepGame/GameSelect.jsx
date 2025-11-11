@@ -442,7 +442,7 @@ style={{
             if (reexecuteActive) {
               reexecuteActive({ requestPolicy: 'network-only' })
             }
-          }}>Continue</ListButton>
+          }}>CONTINUE</ListButton>
        
         <ListButton 
         
@@ -478,7 +478,7 @@ style={{
             if (reexecuteLobby) {
               reexecuteLobby({ requestPolicy: 'network-only' })
             }
-          }}>Lobby</ListButton>
+          }}>LOBBY</ListButton>
 
         
 
@@ -513,7 +513,7 @@ style={{
               __gameCreateType: gameTypeId != null ? String(gameTypeId) : (prev?.__gameCreateType ?? '')
             }))
             onGameSelected?.(null, 'g_create')
-          }}>Create Game</ListButton>
+          }}>CREATE GAME</ListButton>
 
       </div>
 

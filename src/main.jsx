@@ -11,6 +11,7 @@ import { createClient as createWSClient } from 'graphql-ws';
 
 import { TransactionProvider } from './transactions/provider';
 import { PopupProvider } from "./popup/PopupProvider.jsx";
+import { TerminalWindowProvider } from './components/terminal/TerminalWindowProvider.jsx';
 
 
 const HASURA_HTTP = import.meta.env.VITE_HASURA_HTTP || 'https://vscapi.okinoko.io/hasura/v1/graphql';
@@ -57,11 +58,16 @@ const client = createClient({
 
 
 render(
-     <Provider value={client}>
+  <TerminalWindowProvider>
+  <Provider value={client}>
     <TransactionProvider>
-        <PopupProvider>
-        <App />
-        </PopupProvider>
+      <PopupProvider>
+        
+          <App />
+        
+      </PopupProvider>
     </TransactionProvider>
-    </Provider>,
-    document.getElementById('app'))
+  </Provider>
+  </TerminalWindowProvider>,
+  document.getElementById('app'),
+)

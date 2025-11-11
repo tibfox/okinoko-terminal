@@ -56,16 +56,27 @@ export default function MobileHeader({ title }) {
                 <BalanceDisplay account={`hive:${user}`} fontMult={1} />
                 <SettingsMenu />
       
-              </div>
+      </div>
 
       {/* --- Title below --- */}
-      <SlotText
-        text={title.toUpperCase().replace(/Ō/g, "ō")}
-        tag="h4"
-        interval={100}
-        baseDuration={150}
-        charDuration={50}
-      />
+      <div
+        style={{
+          width: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        <SlotText
+          text={title.toUpperCase().replace(/Ō/g, "ō")}
+          tag="h4"
+          interval={100}
+          baseDuration={150}
+          charDuration={50}
+          pad={false}
+          style={{
+            display: 'block',
+          }}
+        />
+      </div>
     </div>
   )
 }

@@ -50,6 +50,7 @@ export const GAME_MOVES_QUERY = gql`
       by
       cell
       indexer_block_height
+      indexer_ts
     }
     joins: okinoko_iarv2_joined_events(
       where: { id: { _eq: $gameId } }
