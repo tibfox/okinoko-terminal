@@ -152,23 +152,62 @@ const renderStatusIcon = (status) => {
   }
 }
 
+const getFirstOpData = (tx) => {
+  const opData = tx?.ops?.[0]?.data
+  if (!opData) {
+    return null
+  }
+  if (typeof opData === 'string') {
+    try {
+      return JSON.parse(opData)
+    } catch {
+      return null
+    }
+  }
+  return opData
+}
+
 const getOperationLabel = (tx) => {
   const primaryType = tx?.op_types?.[0]
   if (typeof primaryType === 'string' && primaryType.toLowerCase() === 'call_contract') {
-    const opData = tx?.ops?.[0]?.data
-    if (opData) {
-      try {
-        const parsedData = typeof opData === 'string' ? JSON.parse(opData) : opData
-        if (parsedData?.action) {
-          return parsedData.action
-        }
-      } catch {
-        // ignore JSON parse errors and fall back to op type
-      }
+    const parsedData = getFirstOpData(tx)
+    if (parsedData?.action) {
+      return parsedData.action
     }
   }
 
   return primaryType ?? tx?.type ?? '—'
+}
+
+const getAmountLabel = (tx) => {
+  const data = getFirstOpData(tx)
+  if (!data) {
+    return ''
+  }
+
+  if (data.amount != null) {
+    const assetSuffix = data.asset ? ` ${String(data.asset).toUpperCase()}` : ''
+    return `${data.amount}${assetSuffix}`
+  }
+
+  const intentsSource = data.intents
+  const intents = Array.isArray(intentsSource)
+    ? intentsSource
+    : typeof intentsSource === 'object' && intentsSource !== null
+      ? Object.values(intentsSource)
+      : []
+  if (intents.length) {
+    const transferAllowIntent = intents.find((intent) => intent?.type === 'transfer.allow')
+    if (transferAllowIntent) {
+      const { limit, token } = transferAllowIntent.args ?? transferAllowIntent
+      if (limit != null) {
+        const tokenSuffix = token ? ` ${String(token).toUpperCase()}` : ''
+        return `${limit}${tokenSuffix}`
+      }
+    }
+  }
+
+  return ''
 }
 
 export default function MonitorPanel() {
@@ -331,6 +370,7 @@ export default function MonitorPanel() {
               <th style={{ ...cellStyle, fontWeight: 600, width: '2rem' }} aria-label="status" />
               <th style={{ ...cellStyle, fontWeight: 600 }}>Account</th>
               <th style={{ ...cellStyle, fontWeight: 600 }}>Operation</th>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Amount</th>
               <th style={{ ...cellStyle, fontWeight: 600 }}>Height</th>
               <th style={{ ...cellStyle, fontWeight: 600 }}>Anchored</th>
             </tr>
@@ -341,6 +381,7 @@ export default function MonitorPanel() {
                 <td style={{ ...cellStyle, width: '2rem', textAlign: 'center' }}>{renderStatusIcon(tx.status)}</td>
                 <td style={cellStyle}>{tx.required_auths?.[0] ?? '—'}</td>
                 <td style={cellStyle}>{getOperationLabel(tx)}</td>
+                <td style={cellStyle}>{getAmountLabel(tx)}</td>
                 <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
                 <td style={cellStyle}>{formatLocalTime(tx.anchr_ts)}</td>
               </tr>

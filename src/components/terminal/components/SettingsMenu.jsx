@@ -6,9 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 import Menu from "../../buttons/MenuButton.jsx";
 import { PopupContext } from "../../../popup/context.js";
+import { useDeviceBreakpoint } from "../../../hooks/useDeviceBreakpoint.js";
 
 export default function SettingsMenu() {
   const popup = useContext(PopupContext);
+  const isMobile = useDeviceBreakpoint();
+  const showInlineControls = isMobile !== false;
 
   return (
     <Menu
@@ -38,19 +41,23 @@ export default function SettingsMenu() {
           }}
         >
           <tbody>
-            <tr>
-              <td > {/* ✅ column gap */}
-                <ColorPickerButton />
-              </td>
-              <td style={{ padding: "4px 0" }}>Theme</td> {/* ✅ row padding */}
-            </tr>
+            {showInlineControls && (
+              <>
+                <tr>
+                  <td>
+                    <ColorPickerButton />
+                  </td>
+                  <td style={{ padding: "4px 0" }}>Theme</td>
+                </tr>
 
-            <tr>
-              <td >
-                <SoundToggleButton />
-              </td>
-              <td style={{ padding: "4px 0" }}>Sound</td>
-            </tr>
+                <tr>
+                  <td>
+                    <SoundToggleButton />
+                  </td>
+                  <td style={{ padding: "4px 0" }}>Sound</td>
+                </tr>
+              </>
+            )}
             <tr>
               <td>
                 <button

@@ -13,6 +13,7 @@ import { HASURA_HTTP, HASURA_WS } from './lib/graphqlEndpoints.js'
 import { TransactionProvider } from './transactions/provider';
 import { PopupProvider } from "./popup/PopupProvider.jsx";
 import { TerminalWindowProvider } from './components/terminal/providers/TerminalWindowProvider.jsx';
+import { BackgroundEffectsProvider } from './components/backgrounds/BackgroundEffectsProvider.jsx';
 
 
 const wsClient = typeof window !== 'undefined'
@@ -56,14 +57,16 @@ const client = createClient({
 
 
 render(
-  <TerminalWindowProvider>
-    <Provider value={client}>
-      <TransactionProvider>
-        <PopupProvider>
-          <App />
-        </PopupProvider>
-      </TransactionProvider>
-    </Provider>
-  </TerminalWindowProvider>,
+  <BackgroundEffectsProvider>
+    <TerminalWindowProvider>
+      <Provider value={client}>
+        <TransactionProvider>
+          <PopupProvider>
+            <App />
+          </PopupProvider>
+        </TransactionProvider>
+      </Provider>
+    </TerminalWindowProvider>
+  </BackgroundEffectsProvider>,
   document.getElementById('app'),
 )

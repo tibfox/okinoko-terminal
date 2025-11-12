@@ -7,8 +7,10 @@ import {
   generateThemeShades,
 } from "../../../styles/colors";
 import { getColorCookie, setColorCookie } from "../../../lib/cookies";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPalette } from '@fortawesome/free-solid-svg-icons/faPalette';
 
-export default function ColorPickerButton({ isMobile}) {
+export default function ColorPickerButton({ isMobile, buttonStyle = {} }) {
   const inputRef = useRef(null);
   const savedColor = getColorCookie() || DEFAULT_COLOR;
   const [color, setColor] = useState(savedColor);
@@ -41,19 +43,9 @@ export default function ColorPickerButton({ isMobile}) {
     setColorCookie(newColor);
   };
 
-  const colorVars = [
-    "--color-primary-lightest",
-    "--color-primary-lighter",
-    "--color-primary",
-    "--color-primary-darker",
-    "--color-primary-darkest",
-  ];
 
-  return (
-    <button
-  onClick={handlePick}
-  title="Pick a theme color"
-  style={{
+
+  const baseButtonStyle = {
     background: "none",
     border: "none",
     padding: 0,
@@ -61,28 +53,15 @@ export default function ColorPickerButton({ isMobile}) {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-  }}
->
-  <div
-    style={{
-      width:"1.5rem",
-      height:"1.5rem",
-      borderRadius: "30%",
-      background: `
-        conic-gradient(
-          var(--color-primary-lightest) 0deg 72deg,
-          var(--color-primary-lighter) 72deg 144deg,
-          var(--color-primary) 144deg 216deg,
-          var(--color-primary-darker) 216deg 288deg,
-          var(--color-primary-darkest) 288deg 360deg
-        )
-      `,
-      boxShadow: "0 0 4px rgba(0,0,0,0.35)",
-      transition: "transform .2s ease",
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15)")}
-    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-  />
+  }
+
+  return (
+    <button
+      onClick={handlePick}
+      title="Pick a theme color"
+      style={{ ...baseButtonStyle, ...buttonStyle }}
+    >
+      <FontAwesomeIcon icon={faPalette} style={{ fontSize: '0.9rem' }} />
 
   <input
     ref={inputRef}

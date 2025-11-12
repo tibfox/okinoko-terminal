@@ -46,19 +46,19 @@ export default function SoundToggleButton({ style = {} }) {
       title={soundEnabled ? 'Mute sound' : 'Enable sound'}
     >
       {soundEnabled ? (
-        <span style={{ color: hovered?'var(--color-primary)':'var(--color-primary-darker)', }}>
-       <FontAwesomeIcon icon={faVolumeHigh} style={{fontSize: '1.5rem'}} />
-
+        <span style={{ color: 'var(--color-primary-darker)', }}>
+          <FontAwesomeIcon icon={faVolumeHigh} style={{ fontSize: '0.9rem' }} />
         </span>
       ) : (
         <span
           style={{
             position: 'relative',
             display: 'inline-block',
-            color: hovered?'var(--color-primary)':'var(--color-primary-darker)',
+            color: 'var(--color-primary-darker)',
           }}
         >
-          <span><FontAwesomeIcon icon={faVolumeXmark} /></span>
+          
+          <FontAwesomeIcon icon={faVolumeXmark} style={{ fontSize: '0.9rem' }} />
         </span>
       )}
     </button>

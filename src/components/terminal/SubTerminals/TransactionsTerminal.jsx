@@ -1,54 +1,25 @@
-import { useEffect, useState } from 'preact/hooks'
 import TerminalContainer from '../TerminalContainer.jsx'
 import TxQueuePopupBody from '../components/TxQueuePopupBody.jsx'
+import { getWindowDefaults } from '../windowDefaults.js'
 
-const DEFAULT_WIDTH = 420
-const DEFAULT_HEIGHT = 380
+const INITIAL_STATE = getWindowDefaults('tx-monitor')
 
 export default function TransactionsTerminal() {
-  const [initialState, setInitialState] = useState(null)
-
-  useEffect(() => {
-    const fallback = {
-      isMinimized: true,
-      dimensions: { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
-      position: null,
-    }
-
-    if (typeof window === 'undefined') {
-      setInitialState(fallback)
-      return
-    }
-
-    const padding = 400
-    const x = Math.max(24, window.innerWidth - DEFAULT_WIDTH - padding)
-    const y = 30
-
-    setInitialState({
-      ...fallback,
-      position: { x, y },
-    })
-  }, [])
-
-  if (!initialState) {
-    return null
-  }
-
   return (
     <TerminalContainer
       windowId="tx-monitor"
       title="Recent Transactions"
       titleOnMinimize="Tx"
-      initialState={initialState}
+      initialState={INITIAL_STATE}
       desktopBounds={{
-        minWidth: 360,
-        maxWidth: 720,
-        minHeight: 260,
+        minWidth: 240,
+        maxWidth: 1024,
+        minHeight: 240,
         maxHeight: 1024,
       }}
       desktopDefaultSize={{
-        width: DEFAULT_WIDTH,
-        height: DEFAULT_HEIGHT,
+        width: 324,
+        height: 324,
       }}
       backgroundColor="rgba(0, 0, 0, 0.8)"
       className="terminal--transactions"

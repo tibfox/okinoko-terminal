@@ -2,11 +2,26 @@ import DesktopHeader from './headers/DesktopHeader.jsx'
 import MobileHeader from './headers/MobileHeader.jsx'
 import CompactHeader from './headers/CompactHeader.jsx'
 
-import { useState, useEffect, useMemo, useRef } from 'preact/hooks'
+import { useState, useEffect, useMemo, useRef, useContext } from 'preact/hooks'
 import { createPortal } from 'preact/compat'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faWindowMinimize, faWindowMaximize, faCaretDown, faRotateLeft } from '@fortawesome/free-solid-svg-icons'
+import { PopupContext } from '../../popup/context.js'
+import {
+  faWindowMinimize,
+  faWindowMaximize,
+  faCaretDown,
+  faRotateLeft,
+  faLayerGroup,
+  faBookmark,
+  faTrash,
+  faPalette,
+  faCircleQuestion,
+} from '@fortawesome/free-solid-svg-icons'
 import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
+import { getWindowDefaults } from './windowDefaults.js'
+import { useBackgroundEffects } from '../backgrounds/BackgroundEffectsProvider.jsx'
+import ColorPickerButton from './headers/ColorPickerButton.jsx'
+import SoundToggleButton from './components/SoundToggleButton.jsx'
 
 const DESKTOP_MIN_WIDTH = 460
 const DESKTOP_MAX_WIDTH = 1400
@@ -24,7 +39,7 @@ export default function TerminalContainer({
   titleOnMinimize,
   children,
   windowId = 'primary',
-  initialState = {},
+  initialState: initialStateProp = null,
   desktopBounds: desktopBoundsProp = {},
   desktopDefaultSize: desktopDefaultSizeProp = {},
   viewportPadding = DEFAULT_VIEWPORT_PADDING,
@@ -38,6 +53,22 @@ export default function TerminalContainer({
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [gridCellSize, setGridCellSize] = useState(DEFAULT_GRID_CELL_SIZE)
+  const [selectedLayoutId, setSelectedLayoutId] = useState('')
+  const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false)
+  const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false)
+  
+  const hasCustomInitialState =
+    initialStateProp && typeof initialStateProp === 'object' && Object.keys(initialStateProp).length > 0
+  const resolvedInitialState = useMemo(() => {
+    if (hasCustomInitialState) {
+      return initialStateProp
+    }
+    return getWindowDefaults(windowId) ?? {}
+  }, [hasCustomInitialState, initialStateProp, windowId])
+  const resolvedInitialStateKey = useMemo(
+    () => JSON.stringify(resolvedInitialState ?? {}),
+    [resolvedInitialState],
+  )
   const {
     isMinimized,
     setIsMinimized,
@@ -49,20 +80,30 @@ export default function TerminalContainer({
     bringToFront,
     triggerLayoutReset,
     layoutResetToken,
-  } = useTerminalWindow(windowId, initialState)
+    layoutPresets,
+    applyLayoutPreset,
+    customLayouts = [],
+    saveCustomLayout,
+    deleteCustomLayout,
+  } = useTerminalWindow(windowId, resolvedInitialState)
+  const { effects: backgroundEffects = [], activeEffectId, setActiveEffectId } = useBackgroundEffects()
+  const popup = useContext(PopupContext)
 
   const canUseWindow = typeof window !== 'undefined'
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const positionRef = useRef(position ?? { x: 0, y: 0 })
   const resizeStartRef = useRef({ width: 0, height: 0, x: 0, y: 0 })
   const containerRef = useRef(null)
+  const layoutGalleryButtonRef = useRef(null)
+  const layoutMenuRef = useRef(null)
+  const backgroundButtonRef = useRef(null)
+  const backgroundMenuRef = useRef(null)
   const resetTokenRef = useRef(layoutResetToken)
-  const initialStateRef = useRef(initialState)
-  const initialStateKey = useMemo(() => JSON.stringify(initialState ?? {}), [initialState])
+  const initialStateRef = useRef(resolvedInitialState)
 
   useEffect(() => {
-    initialStateRef.current = initialState
-  }, [initialStateKey])
+    initialStateRef.current = resolvedInitialState
+  }, [resolvedInitialStateKey])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900)
@@ -70,6 +111,39 @@ export default function TerminalContainer({
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
+
+  useEffect(() => {
+    if (!isLayoutMenuOpen) {
+      return
+    }
+    const handlePointerDown = (event) => {
+      const target = event.target
+      if (
+        layoutGalleryButtonRef.current?.contains(target) ||
+        layoutMenuRef.current?.contains(target)
+      ) {
+        return
+      }
+      setIsLayoutMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true)
+  }, [isLayoutMenuOpen])
+
+  useEffect(() => {
+    if (!isBackgroundMenuOpen) {
+      return
+    }
+    const handlePointerDown = (event) => {
+      const target = event.target
+      if (backgroundButtonRef.current?.contains(target) || backgroundMenuRef.current?.contains(target)) {
+        return
+      }
+      setIsBackgroundMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true)
+  }, [isBackgroundMenuOpen])
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
   const getSafeGridSize = () => gridCellSize || DEFAULT_GRID_CELL_SIZE
@@ -369,35 +443,364 @@ export default function TerminalContainer({
           document.body,
         )
       : null
-  const resetLayoutButton =
-    windowId === 'primary' && !isMobile && canUseWindow
+  const handleLayoutSelect = (nextId) => {
+    setSelectedLayoutId(nextId)
+    if (nextId) {
+      applyLayoutPreset(nextId)
+    }
+    setIsLayoutMenuOpen(false)
+    setIsBackgroundMenuOpen(false)
+  }
+
+  const handleSaveLayout = () => {
+    if (windowId !== 'primary' || isMobile || !canUseWindow || !saveCustomLayout) {
+      return
+    }
+    const defaultName = `Layout ${customLayouts.length + 1}`
+    const proposedName = window.prompt('Save current layout as:', defaultName)
+    const trimmed = proposedName?.trim()
+    if (!trimmed) {
+      return
+    }
+    const created = saveCustomLayout(trimmed)
+    if (created?.id) {
+      setSelectedLayoutId(created.id)
+    }
+  }
+
+  const handleDeleteCustomLayout = (event, layoutId) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!deleteCustomLayout || !canUseWindow) {
+      return
+    }
+    const confirmed = window.confirm('Delete this saved layout?')
+    if (!confirmed) {
+      return
+    }
+    deleteCustomLayout(layoutId)
+    if (selectedLayoutId === layoutId) {
+      setSelectedLayoutId('')
+    }
+  }
+
+  const handleBackgroundSelect = (effectId) => {
+    if (typeof setActiveEffectId === 'function') {
+      setActiveEffectId(effectId)
+    }
+    setIsBackgroundMenuOpen(false)
+  }
+
+  const handleAboutClick = () => {
+    popup?.openPopup?.({
+      title: 'About Ōkinoko',
+      body: () => (
+        <p style={{ lineHeight: 1.5 }}>
+          This terminal and the Ōkinoko smart contracts are created by <b>@tibfox</b>. If you want to support his
+          development work, feel free to send him a donation on Magi or Hive. Every bit of help is deeply appreciated.
+        </p>
+      ),
+    })
+  }
+
+  const shouldShowControls = windowId === 'primary' && !isMobile && canUseWindow
+  const hasBackgroundEffects = backgroundEffects.length > 0 && Boolean(setActiveEffectId)
+  const floatingButtonStyle = {
+    width: '2rem',
+    height: '2rem',
+    borderRadius: '6px',
+    border: '2px solid var(--color-primary-darkest)',
+    background: '#000',
+    color: 'var(--color-primary-darker)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 0 18px var(--color-primary-darkest)',
+  }
+
+  const floatingControls =
+    shouldShowControls
       ? createPortal(
-          <button
-            type="button"
-            onClick={triggerLayoutReset}
-            onPointerDown={(event) => event.stopPropagation()}
-            aria-label="Reset layout"
-            title="Reset layout"
+          <div
             style={{
               position: 'fixed',
               top: '0.75rem',
               right: '0.75rem',
-              width: '2rem',
-              height: '2rem',
-              borderRadius: '6px',
-              border: '2px solid var(--color-primary-darkest)',
-              background: '#000',
-              color: 'var(--color-primary-darker)',
               display: 'flex',
+              gap: '0.5rem',
               alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 0 18px var(--color-primary-darkest)',
-              zIndex: 4,
+              zIndex: 10000,
             }}
           >
-            <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.9rem' }} />
-          </button>,
+            <div style={{ position: 'relative' }}>
+              <button
+                ref={layoutGalleryButtonRef}
+                type="button"
+                onClick={() => {
+                  setIsBackgroundMenuOpen(false)
+                  setIsLayoutMenuOpen((prev) => !prev)
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                aria-label="Layout gallery"
+                title="Layout gallery"
+                style={floatingButtonStyle}
+              >
+                <FontAwesomeIcon icon={faLayerGroup} style={{ fontSize: '0.9rem' }} />
+              </button>
+              {isLayoutMenuOpen && (
+                <div
+                  ref={layoutMenuRef}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    top: '2.5rem',
+                    right: 0,
+                    minWidth: '14rem',
+                    background: 'rgba(0, 0, 0, 0.95)',
+                    border: '2px solid var(--color-primary-darkest)',
+                    borderRadius: '8px',
+                    boxShadow: '0 0 18px var(--color-primary-darkest)',
+                    padding: '0.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem',
+                    zIndex: 10001,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--color-primary-lightest)',
+                      fontSize: '0.7rem',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Layout Gallery
+                  </span>
+                  <div
+                    style={{
+                      fontSize: '0.65rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: 'var(--color-primary)',
+                      marginTop: '0.25rem',
+                    }}
+                  >
+                    Presets
+                  </div>
+                  {layoutPresets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleLayoutSelect(preset.id)}
+                      style={{
+                        textAlign: 'left',
+                        border: '1px solid var(--color-primary-darkest)',
+                        borderRadius: '5px',
+                        padding: '0.4rem 0.5rem',
+                        background:
+                          selectedLayoutId === preset.id
+                            ? 'var(--color-primary-darkest)'
+                            : 'rgba(6, 6, 6, 0.9)',
+                        color: 'var(--color-primary-lighter)',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{preset.label}</div>
+                      {preset.description ? (
+                        <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>{preset.description}</div>
+                      ) : null}
+                    </button>
+                  ))}
+                  {customLayouts.length > 0 ? (
+                    <>
+                      <div
+                        style={{
+                          fontSize: '0.65rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: 'var(--color-primary)',
+                          marginTop: '0.4rem',
+                        }}
+                      >
+                        Saved Layouts
+                      </div>
+                      {customLayouts.map((layout) => (
+                        <div
+                          key={layout.id}
+                          style={{ display: 'flex', gap: '0.35rem', alignItems: 'stretch' }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleLayoutSelect(layout.id)}
+                            style={{
+                              flex: 1,
+                              textAlign: 'left',
+                              border: '1px solid var(--color-primary-darkest)',
+                              borderRadius: '5px',
+                              padding: '0.4rem 0.5rem',
+                              background:
+                                selectedLayoutId === layout.id
+                                  ? 'var(--color-primary-darkest)'
+                                  : 'rgba(6, 6, 6, 0.9)',
+                              color: 'var(--color-primary-lighter)',
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div style={{ fontWeight: 600 }}>{layout.label}</div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => handleDeleteCustomLayout(event, layout.id)}
+                            aria-label={`Delete ${layout.label}`}
+                            title="Delete saved layout"
+                            style={{
+                              width: '2.25rem',
+                              borderRadius: '5px',
+                              border: '1px solid var(--color-primary-darkest)',
+                              background: 'rgba(20, 20, 20, 0.95)',
+                              color: 'var(--color-primary-darker)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.75rem' }} />
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleSaveLayout}
+                    style={{
+                      marginTop: '0.45rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      border: '1px solid var(--color-primary-darkest)',
+                      borderRadius: '5px',
+                      padding: '0.45rem 0.6rem',
+                      background: 'rgba(0, 0, 0, 0.85)',
+                      color: 'var(--color-primary-lighter)',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faBookmark} style={{ fontSize: '0.8rem' }} />
+                    Save Current Layout
+                  </button>
+                </div>
+              )}
+            </div>
+            {hasBackgroundEffects ? (
+              <div style={{ position: 'relative' }}>
+                <button
+                  ref={backgroundButtonRef}
+                  type="button"
+                  onClick={() => {
+                    setIsLayoutMenuOpen(false)
+                    setIsBackgroundMenuOpen((prev) => !prev)
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  aria-label="Background effects"
+                  title="Background effects"
+                  style={floatingButtonStyle}
+                >
+                  <FontAwesomeIcon icon={faPalette} style={{ fontSize: '0.9rem' }} />
+                </button>
+                {isBackgroundMenuOpen && (
+                  <div
+                    ref={backgroundMenuRef}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      top: '2.5rem',
+                      right: 0,
+                      minWidth: '16rem',
+                      background: 'rgba(0, 0, 0, 0.95)',
+                      border: '2px solid var(--color-primary-darkest)',
+                      borderRadius: '8px',
+                      boxShadow: '0 0 18px var(--color-primary-darkest)',
+                      padding: '0.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem',
+                      zIndex: 10001,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: 'var(--color-primary-lightest)',
+                        fontSize: '0.7rem',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Background Effects
+                    </span>
+                    {backgroundEffects.map((effect) => (
+                      <button
+                        key={effect.id}
+                        type="button"
+                        onClick={() => handleBackgroundSelect(effect.id)}
+                        style={{
+                          textAlign: 'left',
+                          border: '1px solid var(--color-primary-darkest)',
+                          borderRadius: '5px',
+                          padding: '0.4rem 0.5rem',
+                          background:
+                            activeEffectId === effect.id
+                              ? 'var(--color-primary-darkest)'
+                              : 'rgba(6, 6, 6, 0.9)',
+                          color: 'var(--color-primary-lighter)',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>{effect.label}</div>
+                        {effect.description ? (
+                          <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>{effect.description}</div>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+            <div onPointerDown={(event) => event.stopPropagation()}>
+              <ColorPickerButton buttonStyle={floatingButtonStyle} />
+            </div>
+            <div onPointerDown={(event) => event.stopPropagation()}>
+              <SoundToggleButton style={floatingButtonStyle} />
+            </div>
+            <button
+              type="button"
+              onClick={handleAboutClick}
+              onPointerDown={(event) => event.stopPropagation()}
+              aria-label="About Ōkinoko"
+              title="About Ōkinoko"
+              style={floatingButtonStyle}
+            >
+              <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem' }} />
+            </button>
+            <button
+              type="button"
+              onClick={triggerLayoutReset}
+              onPointerDown={(event) => event.stopPropagation()}
+              aria-label="Reset layout"
+              title="Reset layout"
+              style={floatingButtonStyle}
+            >
+              <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.9rem' }} />
+            </button>
+          </div>,
           document.body,
         )
       : null
@@ -551,7 +954,7 @@ export default function TerminalContainer({
         )}
       </div>
       {gridOverlay}
-      {resetLayoutButton}
+      {floatingControls}
     </>
   )
 }

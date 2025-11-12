@@ -1,8 +1,11 @@
 import { createContext } from 'preact'
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { getWindowDefaults } from '../windowDefaults.js'
+import { LAYOUT_PRESETS, getLayoutPresetById } from '../layoutPresets.js'
 
 const COOKIE_NAME = 'okinoko_terminal_windows'
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+const CUSTOM_LAYOUT_COOKIE = 'okinoko_terminal_custom_layouts'
+const MAX_CUSTOM_LAYOUTS = 8
 
 const defaultWindowState = {
   isMinimized: false,
@@ -10,6 +13,17 @@ const defaultWindowState = {
   position: null,
   zIndex: 0,
 }
+
+const cloneWindowStateMap = (windows = {}) =>
+  Object.entries(windows).reduce((acc, [id, value]) => {
+    acc[id] = {
+      isMinimized: Boolean(value?.isMinimized),
+      dimensions: value?.dimensions ? { ...value.dimensions } : null,
+      position: value?.position ? { ...value.position } : null,
+      zIndex: typeof value?.zIndex === 'number' ? value.zIndex : 0,
+    }
+    return acc
+  }, {})
 
 const createDefaultState = (overrides = {}) => ({
   ...defaultWindowState,
@@ -23,6 +37,11 @@ const TerminalWindowContext = createContext({
   bringToFront: () => {},
   triggerLayoutReset: () => {},
   layoutResetToken: 0,
+  layoutPresets: LAYOUT_PRESETS,
+  customLayouts: [],
+  applyLayoutPreset: () => false,
+  saveCustomLayout: () => null,
+  deleteCustomLayout: () => {},
 })
 
 const readCookieState = () => {
@@ -51,13 +70,59 @@ const writeCookieState = (state) => {
   }
 
   const payload = encodeURIComponent(JSON.stringify(state))
-  document.cookie = `${COOKIE_NAME}=${payload}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
+  document.cookie = `${COOKIE_NAME}=${payload}; path=/; SameSite=Lax`
+}
+
+const readCustomLayouts = () => {
+  if (typeof document === 'undefined') {
+    return []
+  }
+
+  const cookie = document.cookie
+    .split('; ')
+    .find((entry) => entry.startsWith(`${CUSTOM_LAYOUT_COOKIE}=`))
+
+  if (!cookie) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(decodeURIComponent(cookie.split('=')[1]))
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+    return parsed
+      .filter((entry) => entry && typeof entry === 'object' && typeof entry.id === 'string')
+      .map((entry) => ({
+        id: entry.id,
+        label: typeof entry.label === 'string' && entry.label.trim() ? entry.label.trim() : 'Saved Layout',
+        windows: cloneWindowStateMap(entry.windows ?? {}),
+      }))
+  } catch {
+    return []
+  }
+}
+
+const writeCustomLayouts = (layouts) => {
+  if (typeof document === 'undefined') {
+    return
+  }
+  const payload = encodeURIComponent(JSON.stringify(layouts))
+  document.cookie = `${CUSTOM_LAYOUT_COOKIE}=${payload}; path=/; SameSite=Lax`
+}
+
+const sanitizeLayoutLabel = (label) => {
+  if (!label || typeof label !== 'string') {
+    return ''
+  }
+  return label.trim().slice(0, 40)
 }
 
 export function TerminalWindowProvider({ children }) {
   const [windows, setWindows] = useState({})
   const layerCounterRef = useRef(1)
   const [layoutResetToken, setLayoutResetToken] = useState(0)
+  const [customLayouts, setCustomLayouts] = useState(() => readCustomLayouts())
 
   useEffect(() => {
     const saved = readCookieState()
@@ -88,6 +153,10 @@ export function TerminalWindowProvider({ children }) {
     }
     writeCookieState(windows)
   }, [windows])
+
+  useEffect(() => {
+    writeCustomLayouts(customLayouts)
+  }, [customLayouts])
 
   const ensureWindow = useCallback((id, defaults = {}) => {
     setWindows((prev) => {
@@ -130,6 +199,66 @@ export function TerminalWindowProvider({ children }) {
     setLayoutResetToken((token) => token + 1)
   }, [])
 
+  const saveCustomLayout = useCallback(
+    (label) => {
+      const trimmedLabel = sanitizeLayoutLabel(label)
+      if (!trimmedLabel) {
+        return null
+      }
+      let createdLayout = null
+      setCustomLayouts((prev) => {
+        const nextLayout = {
+          id: `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          label: trimmedLabel,
+          windows: cloneWindowStateMap(windows),
+        }
+        createdLayout = nextLayout
+        const combined = [...prev, nextLayout]
+        if (combined.length > MAX_CUSTOM_LAYOUTS) {
+          return combined.slice(combined.length - MAX_CUSTOM_LAYOUTS)
+        }
+        return combined
+      })
+      return createdLayout
+    },
+    [windows],
+  )
+
+  const deleteCustomLayout = useCallback((layoutId) => {
+    setCustomLayouts((prev) => prev.filter((layout) => layout.id !== layoutId))
+  }, [])
+
+  const applyLayoutPreset = useCallback(
+    (presetId) => {
+      const preset =
+        getLayoutPresetById(presetId) ?? customLayouts.find((layout) => layout.id === presetId)
+      if (!preset) {
+        return false
+      }
+      const entries = Object.entries(preset.windows ?? {})
+    if (entries.length === 0) {
+      return false
+    }
+
+    let nextZ = 1
+    const nextWindows = entries.reduce((acc, [id, value]) => {
+      acc[id] = createDefaultState({
+        ...value,
+        dimensions: value?.dimensions ? { ...value.dimensions } : null,
+        position: value?.position ? { ...value.position } : null,
+        zIndex: nextZ,
+      })
+      nextZ += 1
+      return acc
+    }, {})
+
+    layerCounterRef.current = nextZ
+    setWindows(nextWindows)
+    return true
+  },
+  [customLayouts],
+)
+
   const contextValue = useMemo(
     () => ({
       windows,
@@ -138,8 +267,24 @@ export function TerminalWindowProvider({ children }) {
       bringToFront,
       triggerLayoutReset,
       layoutResetToken,
+      layoutPresets: LAYOUT_PRESETS,
+      customLayouts,
+      applyLayoutPreset,
+      saveCustomLayout,
+      deleteCustomLayout,
     }),
-    [windows, ensureWindow, updateWindow, bringToFront, triggerLayoutReset, layoutResetToken],
+    [
+      windows,
+      ensureWindow,
+      updateWindow,
+      bringToFront,
+      triggerLayoutReset,
+      layoutResetToken,
+      customLayouts,
+      applyLayoutPreset,
+      saveCustomLayout,
+      deleteCustomLayout,
+    ],
   )
 
   return (
@@ -157,15 +302,30 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     bringToFront: contextBringToFront,
     triggerLayoutReset,
     layoutResetToken,
+    applyLayoutPreset,
+    layoutPresets,
+    customLayouts,
+    saveCustomLayout,
+    deleteCustomLayout,
   } = useContext(TerminalWindowContext)
   const defaultsKey = useMemo(() => JSON.stringify(defaults), [defaults])
   const parsedDefaults = useMemo(() => (defaultsKey ? JSON.parse(defaultsKey) : {}), [defaultsKey])
+  const mergedDefaults = useMemo(() => {
+    const base = getWindowDefaults(windowId) ?? {}
+    if (!parsedDefaults || Object.keys(parsedDefaults).length === 0) {
+      return base
+    }
+    return {
+      ...base,
+      ...parsedDefaults,
+    }
+  }, [windowId, parsedDefaults])
 
   useEffect(() => {
-    ensureWindow(windowId, parsedDefaults)
-  }, [windowId, parsedDefaults, ensureWindow])
+    ensureWindow(windowId, mergedDefaults)
+  }, [windowId, mergedDefaults, ensureWindow])
 
-  const windowState = windows[windowId] ?? createDefaultState(parsedDefaults)
+  const windowState = windows[windowId] ?? createDefaultState(mergedDefaults)
 
   const setIsMinimized = useCallback(
     (value) => {
@@ -205,5 +365,21 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     bringToFront: () => contextBringToFront(windowId),
     triggerLayoutReset,
     layoutResetToken,
+    layoutPresets,
+    applyLayoutPreset,
+    customLayouts,
+    saveCustomLayout,
+    deleteCustomLayout,
   }
+}
+
+export const useTerminalLayouts = () => {
+  const {
+    layoutPresets,
+    applyLayoutPreset,
+    customLayouts,
+    saveCustomLayout,
+    deleteCustomLayout,
+  } = useContext(TerminalWindowContext)
+  return { layoutPresets, applyLayoutPreset, customLayouts, saveCustomLayout, deleteCustomLayout }
 }

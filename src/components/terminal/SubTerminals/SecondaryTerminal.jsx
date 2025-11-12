@@ -1,55 +1,27 @@
-import { useEffect, useState } from 'preact/hooks'
 import TerminalContainer from '../TerminalContainer.jsx'
 import MonitorPanel from './MonitorPanel.jsx'
+import { getWindowDefaults } from '../windowDefaults.js'
+
+const INITIAL_STATE = getWindowDefaults('aux-monitor')
 
 export default function SecondaryTerminal() {
-  const [initialState, setInitialState] = useState(null)
-
-  useEffect(() => {
-    const width = 480
-    const height = 320
-    const fallback = {
-      isMinimized: true,
-      dimensions: { width, height },
-      position: null,
-    }
-
-    if (typeof window === 'undefined') {
-      setInitialState(fallback)
-      return
-    }
-
-    setInitialState({
-      ...fallback,
-      position: {
-        x: Math.max(40, window.innerWidth - width - 80),
-        y: 30,
-      },
-    })
-  }, [])
-
-  if (!initialState) {
-    return null
-  }
-
   return (
     <TerminalContainer
       windowId="aux-monitor"
       title="Monitor"
       titleOnMinimize="Mon"
-      initialState={initialState}
+      initialState={INITIAL_STATE}
       desktopBounds={{
-        minWidth: 360,
-        maxWidth: 720,
+        minWidth: 240,
+        maxWidth: 1024,
         minHeight: 240,
         maxHeight: 1024,
       }}
       desktopDefaultSize={{
-        width: 520,
-        height: 320,
+        width: 576,
+        height: 540,
       }}
       viewportPadding={64}
-      
       className="terminal--monitor"
       style={{
         backdropFilter: 'blur(6px)',
