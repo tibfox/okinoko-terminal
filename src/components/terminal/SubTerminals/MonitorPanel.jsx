@@ -64,11 +64,7 @@ const ACCOUNT_CONSENSUS_QUERY = /* GraphQL */ `
 
 const POLL_INTERVAL_MS = 5000
 const MAX_ROWS = 40
-
-const DUMMY_BLOCKS = [
-  { height: 0, producer: 'pending', txCount: 0, note: 'Live feed coming soon' },
-  { height: 0, producer: 'pending', txCount: 0, note: 'Live feed coming soon' },
-]
+const BLOCKS_API_BASE_URL = 'https://vscapi.okinoko.io/backend/be-api/v1'
 
 const FINAL_STATUSES = new Set(['CONFIRMED', 'FAILED'])
 
@@ -210,12 +206,87 @@ const getAmountLabel = (tx) => {
   return ''
 }
 
+const parseNumeric = (value) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
+const extractLastBlockHeight = (propsData) => {
+  if (!propsData || typeof propsData !== 'object') {
+    return null
+  }
+  const candidates = [
+    propsData.l2_block_height,
+    propsData.l2BlockHeight,
+    propsData.last_irreversible_block_num,
+    propsData.last_block_id,
+  ]
+  for (const candidate of candidates) {
+    const parsed = parseNumeric(candidate)
+    if (parsed != null) {
+      return parsed
+    }
+  }
+  return null
+}
+
+const formatRelativeTime = (value) => {
+  if (!value) {
+    return '—'
+  }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+  const diffMs = Date.now() - date.getTime()
+  if (diffMs < 0) {
+    return 'just now'
+  }
+  const seconds = Math.floor(diffMs / 1000)
+  if (seconds < 60) {
+    return `${seconds}s ago`
+  }
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) {
+    return `${minutes}m ago`
+  }
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) {
+    return `${hours}h ago`
+  }
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+const formatBlockCid = (value, visibleChars = 13) => {
+  if (!value) {
+    return '—'
+  }
+  if (value.length <= visibleChars) {
+    return value
+  }
+  return `${value.slice(0, visibleChars)}..`
+}
+
+const formatTxId = (value, visibleChars = 6) => {
+  if (!value) {
+    return '—'
+  }
+  if (value.length <= visibleChars) {
+    return value
+  }
+  return `${value.slice(0, visibleChars)}...`
+}
+
 export default function MonitorPanel() {
   const [activeTab, setActiveTab] = useState('txs')
   const [transactions, setTransactions] = useState([])
   const [witnesses, setWitnesses] = useState([])
   const [witnessLoading, setWitnessLoading] = useState(false)
   const [witnessError, setWitnessError] = useState(null)
+  const [blocks, setBlocks] = useState([])
+  const [blocksLoading, setBlocksLoading] = useState(false)
+  const [blocksError, setBlocksError] = useState(null)
   const txQueryContext = useMemo(
     () => ({
       url: TRANSACTION_API_HTTP,
@@ -343,6 +414,64 @@ export default function MonitorPanel() {
     }
   }, [fetchWitnesses])
 
+  useEffect(() => {
+    let cancelled = false
+    const fetchBlocks = async () => {
+      if (cancelled) {
+        return
+      }
+      setBlocksLoading(true)
+      setBlocksError(null)
+      try {
+        const propsResponse = await fetch(`${BLOCKS_API_BASE_URL}/props`)
+        if (!propsResponse.ok) {
+          throw new Error(`Props request failed with ${propsResponse.status}`)
+        }
+        const propsData = await propsResponse.json()
+        const height = extractLastBlockHeight(propsData)
+        if (!Number.isFinite(height)) {
+          throw new Error('Unable to determine latest L2 block height')
+        }
+
+        const params = new URLSearchParams({
+          last_block_id: String(height),
+          count: '50',
+        })
+        const blocksResponse = await fetch(`${BLOCKS_API_BASE_URL}/blocks?${params.toString()}`)
+        if (!blocksResponse.ok) {
+          throw new Error(`Blocks request failed with ${blocksResponse.status}`)
+        }
+        const payload = await blocksResponse.json()
+        const rows = Array.isArray(payload) ? payload : []
+        rows.sort((a, b) => {
+          const blockA = parseNumeric(a?.be_info?.block_id) ?? 0
+          const blockB = parseNumeric(b?.be_info?.block_id) ?? 0
+          return blockB - blockA
+        })
+        if (!cancelled) {
+          setBlocks(rows)
+          setBlocksError(null)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setBlocks([])
+          setBlocksError(err)
+        }
+      } finally {
+        if (!cancelled) {
+          setBlocksLoading(false)
+        }
+      }
+    }
+
+    fetchBlocks()
+    const id = setInterval(fetchBlocks, POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
   const renderTxTable = () => {
     if (error) {
       return (
@@ -367,6 +496,7 @@ export default function MonitorPanel() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Tx</th>
               <th style={{ ...cellStyle, fontWeight: 600, width: '2rem' }} aria-label="status" />
               <th style={{ ...cellStyle, fontWeight: 600 }}>Account</th>
               <th style={{ ...cellStyle, fontWeight: 600 }}>Operation</th>
@@ -378,12 +508,35 @@ export default function MonitorPanel() {
           <tbody>
             {rows.map((tx) => (
               <tr key={tx.id}>
+                <td style={cellStyle}>
+                  {tx?.id ? (
+                    <a href={`https://vsc.techcoderx.com/tx/${tx.id}`} target="_blank" rel="noreferrer">
+                      {formatTxId(tx.id)}
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td style={{ ...cellStyle, width: '2rem', textAlign: 'center' }}>{renderStatusIcon(tx.status)}</td>
-                <td style={cellStyle}>{tx.required_auths?.[0] ?? '—'}</td>
+                <td style={cellStyle}>
+                  {tx.required_auths?.[0] ? (
+                    <a
+                      href={`https://vsc.techcoderx.com/address/hive:${tx.required_auths[0]}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {tx.required_auths[0]}
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td style={cellStyle}>{getOperationLabel(tx)}</td>
                 <td style={cellStyle}>{getAmountLabel(tx)}</td>
                 <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
-                <td style={cellStyle}>{formatLocalTime(tx.anchr_ts)}</td>
+                <td style={cellStyle} title={formatLocalTime(tx.anchr_ts)}>
+                  {formatRelativeTime(tx.anchr_ts)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -391,33 +544,6 @@ export default function MonitorPanel() {
       </div>
     )
   }
-
-  const renderDummyTable = (rows, columns) => (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column.key} style={{ ...cellStyle, fontWeight: 600 }}>
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr key={`${row.name ?? row.note}-${index}`}>
-              {columns.map((column) => (
-                <td key={column.key} style={cellStyle}>
-                  {row[column.key] ?? '—'}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
 
   const renderWitnessTable = () => {
     if (witnessError) {
@@ -448,7 +574,19 @@ export default function MonitorPanel() {
           <tbody>
             {witnesses.map((witness) => (
               <tr key={witness.account}>
-                <td style={cellStyle}>{witness.account}</td>
+                <td style={cellStyle}>
+                  {witness?.account ? (
+                    <a
+                      href={`https://vsc.techcoderx.com/address/hive:${witness.account}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {witness.account}
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td style={cellStyle}>{formatWeight(witness.weight)}</td>
               </tr>
             ))}
@@ -458,15 +596,88 @@ export default function MonitorPanel() {
     )
   }
 
+  const renderBlocksTable = () => {
+    if (blocksError) {
+      return (
+        <div style={{ color: '#ff6464', fontSize: '0.9rem' }}>
+          Failed to load blocks. Retrying...
+        </div>
+      )
+    }
+
+    if (!blocks.length && blocksLoading) {
+      return <div style={{ fontSize: '0.9rem' }}>Loading latest blocks...</div>
+    }
+
+    if (!blocks.length) {
+      return <div style={{ fontSize: '0.9rem' }}>No block data yet.</div>
+    }
+
+    return (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Block</th>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Proposer</th>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>Timestamp</th>
+              <th style={{ ...cellStyle, fontWeight: 600 }}>CID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {blocks.map((block) => {
+              const blockId = parseNumeric(block?.be_info?.block_id) ?? '—'
+              const proposer = block?.proposer ?? '—'
+              const ts = block?.be_info?.ts ?? block?.ts
+              const cid = block?.block
+              const rowKey = `${blockId}-${cid ?? Math.random()}`
+              const blockUrl = Number.isFinite(blockId) ? `https://vsc.techcoderx.com/block/${blockId}` : null
+              const proposerUrl = proposer && proposer !== '—'
+                ? `https://vsc.techcoderx.com/address/hive:${proposer}`
+                : null
+              return (
+                <tr key={rowKey}>
+                  <td style={cellStyle}>
+                    {blockUrl ? (
+                      <a href={blockUrl} target="_blank" rel="noreferrer">
+                        {blockId}
+                      </a>
+                    ) : (
+                      blockId
+                    )}
+                  </td>
+                  <td style={cellStyle}>
+                    {proposerUrl ? (
+                      <a href={proposerUrl} target="_blank" rel="noreferrer">
+                        {proposer}
+                      </a>
+                    ) : (
+                      proposer
+                    )}
+                  </td>
+                  <td style={cellStyle}>{formatRelativeTime(ts)}</td>
+                  <td style={cellStyle}>
+                    {blockUrl ? (
+                      <a href={blockUrl} target="_blank" rel="noreferrer">
+                        {formatBlockCid(cid)}
+                      </a>
+                    ) : (
+                      formatBlockCid(cid)
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
   const renderActiveContent = () => {
     switch (activeTab) {
       case 'blocks':
-        return renderDummyTable(DUMMY_BLOCKS, [
-          { key: 'height', label: 'Height' },
-          { key: 'producer', label: 'Producer' },
-          { key: 'txCount', label: 'Txs' },
-          { key: 'note', label: 'Status' },
-        ])
+        return renderBlocksTable()
       case 'witnesses':
         return renderWitnessTable()
       case 'txs':
@@ -488,7 +699,7 @@ export default function MonitorPanel() {
               padding: '0.35rem 0.85rem',
               borderRadius: '6px',
               border: '1px solid var(--color-primary-dark)',
-              background: activeTab === tab.id ? 'var(--color-primary-darkest)' : 'transparent',
+              background: activeTab === tab.id ? 'var(--color-primary-darkest)' : 'rgba(0, 0, 0, 0.4)',
               color: 'var(--color-primary)',
               fontWeight: 600,
               cursor: 'pointer',

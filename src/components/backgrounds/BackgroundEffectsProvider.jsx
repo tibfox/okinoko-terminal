@@ -16,8 +16,8 @@ export const BACKGROUND_EFFECTS = [
   },
   {
     id: 'color-bends',
-    label: 'Color Bends',
-    description: 'Flowing neon ribbons of color.',
+    label: 'Color Balls',
+    description: 'Flowing neon balls of color.',
     component: ColorBendsEffect,
   },
   {
@@ -26,12 +26,12 @@ export const BACKGROUND_EFFECTS = [
     description: 'Vertical light threads drifting across the screen.',
     component: ThreadsEffect,
   },
-  {
-    id: 'dark-veil',
-    label: 'Dark Veil',
-    description: 'Slow, moody aurora-style veils.',
-    component: DarkVeilEffect,
-  },
+  // {
+  //   id: 'dark-veil',
+  //   label: 'Dark Shine',
+  //   description: 'Slow, moody aurora-style shine.',
+  //   component: DarkVeilEffect,
+  // },
   {
     id: 'terminal',
     label: 'Terminal',

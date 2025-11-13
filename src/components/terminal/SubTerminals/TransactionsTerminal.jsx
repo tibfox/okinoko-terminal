@@ -21,7 +21,7 @@ export default function TransactionsTerminal() {
         width: 324,
         height: 324,
       }}
-      backgroundColor="rgba(0, 0, 0, 0.8)"
+      backgroundColor="rgba(0, 0, 0, 0.7)"
       className="terminal--transactions"
       style={{
         backdropFilter: 'blur(4px)',

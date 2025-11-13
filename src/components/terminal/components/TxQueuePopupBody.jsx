@@ -85,7 +85,12 @@
               cursor: txs.length === 0 ? "not-allowed" : "pointer"
             }}
           >
-            Delete all
+             <FontAwesomeIcon
+                    icon={faTrash}
+                    style={{ marginLeft: "auto", alignContent: "right" }}
+                    title="Remove from list"
+                    onClick={() => removeTransaction(tx.id)}
+                  /> all
           </button>
         </div>
 

@@ -15,6 +15,7 @@ import {
   faBookmark,
   faTrash,
   faPalette,
+  faTornado,
   faCircleQuestion,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
@@ -713,7 +714,7 @@ export default function TerminalContainer({
                   title="Background effects"
                   style={floatingButtonStyle}
                 >
-                  <FontAwesomeIcon icon={faPalette} style={{ fontSize: '0.9rem' }} />
+                  <FontAwesomeIcon icon={faTornado} style={{ fontSize: '0.9rem' }} />
                 </button>
                 {isBackgroundMenuOpen && (
                   <div
@@ -790,7 +791,7 @@ export default function TerminalContainer({
             >
               <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem' }} />
             </button>
-            <button
+            {/* <button
               type="button"
               onClick={triggerLayoutReset}
               onPointerDown={(event) => event.stopPropagation()}
@@ -799,7 +800,7 @@ export default function TerminalContainer({
               style={floatingButtonStyle}
             >
               <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.9rem' }} />
-            </button>
+            </button> */}
           </div>,
           document.body,
         )

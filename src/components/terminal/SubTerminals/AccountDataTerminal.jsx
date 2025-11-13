@@ -11,6 +11,7 @@ export default function AccountDataTerminal() {
       title="Account Data"
       titleOnMinimize="Acc"
       initialState={INITIAL_STATE}
+      backgroundColor="rgba(0, 0, 0, 0.7)"
       desktopBounds={{
         minWidth: 150,
         maxWidth: 1024,

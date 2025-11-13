@@ -24,7 +24,7 @@ export const LAYOUT_PRESETS = [
   {
     id: 'default-control',
     label: 'Control Deck (Default)',
-    description: 'Matches today’s live desktop layout.',
+    description: 'General purpose layout.',
     windows: cloneWindows(TERMINAL_WINDOW_DEFAULTS),
   },
   {
