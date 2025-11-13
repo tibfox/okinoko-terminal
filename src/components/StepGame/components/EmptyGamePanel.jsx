@@ -5,6 +5,7 @@ import {
   PLAYER_LEADERBOARD_SEASON_QUERY,
 } from '../../../data/inarow_gql.js'
 import { GAME_TYPE_OPTIONS } from '../gameTypes.js'
+import { Tabs } from '../../common/Tabs.jsx'
 
 const DEFAULT_LEADERBOARD_GAME_TYPE = GAME_TYPE_OPTIONS[0]?.id ?? 1
 
@@ -211,18 +212,14 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button
-          type="button"
-          style={tabButtonStyle(activeTab === 'leaderboard')}
-          onClick={() => setActiveTab('leaderboard')}
-        >
-          Leaderboard
-        </button>
-        <button type="button" style={tabButtonStyle(activeTab === 'info')} onClick={() => setActiveTab('info')}>
-          Game Info
-        </button>
-      </div>
+     <Tabs
+  tabs={[
+    { id: 'leaderboard', label: 'Leaderboard' },
+    { id: 'info', label: 'Game Info' },
+  ]}
+  activeTab={activeTab}
+  onChange={setActiveTab}
+/>
       {activeTab === 'leaderboard' && (
         <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
           {[

@@ -2,6 +2,7 @@ import { createContext } from 'preact'
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { getWindowDefaults } from '../windowDefaults.js'
 import { LAYOUT_PRESETS, getLayoutPresetById } from '../layoutPresets.js'
+import { convertWindowMapToPixels } from '../layoutUnits.js'
 
 const COOKIE_NAME = 'okinoko_terminal_windows'
 const CUSTOM_LAYOUT_COOKIE = 'okinoko_terminal_custom_layouts'
@@ -230,34 +231,38 @@ export function TerminalWindowProvider({ children }) {
 
   const applyLayoutPreset = useCallback(
     (presetId) => {
-      const preset =
-        getLayoutPresetById(presetId) ?? customLayouts.find((layout) => layout.id === presetId)
+      const builtinPreset = getLayoutPresetById(presetId)
+      const preset = builtinPreset ?? customLayouts.find((layout) => layout.id === presetId)
       if (!preset) {
         return false
       }
-      const entries = Object.entries(preset.windows ?? {})
-    if (entries.length === 0) {
-      return false
-    }
 
-    let nextZ = 1
-    const nextWindows = entries.reduce((acc, [id, value]) => {
-      acc[id] = createDefaultState({
-        ...value,
-        dimensions: value?.dimensions ? { ...value.dimensions } : null,
-        position: value?.position ? { ...value.position } : null,
-        zIndex: nextZ,
-      })
-      nextZ += 1
-      return acc
-    }, {})
+      const windowsSource = builtinPreset
+        ? convertWindowMapToPixels(builtinPreset.windows ?? {})
+        : cloneWindowStateMap(preset.windows ?? {})
+      const entries = Object.entries(windowsSource)
+      if (entries.length === 0) {
+        return false
+      }
 
-    layerCounterRef.current = nextZ
-    setWindows(nextWindows)
-    return true
-  },
-  [customLayouts],
-)
+      let nextZ = 1
+      const nextWindows = entries.reduce((acc, [id, value]) => {
+        acc[id] = createDefaultState({
+          ...value,
+          dimensions: value?.dimensions ? { ...value.dimensions } : null,
+          position: value?.position ? { ...value.position } : null,
+          zIndex: nextZ,
+        })
+        nextZ += 1
+        return acc
+      }, {})
+
+      layerCounterRef.current = nextZ
+      setWindows(nextWindows)
+      return true
+    },
+    [customLayouts],
+  )
 
   const contextValue = useMemo(
     () => ({

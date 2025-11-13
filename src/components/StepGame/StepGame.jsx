@@ -15,6 +15,7 @@ import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import { usePendingTransaction } from './hooks/usePendingTransaction.js'
 import { useGameSelection } from './hooks/useGameSelection.js'
 import { deriveGameTypeId } from './gameTypes.js'
+import { Tabs } from '../common/Tabs.jsx'
 
 const resolveBrowseLabel = (activeGame, mode) => {
   if (!activeGame) return 'BROWSE'
@@ -125,12 +126,15 @@ export default function StepGame({
     titleOnMinimize="Function"
     backgroundColor="rgba(0, 0, 0, 0.5)"
     >
-      <MobileTabs
-        visible={isMobile}
-        tabs={mobileTabs}
-        activeTab={activePage}
-        onChange={setActivePage}
-      />
+     {isMobile && (
+  <div style={{ marginBottom: '8px' }}>
+    <Tabs
+      tabs={mobileTabs}
+      activeTab={activePage}
+      onChange={setActivePage}
+    />
+  </div>
+)}
 
       <ResumedTransactionBanner tx={resumedTx} />
 

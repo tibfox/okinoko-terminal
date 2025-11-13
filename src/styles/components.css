@@ -100,6 +100,31 @@ select {
     background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
 }
 
+.cyber-subheader {
+    --tile-width: 100%;
+    --tile-padding-hor: 20px;
+    --tile-padding-vert: 10px;
+    --tile-edges: 10px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
+   --og-clip-path: polygon(
+    var(--tile-edges) 0,                 /* cut top-left */
+    100% 0,
+    100% calc(100% - var(--tile-edges)), /* full top/right edges */
+    calc(100% - var(--tile-edges)) 100%, /* cut bottom-right */
+    0 100%,
+    0 var(--tile-edges)
+);
+
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
+    padding-bottom: var(--tile-edges);
+    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+    margin: 0;
+  
+}
+
 .cyber-popup {
     --tile-width: 33%;
     --tile-padding-hor: 2px;

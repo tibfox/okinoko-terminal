@@ -1,3 +1,5 @@
+import { convertWindowLayoutToPixels } from './layoutUnits.js'
+
 const TERMINAL_WINDOW_DEFAULTS = Object.freeze({
   primary: {
     isMinimized: false,
@@ -33,10 +35,11 @@ export const getWindowDefaults = (windowId) => {
   if (!defaults) {
     return null
   }
+  const resolved = convertWindowLayoutToPixels(defaults)
   return {
-    ...defaults,
-    dimensions: clone(defaults.dimensions),
-    position: clone(defaults.position),
+    ...resolved,
+    dimensions: clone(resolved.dimensions),
+    position: clone(resolved.position),
   }
 }
 

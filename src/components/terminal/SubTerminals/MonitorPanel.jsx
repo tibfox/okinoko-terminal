@@ -5,6 +5,9 @@ import {  faCheckCircle,   faHourglass } from '@fortawesome/free-solid-svg-icons
 import {   faCircleXmark } from '@fortawesome/free-regular-svg-icons'
 import { TRANSACTION_API_HTTP } from '../../../lib/graphqlEndpoints.js'
 
+import { Tabs } from '../../common/Tabs.jsx'
+
+
 const FIND_TRANSACTION_QUERY = /* GraphQL */ `
   query FindTransaction($filterOptions: TransactionFilter) {
     findTransaction(filterOptions: $filterOptions) {
@@ -62,7 +65,9 @@ const ACCOUNT_CONSENSUS_QUERY = /* GraphQL */ `
   }
 `
 
-const POLL_INTERVAL_MS = 5000
+const WI_POLL_INTERVAL_MS = 60000
+const BE_POLL_INTERVAL_MS = 15000
+const TX_POLL_INTERVAL_MS = 5000
 const MAX_ROWS = 40
 const BLOCKS_API_BASE_URL = 'https://vscapi.okinoko.io/backend/be-api/v1'
 
@@ -335,7 +340,7 @@ export default function MonitorPanel() {
   useEffect(() => {
     const id = setInterval(() => {
       reexecuteQuery({ requestPolicy: 'network-only', context: txQueryContext })
-    }, POLL_INTERVAL_MS)
+    }, TX_POLL_INTERVAL_MS)
     return () => clearInterval(id)
   }, [reexecuteQuery, txQueryContext])
 
@@ -407,7 +412,7 @@ export default function MonitorPanel() {
       await fetchWitnesses()
     }
     wrapFetch()
-    const id = setInterval(fetchWitnesses, POLL_INTERVAL_MS)
+    const id = setInterval(fetchWitnesses, WI_POLL_INTERVAL_MS)
     return () => {
       cancelled = true
       clearInterval(id)
@@ -465,7 +470,7 @@ export default function MonitorPanel() {
     }
 
     fetchBlocks()
-    const id = setInterval(fetchBlocks, POLL_INTERVAL_MS)
+    const id = setInterval(fetchBlocks, BE_POLL_INTERVAL_MS)
     return () => {
       cancelled = true
       clearInterval(id)
@@ -688,27 +693,11 @@ export default function MonitorPanel() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, minHeight: 0 }}>
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              flex: '0 0 auto',
-              padding: '0.35rem 0.85rem',
-              borderRadius: '6px',
-              border: '1px solid var(--color-primary-dark)',
-              background: activeTab === tab.id ? 'var(--color-primary-darkest)' : 'rgba(0, 0, 0, 0.4)',
-              color: 'var(--color-primary)',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+  tabs={TABS}
+  activeTab={activeTab}
+  onChange={setActiveTab}
+/>
 
       <div style={{ flex: 1, minHeight: 0 }}>{renderActiveContent()}</div>
     </div>

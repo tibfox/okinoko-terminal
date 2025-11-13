@@ -1,3 +1,6 @@
+/* Retro pixel font for TicTacToe stones */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 :root {
 --color-primary: hsl(180, 100%, 40%);
   --color-primary-darker: hsl(180, 100%, 20%);
@@ -5,3 +8,4 @@
   --color-primary-lighter: hsl(180, 100%, 60%);
   --color-primary-lightest: hsl(180, 100%, 70%);
 }
+

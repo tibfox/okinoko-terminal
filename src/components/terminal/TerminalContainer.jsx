@@ -847,7 +847,11 @@ export default function TerminalContainer({
           minHeight: isMinimized ? 'auto' : undefined,
           transition: isDragging || isResizing ? 'none' : 'transform 120ms ease-out',
           cursor: !isMobile && isDragging ? 'grabbing' : undefined,
-          boxShadow: isFloating ? '0 0 25px var(--color-primary-darkest)' : undefined,
+          
+          boxShadow: isFloating ? isDragging || isResizing?'0 0 50px var(--color-primary-darker)':'0 0 25px var(--color-primary-darkest)' : undefined,
+
+
+
           zIndex: isFloating ? zIndex || 2 : 1,
           ...(resolvedBackground ? { background: resolvedBackground } : {}),
           ...(resolvedBackdrop ? { backdropFilter: resolvedBackdrop } : {}),
@@ -954,7 +958,7 @@ export default function TerminalContainer({
           </button>
         )}
       </div>
-      {gridOverlay}
+      {/* {gridOverlay} */}
       {floatingControls}
     </>
   )

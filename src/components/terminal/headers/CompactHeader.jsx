@@ -57,7 +57,7 @@ export default function CompactHeader({
           style={{
             margin: 0,
             marginRight: '75px',
-            fontFamily: "'Share Tech Mono',monospace",
+            // fontFamily: "'Share Tech Mono',monospace",
             textTransform: 'uppercase',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',

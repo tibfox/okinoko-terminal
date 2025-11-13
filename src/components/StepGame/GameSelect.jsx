@@ -11,6 +11,7 @@ import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY, IAR_EVENTS_SUBSCRIPTION } f
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import { GAME_TYPE_IDS, typeNameFromId, deriveGameTypeId } from './gameTypes.js'
+import { Tabs } from '../common/Tabs.jsx'
 
 const ensureHiveAddress = (value) =>
   !value ? null : value.startsWith('hive:') ? value : `hive:${value}`
@@ -251,7 +252,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
 
     return (
       <>
-        <h4>{type == 'join'?'Join a New Game':'Continue a Game'}</h4>
+        {/* {type == 'join'?'Join a New Game':'Continue a Game'}: */}
         <div class="game-selection-table">
           <table style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead>
@@ -391,130 +392,48 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingRight: isMobile ? '0' : '10px' }}>
 
-      {/* Header */}
-      <table style={{ width: '100%', tableLayout: 'fixed' }}>
-         <colgroup>
-                <col style={{ width: '25%' }} />
-                <col style={{ width: '70%' }} />
-                
-              </colgroup>
-        <tbody>
-          <tr><td><strong>User:</strong></td><td>{user}</td></tr>
-          <tr><td><strong>Contract:</strong></td><td>{contract?.name}</td></tr>
-          <tr><td><strong>Game Type:</strong></td><td>{fn?.friendlyName}</td></tr>
-        </tbody>
-      </table>
+     
+        <div 
+         style={{ marginBottom: '15px' }}
+        >
+        <Tabs
+          tabs={[
+            { id: 'continue', label: 'Continue' },
+            { id: 'g_join', label: 'Lobby' },
+            { id: 'create', label: 'Create Game' },
+          ]}
+          activeTab={view}
+          onChange={(tabId) => {
+            setView(tabId)
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', margin: '15px 0' }}>
-       <ListButton 
-       
-      //  style={{ opacity: view === 'continue' ? 1 : 0.5 }}
-style={{
-            backgroundColor:
-              view === 'continue'
-                ? 'var(--color-primary-darker)'
-                : 'var(--color-primary-darkest)',
-            color:
-              view === 'continue'
-                ? 'var(--color-primary-lightest)'
-                : 'var(--color-primary-lighter)',
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            padding: '0.5em 1em',
-            // border: 'none',
-            // borderRadius: '2px',
-            cursor: 'pointer',
-
-            // 👇 prevent full-width stretch
-            // display: 'inline-flex',
-            // flex: '0 0 auto',
-            // width: 'auto',
-          }}
-
-          onClick={() => {
-            setView('continue')
-            setParams(prev => ({
-              __gameAction: null,
-              __gameId: null,
-            }))
-            onGameSelected?.(null, null)
-            if (reexecuteActive) {
-              reexecuteActive({ requestPolicy: 'network-only' })
+            if (tabId === 'continue') {
+              setParams((prev) => ({ __gameAction: null, __gameId: null }))
+              onGameSelected?.(null, null)
+              reexecuteActive?.({ requestPolicy: 'network-only' })
             }
-          }}>CONTINUE</ListButton>
-       
-        <ListButton 
-        
-        style={{
-            backgroundColor:
-              view === 'g_join'
-                ? 'var(--color-primary-darker)'
-                : 'var(--color-primary-darkest)',
-            color:
-              view === 'g_join'
-                ? 'var(--color-primary-lightest)'
-                : 'var(--color-primary-lighter)',
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            padding: '0.5em 1em',
-            // border: 'none',
-            // borderRadius: '2px',
-            cursor: 'pointer',
 
-            // 👇 prevent full-width stretch
-            // display: 'inline-flex',
-            // flex: '0 0 auto',
-            // width: 'auto',
-          }}
-
-          onClick={() => {
-            setView('g_join')
-            setParams(prev => ({
-              __gameAction: 'g_join',
-              __gameId: null,
-            }))
-            onGameSelected?.(null, null)
-            if (reexecuteLobby) {
-              reexecuteLobby({ requestPolicy: 'network-only' })
+            if (tabId === 'g_join') {
+              setParams((prev) => ({
+                __gameAction: 'g_join',
+                __gameId: null,
+              }))
+              onGameSelected?.(null, null)
+              reexecuteLobby?.({ requestPolicy: 'network-only' })
             }
-          }}>LOBBY</ListButton>
 
-        
-
-        <ListButton 
-
-         style={{
-            backgroundColor:
-              view === 'create'
-                ? 'var(--color-primary-darker)'
-                : 'var(--color-primary-darkest)',
-            color:
-              view === 'create'
-                ? 'var(--color-primary-lightest)'
-                : 'var(--color-primary-lighter)',
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            padding: '0.5em 1em',
-            // border: 'none',
-            // borderRadius: '2px',
-            cursor: 'pointer',
-
-            // 👇 prevent full-width stretch
-            // display: 'inline-flex',
-            // flex: '0 0 auto',
-            // width: 'auto',
+            if (tabId === 'create') {
+              setParams((prev) => ({
+                __gameAction: 'g_create',
+                __gameId: null,
+                __gameCreateType:
+                  gameTypeId != null
+                    ? String(gameTypeId)
+                    : prev?.__gameCreateType ?? '',
+              }))
+              onGameSelected?.(null, 'g_create')
+            }
           }}
-          onClick={() => {
-            setView('create')
-            setParams(prev => ({
-              __gameAction: 'g_create',
-              __gameId: null,
-              __gameCreateType: gameTypeId != null ? String(gameTypeId) : (prev?.__gameCreateType ?? '')
-            }))
-            onGameSelected?.(null, 'g_create')
-          }}>CREATE GAME</ListButton>
-
+        />
       </div>
 
       {/* Create form */}

@@ -22,11 +22,11 @@ const cellLabelStyle = {
   letterSpacing: '0.04em',
   color: 'var(--color-primary-lighter)',
   padding: '0.25rem 0.35rem 0.25rem 0',
-  width: '40%',
+  width: '70%',
 }
 
 const cellValueStyle = {
-  padding: '0.25rem 0.35rem',
+  padding: '0.25rem 0.1rem',
   color: 'var(--color-primary-lighter)',
 }
 

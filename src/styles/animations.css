@@ -86,3 +86,17 @@
   0%   { background-position: 200% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+.board-cell {
+  transition: background 500ms ease ,  border 700ms ease !important;
+}
+
+.board-cell.clickable:hover {  
+  border: 1px solid var(--color-primary) !important;
+  background-color: color-mix(in srgb, var(--color-primary-darker) 30%, black) !important;
+}
+
+/* Disable cursor on non-clickable cells */
+.board-cell:not(.clickable) {
+  cursor: not-allowed;
+}

@@ -22,9 +22,10 @@ export const AiohaPage = () => {
         {user ?? 'Connect Wallet'}
         
       </NeonButton>
-
+<div className="aioha-modal-theme">
       <AiohaModal
         displayed={modalDisplayed}
+       
         loginOptions={{
           msg: 'Login',
           keyType: KeyTypes.Active,
@@ -33,6 +34,7 @@ export const AiohaPage = () => {
         onLogin={console.log}
         onClose={() => setModalDisplayed(false)}
       />
+      </div>
     </>
   )
 }

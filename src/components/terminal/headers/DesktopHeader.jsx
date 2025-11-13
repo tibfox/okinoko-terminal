@@ -94,8 +94,8 @@ export default function DesktopHeader({
               gap: "0.5rem",
             }}
           >
-            <BalanceDisplay account={`hive:${user}`} fontMult={1} />
-            <SettingsMenu />
+            {/* <BalanceDisplay account={`hive:${user}`} fontMult={1} />
+            <SettingsMenu /> */}
           </div>
         )}
       </div>
