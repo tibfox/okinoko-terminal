@@ -16,16 +16,39 @@ import { TerminalWindowProvider } from './components/terminal/providers/Terminal
 import { BackgroundEffectsProvider } from './components/backgrounds/BackgroundEffectsProvider.jsx';
 
 
-const wsClient = typeof window !== 'undefined'
-  ? createWSClient({
-      url: HASURA_WS,
-      connectionParams: {
-        headers: {
-          'x-hasura-role': 'public',
-        },
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const shouldRetryConnection = (eventOrErr) => {
+  if (!eventOrErr) return true;
+  if (typeof eventOrErr === 'object' && 'code' in eventOrErr) {
+    const code = eventOrErr.code;
+    if (typeof code === 'number' && code >= 4400 && code < 4500) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const createWsClientInstance = () =>
+  createWSClient({
+    url: HASURA_WS,
+    connectionParams: {
+      headers: {
+        'x-hasura-role': 'public',
       },
-    })
-  : null;
+    },
+    lazy: false,
+    retryAttempts: Infinity,
+    shouldRetry: shouldRetryConnection,
+    retryWait: async (attempt) => {
+      const cappedAttempt = Math.min(attempt, 5);
+      const backoff = 1000 * 2 ** cappedAttempt;
+      const jitter = Math.random() * 300;
+      await wait(Math.min(backoff + jitter, 10000));
+    },
+  });
+
+const wsClient = typeof window !== 'undefined' ? createWsClientInstance() : null;
 
 const client = createClient({
   url: HASURA_HTTP,
