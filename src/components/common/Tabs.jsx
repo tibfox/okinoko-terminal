@@ -4,7 +4,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
   const tabButtonStyle = (active) => ({
     flex: 1,
     padding: '10px 12px',
-    background: active ? 'var(--color-primary-darkest)' : 'transparent',
+    background: active ? 'var(--color-primary-darker)' : 'transparent',
     color: active ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
     border: '1px solid var(--color-primary-darkest)',
     cursor: 'pointer',

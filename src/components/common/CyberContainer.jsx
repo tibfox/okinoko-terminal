@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 
-export function CyberContainer({ title, children, defaultCollapsed = false }) {
+export function CyberContainer({ title, children, defaultCollapsed = false, maxContentHeight = '200px' }) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
 
   const toggle = () => setIsCollapsed(prev => !prev)
@@ -24,6 +24,8 @@ export function CyberContainer({ title, children, defaultCollapsed = false }) {
           color: 'var(--color-primary-lightest)',
           borderBottomLeftRadius: 0,
           borderBottomRightRadius: 0,
+          position: 'relative',
+          zIndex: 2,
         }}
       >
        {title}
@@ -33,6 +35,7 @@ export function CyberContainer({ title, children, defaultCollapsed = false }) {
       {/* Collapsible content */}
       {!isCollapsed && (
         <div
+        className='neon-scroll'
           style={{
             border: '1px solid var(--color-primary-darkest)',
             borderTop: 'none',
@@ -41,7 +44,10 @@ export function CyberContainer({ title, children, defaultCollapsed = false }) {
             borderRadius: 0,
             marginTop: '-24px',
             position: 'relative',
-            zIndex: -1,
+            zIndex: 1,
+            maxHeight: maxContentHeight,
+            overflowY: 'auto',
+            // transition: 'max-height 0.3s ease',
           }}
         >
           {children}

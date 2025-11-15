@@ -55,51 +55,66 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
     return (
       <div
         style={{
-          maxHeight: "60vh",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
           marginTop: "10px",
           color: "var(--color-primary-lighter)",
         }}
       >
         <div
+          className="neon-scroll"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "10px",
-            fontSize: "0.9rem",
-            fontWeight: "600"
+            flex: 1,
+            overflowY: "auto",
+            paddingRight: "6px",
           }}
         >
-          <span>{`Recent transactions (${txs.length})`}</span>
-          <button
-            type="button"
-            onClick={handleDeleteAll}
-            disabled={txs.length === 0}
+          <div
             style={{
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "4px",
-              padding: "4px 10px",
-              background: "transparent",
-              color: "inherit",
-              opacity: txs.length === 0 ? 0.4 : 1,
-              cursor: txs.length === 0 ? "not-allowed" : "pointer"
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "10px",
+              fontSize: "0.9rem",
+              fontWeight: "600",
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
+              padding: "6px 0",
+              background: "rgba(4, 15, 24, 0.95)",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
             }}
           >
-             <FontAwesomeIcon
-                    icon={faTrash}
-                    style={{ marginLeft: "auto", alignContent: "right" }}
-                    title="Remove from list"
-                    onClick={() => removeTransaction(tx.id)}
-                  /> all
-          </button>
-        </div>
+            <span>{`Recent transactions (${txs.length})`}</span>
+            <button
+              type="button"
+              onClick={handleDeleteAll}
+              disabled={txs.length === 0}
+              style={{
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "4px",
+                padding: "4px 10px",
+                background: "transparent",
+                color: "inherit",
+                opacity: txs.length === 0 ? 0.4 : 1,
+                cursor: txs.length === 0 ? "not-allowed" : "pointer"
+              }}
+            >
+               <FontAwesomeIcon
+                      icon={faTrash}
+                      style={{ marginRight: "6px" }}
+                      title="Remove all"
+                    /> all
+            </button>
+          </div>
 
-        {txs.length === 0 && (
-          <div style={{ fontStyle: "italic" }}>No recent transactions.</div>
-        )}
+          {txs.length === 0 && (
+            <div style={{ fontStyle: "italic" }}>No recent transactions.</div>
+          )}
 
-        {txs.map((tx) => {
+          {txs.map((tx) => {
           // Use completedAt when available to freeze the duration
           const seconds = Math.floor(
             ((tx.completedAt ?? Date.now()) - tx.startedAt) / 1000
@@ -245,7 +260,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               )}
             </div>
           );
-        })}
+          })}
+        </div>
       </div>
     );
   }

@@ -9,6 +9,8 @@ const panelStyle = {
   padding: '0.5rem',
   fontSize: '0.9rem',
   color: 'var(--color-primary-lighter)',
+  flex: 1,
+  minHeight: 0,
 }
 
 const tableStyle = {
@@ -149,63 +151,75 @@ export default function AccountDataPanel() {
 
   return (
     <div style={panelStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.85rem' }}>
-          {normalizedUser}
-        </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
+      <div className="neon-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem' }}>
+        <div
           style={{
-            border: '1px solid var(--color-primary-dark)',
-            background: 'transparent',
-            color: 'var(--color-primary-lighter)',
-            padding: '0.25rem 0.75rem',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '0.75rem',
-            letterSpacing: '0.1em',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1,
+            background: 'rgba(4, 15, 24, 0.95)',
+            paddingBottom: '1rem',
           }}
         >
-          Refresh
-        </button>
-      </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.85rem' }}>
+              {normalizedUser}
+            </div>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              style={{
+                border: '1px solid var(--color-primary-dark)',
+                background: 'transparent',
+                color: 'var(--color-primary-lighter)',
+                padding: '0.25rem 0.75rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                letterSpacing: '0.1em',
+              }}
+            >
+              Refresh
+            </button>
+          </div>
 
-      <div style={progressWrapperStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
-          <span style={{ color: 'var(--color-primary-lighter)' }}>Resource Credits</span>
-          <span style={{ color: 'var(--color-primary-lighter)' }}>
-            {showSkeleton ? '—' : `${rcPercent.toFixed(1)}%`}
-          </span>
+          <div style={{ ...progressWrapperStyle, marginTop: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
+              <span style={{ color: 'var(--color-primary-lighter)' }}>Resource Credits</span>
+              <span style={{ color: 'var(--color-primary-lighter)' }}>
+                {showSkeleton ? '—' : `${rcPercent.toFixed(1)}%`}
+              </span>
+            </div>
+            {showSkeleton ? (
+              <div style={progressSkeletonStyle} />
+            ) : (
+              <div style={progressTrackStyle}>
+                <div style={{ ...progressFillBase, width: `${rcPercent}%` }} />
+              </div>
+            )}
+          </div>
         </div>
-        {showSkeleton ? (
-          <div style={progressSkeletonStyle} />
-        ) : (
-          <div style={progressTrackStyle}>
-            <div style={{ ...progressFillBase, width: `${rcPercent}%` }} />
-          </div>
-        )}
-      </div>
 
-      <div>
-        {showSkeleton ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={`skeleton-${index}`} style={skeletonRowStyle} />
-            ))}
-          </div>
-        ) : (
-          <table style={tableStyle}>
-            <tbody>
-              {accountRows.map((row) => (
-                <tr key={row.label}>
-                  <td style={cellLabelStyle}>{row.label}</td>
-                  <td style={cellValueStyle}>{row.value}</td>
-                </tr>
+        <div style={{ paddingTop: '1rem' }}>
+          {showSkeleton ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={`skeleton-${index}`} style={skeletonRowStyle} />
               ))}
-            </tbody>
-          </table>
-        )}
+            </div>
+          ) : (
+            <table style={tableStyle}>
+              <tbody>
+                {accountRows.map((row) => (
+                  <tr key={row.label}>
+                    <td style={cellLabelStyle}>{row.label}</td>
+                    <td style={cellValueStyle}>{row.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   )

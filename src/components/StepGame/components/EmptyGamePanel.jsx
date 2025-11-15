@@ -233,7 +233,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
                 flex: '0 0 auto',
                 padding: '6px 12px',
                 border: '1px solid var(--color-primary-darkest)',
-                background: leaderboardScope === key ? 'var(--color-primary-darkest)' : 'transparent',
+                background: leaderboardScope === key ? 'var(--color-primary-darker)' : 'transparent',
                 color: 'var(--color-primary-lightest)',
                 cursor: 'pointer',
                 fontSize: '0.8rem',

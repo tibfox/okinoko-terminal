@@ -92,16 +92,9 @@ body {
 
 /* Neon scrollbar look (Firefox) */
 .neon-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-primary-darkest) rgba(0, 0, 0, 0.3);
-  overflow-y: visible;
-}
-
-/* Desktop: enable internal scroll when content overflows */
-@media (min-width: 900px) {
-  .neon-scroll {
-    overflow-y: auto;
-  }
+  scrollbar-width: thick;
+  scrollbar-color: var(--color-primary-darker) rgba(0, 0, 0, 0.3);
+  overflow-y: auto;
 }
 
 /* Neon scrollbar look (WebKit) */

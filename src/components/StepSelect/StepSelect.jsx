@@ -12,7 +12,7 @@ import { useAioha } from '@aioha/react-ui'
 
 const STORAGE_KEY = 'stepSelectActivePage'
 const IN_A_ROW_VSC_ID = 'vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh'
-const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
+// const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 
 const getStoredPage = () => {
   if (typeof window === 'undefined') return 'list'
@@ -38,7 +38,8 @@ export default function StepSelect({
   }, [activePage])
 
   const normalizedUser = (user || '').replace(/^hive:/i, '').toLowerCase()
-  const canSeeInARow = ALLOWED_GAMER_HANDLES.includes(normalizedUser)
+  // const canSeeInARow = ALLOWED_GAMER_HANDLES.includes(normalizedUser)
+  const canSeeInARow = true //  enable for all users
 
   const visibleContracts = useMemo(() => {
     if (canSeeInARow) return contracts

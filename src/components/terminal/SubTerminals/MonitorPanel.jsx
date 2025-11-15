@@ -124,6 +124,15 @@ const cellStyle = {
   textAlign: 'left',
 }
 
+const headerCellStyle = {
+  ...cellStyle,
+  fontWeight: 600,
+  position: 'sticky',
+  top: 0,
+  background: 'rgba(4, 15, 24, 0.95)',
+  zIndex: 1,
+}
+
 const renderStatusIcon = (status) => {
   const normalized = status?.toUpperCase?.() ?? ''
   switch (normalized) {
@@ -457,17 +466,17 @@ export default function MonitorPanel() {
     }
 
     return (
-      <div style={{ overflowX: 'auto' }}>
+      <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Tx</th>
-              <th style={{ ...cellStyle, fontWeight: 600, width: '2rem' }} aria-label="status" />
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Account</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Operation</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Amount</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Height</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Anchored</th>
+              <th style={headerCellStyle}>Tx</th>
+              <th style={{ ...headerCellStyle, width: '2rem' }} aria-label="status" />
+              <th style={headerCellStyle}>Account</th>
+              <th style={headerCellStyle}>Operation</th>
+              <th style={headerCellStyle}>Amount</th>
+              <th style={headerCellStyle}>Height</th>
+              <th style={headerCellStyle}>Anchored</th>
             </tr>
           </thead>
           <tbody>
@@ -526,12 +535,12 @@ export default function MonitorPanel() {
     }
 
     return (
-      <div style={{ overflowX: 'auto' }}>
+      <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Witness</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Weight</th>
+              <th style={headerCellStyle}>Witness</th>
+              <th style={headerCellStyle}>Weight</th>
             </tr>
           </thead>
           <tbody>
@@ -577,14 +586,14 @@ export default function MonitorPanel() {
     }
 
     return (
-      <div style={{ overflowX: 'auto' }}>
+      <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }} >
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Block</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Proposer</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>Timestamp</th>
-              <th style={{ ...cellStyle, fontWeight: 600 }}>CID</th>
+              <th style={headerCellStyle}>Block</th>
+              <th style={headerCellStyle}>Proposer</th>
+              <th style={headerCellStyle}>Timestamp</th>
+              <th style={headerCellStyle}>CID</th>
             </tr>
           </thead>
           <tbody>

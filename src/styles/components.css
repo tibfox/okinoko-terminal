@@ -59,114 +59,32 @@ select {
 #log.error { border-color:#ff0033; color:#ff4444; }
 
 /* === Buttons === */
+
 .neon-btn {
-  background: transparent;
+  background: #000;
   color: var(--color-primary);
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
   width: 100%;
   height: 42px;
   padding: 0 12px;
   font-size: 1.1em;
-  font-family: 'Share Tech Mono',monospace;
+  font-family: 'Share Tech Mono', monospace;
   margin-top: 20px;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
-  /* text-shadow: 0 0 8px #0ff; */
-  /* box-shadow: 0 0 15px #0ff, inset 0 0 8px rgba(0,255,255,0.4); */
   transition: all 0.2s ease-in-out;
   position: relative;
+  overflow: hidden;
 }
 
-.cyber-tile {
-    --tile-width: 100%;
-    --tile-padding-hor: 20px;
-    --tile-padding-vert: 10px;
-    --tile-edges: 20px;
-    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
-   --og-clip-path: polygon(
-    var(--tile-edges) 0,                 /* cut top-left */
-    100% 0,
-    100% calc(100% - var(--tile-edges)), /* full top/right edges */
-    calc(100% - var(--tile-edges)) 100%, /* cut bottom-right */
-    0 100%,
-    0 var(--tile-edges)
-);
-
-    width: var(--tile-width);
-    min-height: 30px;
-    clip-path: var(--og-clip-path);
-    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
-    padding-bottom: var(--tile-edges);
-    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+.neon-btn:hover:not(.disabled),
+.neon-btn:focus-visible {
+  border: 1px solid var(--color-primary) !important;
+  color: var(--color-primary);
+  background: var(--color-primary-darkest);
 }
 
-.cyber-subheader {
-    --tile-width: 100%;
-    --tile-padding-hor: 20px;
-    --tile-padding-vert: 10px;
-    --tile-edges: 10px;
-    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
-   --og-clip-path: polygon(
-    var(--tile-edges) 0,                 /* cut top-left */
-    100% 0,
-    100% calc(100% - var(--tile-edges)), /* full top/right edges */
-    calc(100% - var(--tile-edges)) 100%, /* cut bottom-right */
-    0 100%,
-    0 var(--tile-edges)
-);
-
-    width: var(--tile-width);
-    min-height: 30px;
-    clip-path: var(--og-clip-path);
-    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
-    padding-bottom: var(--tile-edges);
-    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
-    margin: 0;
-  
-}
-
-.cyber-popup {
-    --tile-width: 33%;
-    --tile-padding-hor: 2px;
-    --tile-padding-vert: 4px;
-    --tile-edges: 15px;
-    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
-   --og-clip-path: polygon(
-  0 0,
-  calc(100% - var(--tile-edges)) 0,              /* cut top-right */
-  100% var(--tile-edges),
-  100% 100%,
-  0 100%,
-    0 var(--tile-edges)
-);
-    width: var(--tile-width);
-    min-height: 30px;
-    clip-path: var(--og-clip-path);
-    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
-    padding-bottom: var(--tile-edges);
-   background-color: var(--cyber-bg, var(--color-primary-darkest));
-}
-
-
-
-
-/* 
-.neon-btn:after{
-    position: absolute;
-    content: '';
-    left: -50px;
-    top: 0px;
-    border-style: solid;
-    border-color: blue transparent blue transparent;
-    border-width: 100px 0px 0px 50px;
-} */
-
-/* .neon-btn:hover {
-  border-color: #ff00ff;
-  color: #ff00ff;
-  text-shadow: 0 0 10px #ff00ff;
-  box-shadow: 0 0 25px #ff00ff, inset 0 0 10px rgba(255,0,255,0.5);
-} */
 
 .neon-btn:disabled, .neon-btn.disabled {
   opacity: 0.4;
@@ -204,7 +122,7 @@ select {
 .neon-list-btn {
   width: 100%;
   height: 42px;
-  border: 1px solid var(--color-primary-darker);
+  border: 1px solid var(--color-primary-darkest);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -213,6 +131,7 @@ select {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  
 }
 
 .neon-list-btn:hover {

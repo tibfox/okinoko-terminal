@@ -26,7 +26,7 @@ export default function ContractList({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        
+
       }}
     >
       {/* --- Contract Buttons --- */}
@@ -49,19 +49,29 @@ export default function ContractList({
               setFnName('')
             }}
             style={{
-              backgroundColor: contractId === c.vscId ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)',
-              color:  contractId === c.vscId ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
+              backgroundColor:
+                contractId === c.vscId 
+                ? 'var(--color-primary-darker)' 
+                // : 'var(--color-primary-darkest)',
+                : 'transparent',
+              color:
+                contractId === c.vscId 
+                ? 'var(--color-primary-lightest)' 
+                : 'var(--color-primary-lighter)',
               textAlign: 'left',
               whiteSpace: 'nowrap',
               padding: '0.5em 1em',
-              // border: 'none',
+               border: 'none',
               // borderRadius: '2px',
               cursor: 'pointer',
               width: '100%',
+              textTransform: 'uppercase',
+              fontSize: '0.85rem',
+              letterSpacing: '0.05em',
             }}
           >
-           <FontAwesomeIcon icon={faFileContract} style={{marginRight: '10px'}} /> 
-          {c.name}
+            <FontAwesomeIcon icon={faFileContract} style={{ marginRight: '10px' }} />
+            {c.name}
           </ListButton>
         ))}
       </div>
@@ -79,7 +89,7 @@ export default function ContractList({
             overflowY: 'auto',
           }}
         >
-          
+
 
           {/* Metadata */}
           <table

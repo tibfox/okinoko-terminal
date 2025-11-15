@@ -23,7 +23,8 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
             backgroundColor:
               fnName === fn.name
                 ? 'var(--color-primary-darker)'
-                : 'var(--color-primary-darkest)',
+                // : 'var(--color-primary-darkest)',
+                : 'transparent',
             color:
               fnName === fn.name
                 ? 'var(--color-primary-lightest)'
@@ -41,6 +42,9 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
             flex: '0 0 auto',
             width: 'auto',
             alignItems: 'center',
+            textTransform: 'uppercase',
+              fontSize: '0.85rem',
+              letterSpacing: '0.05em',
           }}
         >
          <FontAwesomeIcon icon={fn.parse =="game"?faDice:faCirclePlay} style={{marginRight: '10px'}} /> 
