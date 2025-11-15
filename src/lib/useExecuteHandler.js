@@ -6,6 +6,8 @@ import { useVscQuery } from './useVscQuery.js'
 
 import { TransactionContext } from '../transactions/context';
 
+import { PopupContext } from '../popup/context.js'
+
 const successBeep = 800
 const successLength = 100
 const failureBeep = 270
@@ -17,6 +19,8 @@ const TONE_PAUSE = 300 // ms between tones to keep the cue snappy
 const RC_LIMIT_DEFAULT = 10000
 
 export default function useExecuteHandler({ contract, fn, params }) {
+  const { openPopup } = useContext(PopupContext)
+
   const { aioha, user } = useAioha()
   const { runQuery } = useVscQuery()
   const { addTransaction, state } = useContext(TransactionContext);
@@ -34,14 +38,14 @@ export default function useExecuteHandler({ contract, fn, params }) {
   const playFailureChime = useCallback(() => {
     const interval = failureLength + TONE_PAUSE
     for (let i = 0; i < TONE_COUNT; i += 1) {
-      setTimeout(() => playBeep(failureBeep-i*80, failureLength+i*failureLength, 'sawtooth'), i * interval)
+      setTimeout(() => playBeep(failureBeep - i * 80, failureLength + i * failureLength, 'sawtooth'), i * interval)
     }
   }, [])
 
   const playSuccessChime = useCallback(() => {
     const interval = successLength + TONE_PAUSE
     for (let i = 0; i < TONE_COUNT; i += 1) {
-      setTimeout(() => playBeep(successBeep+i*80, successLength+i*successLength, 'sawtooth'), i * interval)
+      setTimeout(() => playBeep(successBeep + i * 80, successLength + i * successLength, 'sawtooth'), i * interval)
     }
   }, [])
 
@@ -216,7 +220,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
         const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
         const val =
           params?.[first?.name] ?? getDefaultValue(first ?? { type: 'string' })
-          console.log("action: " + action)
+        console.log("action: " + action)
         return { payload: val != null ? val.toString() : '', intents, action }
       }
 
@@ -323,7 +327,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
         })
 
         const jsonString = JSON.stringify(obj)
-        return { payload:jsonString, intents, action }
+        return { payload: jsonString, intents, action }
       }
     }
   }
@@ -450,8 +454,13 @@ export default function useExecuteHandler({ contract, fn, params }) {
     }
 
     setPending(true)
+
     let startingMessages = ['▶ Signing and broadcasting L1…']
     if (aioha.getCurrentProvider() == 'hiveauth') {
+      openPopup({
+      title: "Approve in HiveAuth",
+      body: "Please confirm the transaction in your HiveAuth app."
+    })
       startingMessages.push('(accept tx via HiveAuth)')
     }
     setLogs((prev) => {

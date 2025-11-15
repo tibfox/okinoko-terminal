@@ -1,19 +1,17 @@
-import { useMemo, useState, useEffect } from 'preact/hooks'
+import { useMemo } from 'preact/hooks'
 import { useQuery, useSubscription } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCirclePlay,
   faHourglassStart,
-  faChevronDown,
-  faChevronUp,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   GAME_MOVES_QUERY,
   GAME_MOVE_SUBSCRIPTION,
 } from '../../../data/inarow_gql.js'
 import { getBoardDimensions } from '../utils/boardDimensions.js'
-import { getCookie, setCookie } from '../../../lib/cookies.js'
 import { CyberContainer } from '../../common/CyberContainer.jsx'
+import { formatUTC } from '../../../lib/friendlyDates.js'
 
 /* ---------------- GameDetails ---------------- */
 
@@ -89,7 +87,7 @@ export default function GameDetails({
         </center>
 
         {/* Move history */}
-        <GameMovesTable game={game} formattedAgo={formattedAgo} />
+        <GameMovesTable game={game} />
       </div>
     </div>
   )
@@ -101,23 +99,11 @@ const formatHandle = value => (value ? value.replace(/^hive:/, '') : '—')
 const toNumericVar = value =>
   value === null || value === undefined ? null : value.toString()
 
-const formatUtcTimestamp = (value) => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  const pad = num => String(num).padStart(2, '0')
-  return (
-    `${date.getUTCFullYear()}-` +
-    `${pad(date.getUTCMonth() + 1)}-` +
-    `${pad(date.getUTCDate())} ` +
-    `${pad(date.getUTCHours())}:` +
-    `${pad(date.getUTCMinutes())}:` +
-    `${pad(date.getUTCSeconds())}`
-  )
-}
+
 
 /* ---------------- GameMovesTable ---------------- */
 
-function GameMovesTable({ game, formattedAgo }) {
+function GameMovesTable({ game }) {
   const dimensions = useMemo(() => getBoardDimensions(game?.type), [game?.type])
   const numericGameId = toNumericVar(game?.id)
 
@@ -144,6 +130,7 @@ function GameMovesTable({ game, formattedAgo }) {
 
   const entries = useMemo(() => {
     return moves
+    
       .map((move, idx) => {
         const cellIndex = Number(move.cell)
         let coords = '—'
@@ -153,8 +140,7 @@ function GameMovesTable({ game, formattedAgo }) {
           coords = `R${row + 1}C${col + 1}`
         }
         const timestamp = move.indexer_ts
-          ? formatUtcTimestamp(move.indexer_ts)
-          : '—'
+         
         const rawId = Number(move.id)
 
         return {
@@ -166,7 +152,7 @@ function GameMovesTable({ game, formattedAgo }) {
           timestamp,
         }
       })
-      .sort((a, b) => b.rawId - a.rawId)
+      .reverse()  // ASC by numeric id
   }, [moves, dimensions])
 
   return (
@@ -197,7 +183,7 @@ function GameMovesTable({ game, formattedAgo }) {
               <th style={{ textAlign: 'left', paddingRight: '12px' }}>#</th>
               <th style={{ textAlign: 'left', paddingRight: '12px' }}>Player</th>
               <th style={{ textAlign: 'left', paddingRight: '12px' }}>Move</th>
-              <th style={{ textAlign: 'left' }}>Timestamp (UTC)</th>
+              <th style={{ textAlign: 'left' }}>Time</th>
             </tr>
           </thead>
 
@@ -207,7 +193,7 @@ function GameMovesTable({ game, formattedAgo }) {
                 <td style={{ paddingRight: '12px' }}>{entry.turn}</td>
                 <td style={{ paddingRight: '12px' }}>{entry.player}</td>
                 <td style={{ textAlign: 'left', paddingRight: '12px' }}>{entry.coords}</td>
-                <td style={{ textAlign: 'left' }}>{entry.timestamp}</td>
+                <td style={{ textAlign: 'left' }}>{formatUTC(entry.timestamp)}</td>
               </tr>
             ))}
           </tbody>

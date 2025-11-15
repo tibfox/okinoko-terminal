@@ -1,5 +1,5 @@
 // StepGame.jsx
-import { useMemo, useState } from 'preact/hooks'
+import { useMemo, useState, useEffect } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
@@ -82,18 +82,14 @@ export default function StepGame({
   }
 
   const handleSendMoveDummy = async () => {
-    console.log('[Move] selectedCells:', selectedCells, 'game:', activeGame)
     await handleSend()
   }
 
   const handleJoin = async () => {
-    console.log('[Join] game:', activeGame)
-
     await handleSend()
   }
 
   const handleCreate = async () => {
-    console.log('[Create] game')
     await handleSend()
   }
 
@@ -121,20 +117,27 @@ export default function StepGame({
     [activeGame, displayMode]
   )
 
+  useEffect(() => {
+    if (isMobile && activeGame) {
+      setActivePage('preview')   // automatically go to the board
+    }
+  }, [isMobile, activeGame])
+
+
   return (
     <TerminalContainer title={fn.friendlyName}
-    titleOnMinimize="Function"
-    backgroundColor="rgba(0, 0, 0, 0.5)"
+      titleOnMinimize="Function"
+      backgroundColor="rgba(0, 0, 0, 0.5)"
     >
-     {isMobile && (
-  <div style={{ marginBottom: '8px' }}>
-    <Tabs
-      tabs={mobileTabs}
-      activeTab={activePage}
-      onChange={setActivePage}
-    />
-  </div>
-)}
+      {isMobile && (
+        <div style={{ marginBottom: '8px' }}>
+          <Tabs
+            tabs={mobileTabs}
+            activeTab={activePage}
+            onChange={setActivePage}
+          />
+        </div>
+      )}
 
       <ResumedTransactionBanner tx={resumedTx} />
 

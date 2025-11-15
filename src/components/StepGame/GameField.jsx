@@ -511,7 +511,7 @@ export default function GameField({
                 return (
                   <div
                     key={`${r}-${c}`}
-                    class={`board-cell ${clickable ? 'clickable' : ''}`}
+                    class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
                     onClick={() => toggleCell(r, c)}
                     style={{
                       aspectRatio: '1 / 1',
@@ -545,23 +545,23 @@ export default function GameField({
                 const shadow =
                   isFalling
                     ? SOFT_GLOW_PRIMARY  // animation frame: soft glow only
-                    :'none'
-                    // : isSelectedLanding
-                    //   ? SOFT_GLOW_PRIMARY       // final position: ULTRA
-                    //   : 'none'
-const borderdef =  isSelectedLanding? 
-'4px solid var(--color-primary-lightest)':
-isFalling? '2px solid var(--color-primary-lightest)':
-'1px solid ' + (clickable ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)');
+                    : 'none'
+                // : isSelectedLanding
+                //   ? SOFT_GLOW_PRIMARY       // final position: ULTRA
+                //   : 'none'
+                const borderdef = isSelectedLanding ?
+                  '4px solid var(--color-primary-lightest)' :
+                  isFalling ? '2px solid var(--color-primary-lightest)' :
+                    '1px solid ' + (clickable ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)');
                 return (
                   <div
                     key={`${r}-${c}`}
-                    class={`board-cell ${clickable ? 'clickable' : ''}`}
+                    class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
                     onClick={() => toggleCell(r, c)}
                     style={{
                       aspectRatio: '1 / 1',
                       border:
-                       borderdef,
+                        borderdef,
                       //  border: 'none',
                       background: bgBase,
                       boxShadow: shadow,
@@ -590,7 +590,7 @@ isFalling? '2px solid var(--color-primary-lightest)':
                 return (
                   <div
                     key={`${r}-${c}`}
-                    class={`board-cell ${clickable ? 'clickable' : ''}`}
+                    class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
                     onClick={() => toggleCell(r, c)}
                     style={{
                       aspectRatio: '1 / 1',
@@ -626,7 +626,7 @@ isFalling? '2px solid var(--color-primary-lightest)':
               return (
                 <div
                   key={`${r}-${c}`}
-class={`board-cell ${clickable ? 'clickable' : ''}`}
+                  class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
                   onClick={() => toggleCell(r, c)}
                   style={{
                     aspectRatio: '1 / 1',

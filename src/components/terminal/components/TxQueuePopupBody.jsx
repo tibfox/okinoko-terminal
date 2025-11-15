@@ -12,6 +12,7 @@
     faChevronUp,
     faTrash
   } from "@fortawesome/free-solid-svg-icons";
+import { formatUTC } from "../../../lib/friendlyDates.js";
 
   export default function TxQueuePopupBody() {
     const { state, removeTransaction, clearTransactions } = useContext(TransactionContext);
@@ -157,7 +158,7 @@
                   <tr>
                     <td style={{ paddingRight: "8px" }}>Created:</td>
                     <td style={{ wordBreak: "break-all", textAlign: "left" }}>
-                      {new Date(tx.startedAt).toLocaleString()}
+                      {formatUTC(tx.startedAt)}
                     </td>
                   </tr>
 
@@ -175,7 +176,7 @@
                     >
                       {tx.status === "pending"
                         ? `${seconds}s`
-                        : `${new Date(tx.completedAt).toLocaleString()}`}
+                        : `${formatUTC(tx.completedAt)}`}
 
                       <FontAwesomeIcon icon={stateIcon[tx.status]} />
                     </td>

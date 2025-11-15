@@ -4,8 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {  faCheckCircle,   faHourglass } from '@fortawesome/free-solid-svg-icons'
 import {   faCircleXmark } from '@fortawesome/free-regular-svg-icons'
 import { TRANSACTION_API_HTTP } from '../../../lib/graphqlEndpoints.js'
-
 import { Tabs } from '../../common/Tabs.jsx'
+import { formatUTC } from '../../../lib/friendlyDates.js'
+
+
 
 
 const FIND_TRANSACTION_QUERY = /* GraphQL */ `
@@ -103,24 +105,6 @@ const mergeTransactions = (previous, incoming) => {
   return Array.from(byId.values())
     .sort((a, b) => Number(b?.anchr_height ?? 0) - Number(a?.anchr_height ?? 0))
     .slice(0, MAX_ROWS)
-}
-
-const formatLocalTime = (value) => {
-  if (!value) {
-    return '—'
-  }
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return '—'
-  }
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
 }
 
 const formatWeight = (value) => {
@@ -235,33 +219,9 @@ const extractLastBlockHeight = (propsData) => {
   return null
 }
 
-const formatRelativeTime = (value) => {
-  if (!value) {
-    return '—'
-  }
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return '—'
-  }
-  const diffMs = Date.now() - date.getTime()
-  if (diffMs < 0) {
-    return 'just now'
-  }
-  const seconds = Math.floor(diffMs / 1000)
-  if (seconds < 60) {
-    return `${seconds}s ago`
-  }
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) {
-    return `${minutes}m ago`
-  }
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) {
-    return `${hours}h ago`
-  }
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
-}
+
+
+
 
 const formatBlockCid = (value, visibleChars = 13) => {
   if (!value) {
@@ -539,9 +499,7 @@ export default function MonitorPanel() {
                 <td style={cellStyle}>{getOperationLabel(tx)}</td>
                 <td style={cellStyle}>{getAmountLabel(tx)}</td>
                 <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
-                <td style={cellStyle} title={formatLocalTime(tx.anchr_ts)}>
-                  {formatRelativeTime(tx.anchr_ts)}
-                </td>
+                <td style={cellStyle}>{formatUTC(tx.anchr_ts)}</td>
               </tr>
             ))}
           </tbody>
@@ -582,7 +540,7 @@ export default function MonitorPanel() {
                 <td style={cellStyle}>
                   {witness?.account ? (
                     <a
-                      href={`https://vsc.techcoderx.com/address/hive:${witness.account}`}
+                      href={`https://vsc.techcoderx.com/address/${witness.account}`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -660,7 +618,7 @@ export default function MonitorPanel() {
                       proposer
                     )}
                   </td>
-                  <td style={cellStyle}>{formatRelativeTime(ts)}</td>
+                  <td style={cellStyle}>{formatUTC(ts)}</td>
                   <td style={cellStyle}>
                     {blockUrl ? (
                       <a href={blockUrl} target="_blank" rel="noreferrer">
