@@ -18,6 +18,7 @@ export function useGameSelection({
   const [opponentName, setOpponentName] = useState(null)
   const [formattedAgo, setFormattedAgo] = useState(null)
   const [isMyTurn, setIsMyTurn] = useState(null)
+  const [nextPlayer, setNextPlayer] = useState(null)
 
   const fullUser = ensureHiveAddress(user)
 
@@ -37,10 +38,18 @@ export function useGameSelection({
       onResetSelection?.()
       setFormattedAgo(formatMinutesAgo(game.lastMoveMinutesAgo))
 
+      const explicitNext = game.nextTurnPlayer || null
+      setNextPlayer(explicitNext)
+
       if (fullUser) {
-        const isTurn =
-          (fullUser === game.playerX && game.turn === '1') ||
-          (fullUser === game.playerY && game.turn === '2')
+        let isTurn = false
+        if (explicitNext) {
+          isTurn = fullUser === explicitNext
+        } else {
+          isTurn =
+            (fullUser === game.playerX && game.turn === '1') ||
+            (fullUser === game.playerY && game.turn === '2')
+        }
         setIsMyTurn(Boolean(isTurn))
         setOpponentName(fullUser === game.playerX ? game.playerY : game.playerX)
       } else {
@@ -75,6 +84,7 @@ export function useGameSelection({
     setFormattedAgo(null)
     setOpponentName(null)
     setIsMyTurn(null)
+    setNextPlayer(null)
     onResetSelection?.()
     if (isMobile) {
       onMobilePageChange?.('form')
@@ -82,10 +92,11 @@ export function useGameSelection({
   }, [isMobile, onResetSelection, onMobilePageChange])
 
   const handleStateChange = useCallback(
-    ({ playerX, playerY, hasOpponent, isMyTurn: nextTurn }) => {
+    ({ playerX, playerY, hasOpponent, isMyTurn: nextTurn, nextPlayer: incomingNext }) => {
       if (!fullUser) {
         setOpponentName(null)
         setIsMyTurn(null)
+        setNextPlayer(null)
         return
       }
       if (hasOpponent && playerX && playerY) {
@@ -93,8 +104,12 @@ export function useGameSelection({
       } else if (!hasOpponent) {
         setOpponentName(null)
       }
-      if (typeof nextTurn === 'boolean') {
+      if (incomingNext) {
+        setNextPlayer(incomingNext)
+        setIsMyTurn(incomingNext === fullUser)
+      } else if (typeof nextTurn === 'boolean') {
         setIsMyTurn(nextTurn)
+        setNextPlayer(null)
       }
     },
     [fullUser],
@@ -108,6 +123,7 @@ export function useGameSelection({
     isMyTurn,
     selectGame,
     unselectGame,
+    nextPlayer,
     handleStateChange,
   }
 }

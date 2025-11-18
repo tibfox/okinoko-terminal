@@ -201,6 +201,19 @@ export default function useExecuteHandler({ contract, fn, params }) {
           payload += `|${params?.__gameCell?.replace(',', '|')}`
 
         }
+        if (action === "g_swap") {
+          const op = params?.__gameSwapOp || ''
+          payload += `|${op}`
+          const extra = params?.__gameSwapArgs
+          const parts = Array.isArray(extra)
+            ? extra
+            : typeof extra === 'string' && extra
+              ? [extra]
+              : []
+          parts.filter(Boolean).forEach((part) => {
+            payload += `|${part}`
+          })
+        }
 
         const intents = []
         if (intent) {
@@ -394,6 +407,24 @@ export default function useExecuteHandler({ contract, fn, params }) {
         if (action === 'g_move') {
           const moveVal = inputParams?.__gameCell
           return typeof moveVal === 'string' && moveVal.length > 0
+        }
+
+        if (action === 'g_swap') {
+          const op = inputParams?.__gameSwapOp
+          if (!op) return false
+          const extra = inputParams?.__gameSwapArgs
+          const parts = Array.isArray(extra)
+            ? extra
+            : typeof extra === 'string' && extra
+              ? [extra]
+              : []
+          if (op === 'place' || op === 'add') {
+            return parts.length > 0
+          }
+          if (op === 'choose' || op === 'color') {
+            return parts.length === 1 && typeof parts[0] === 'string' && parts[0].length > 0
+          }
+          return false
         }
 
         if (action === 'g_resign' || action === 'g_timeout') {

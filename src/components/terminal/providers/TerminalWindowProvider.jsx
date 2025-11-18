@@ -2,11 +2,13 @@ import { createContext } from 'preact'
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { getWindowDefaults } from '../windowDefaults.js'
 import { LAYOUT_PRESETS, getLayoutPresetById } from '../layoutPresets.js'
-import { convertWindowMapToPixels } from '../layoutUnits.js'
+import { convertWindowMapToPixels, getViewportSize } from '../layoutUnits.js'
 
 const COOKIE_NAME = 'okinoko_terminal_windows'
 const CUSTOM_LAYOUT_COOKIE = 'okinoko_terminal_custom_layouts'
 const MAX_CUSTOM_LAYOUTS = 8
+
+const VIEWPORT_SCALE_EPSILON = 0.005
 
 const defaultWindowState = {
   isMinimized: false,
@@ -119,9 +121,117 @@ const sanitizeLayoutLabel = (label) => {
   return label.trim().slice(0, 40)
 }
 
+const scaleNumericValue = (value, ratio) => {
+  if (!Number.isFinite(value) || !Number.isFinite(ratio) || ratio <= 0) {
+    return value
+  }
+  const scaled = Math.round(value * ratio)
+  if (!Number.isFinite(scaled)) {
+    return value
+  }
+  return scaled < 0 ? 0 : scaled
+}
+
+const scaleDimensions = (dimensions, ratioX, ratioY) => {
+  if (!dimensions || typeof dimensions !== 'object') {
+    return dimensions ?? null
+  }
+  let nextWidth = dimensions.width
+  let widthChanged = false
+  if (typeof dimensions.width === 'number' && Number.isFinite(dimensions.width)) {
+    const scaled = scaleNumericValue(dimensions.width, ratioX)
+    if (scaled !== dimensions.width) {
+      nextWidth = scaled
+      widthChanged = true
+    }
+  }
+  let nextHeight = dimensions.height
+  let heightChanged = false
+  if (typeof dimensions.height === 'number' && Number.isFinite(dimensions.height)) {
+    const scaled = scaleNumericValue(dimensions.height, ratioY)
+    if (scaled !== dimensions.height) {
+      nextHeight = scaled
+      heightChanged = true
+    }
+  }
+  if (!widthChanged && !heightChanged) {
+    return dimensions
+  }
+  return {
+    ...dimensions,
+    ...(widthChanged ? { width: nextWidth } : {}),
+    ...(heightChanged ? { height: nextHeight } : {}),
+  }
+}
+
+const scalePosition = (position, ratioX, ratioY) => {
+  if (!position || typeof position !== 'object') {
+    return position ?? null
+  }
+  let nextX = position.x
+  let xChanged = false
+  if (typeof position.x === 'number' && Number.isFinite(position.x)) {
+    const scaled = scaleNumericValue(position.x, ratioX)
+    if (scaled !== position.x) {
+      nextX = scaled
+      xChanged = true
+    }
+  }
+  let nextY = position.y
+  let yChanged = false
+  if (typeof position.y === 'number' && Number.isFinite(position.y)) {
+    const scaled = scaleNumericValue(position.y, ratioY)
+    if (scaled !== position.y) {
+      nextY = scaled
+      yChanged = true
+    }
+  }
+  if (!xChanged && !yChanged) {
+    return position
+  }
+  return {
+    ...position,
+    ...(xChanged ? { x: nextX } : {}),
+    ...(yChanged ? { y: nextY } : {}),
+  }
+}
+
+const scaleWindowState = (state, ratioX, ratioY) => {
+  if (!state || typeof state !== 'object') {
+    return state ?? null
+  }
+  const nextDimensions = scaleDimensions(state.dimensions, ratioX, ratioY)
+  const nextPosition = scalePosition(state.position, ratioX, ratioY)
+  if (nextDimensions === state.dimensions && nextPosition === state.position) {
+    return state
+  }
+  return {
+    ...state,
+    dimensions: nextDimensions,
+    position: nextPosition,
+  }
+}
+
+const scaleWindowMap = (windows, ratioX, ratioY) => {
+  if (!windows || typeof windows !== 'object' || Object.keys(windows).length === 0) {
+    return windows
+  }
+  let hasChanges = false
+  const nextWindows = Object.entries(windows).reduce((acc, [id, entry]) => {
+    const scaledEntry = scaleWindowState(entry, ratioX, ratioY)
+    acc[id] = scaledEntry
+    if (scaledEntry !== entry) {
+      hasChanges = true
+    }
+    return acc
+  }, {})
+  return hasChanges ? nextWindows : windows
+}
+
 export function TerminalWindowProvider({ children }) {
   const [windows, setWindows] = useState({})
   const layerCounterRef = useRef(1)
+  const viewportRef = useRef(getViewportSize())
   const [layoutResetToken, setLayoutResetToken] = useState(0)
   const [customLayouts, setCustomLayouts] = useState(() => readCustomLayouts())
 
@@ -158,6 +268,47 @@ export function TerminalWindowProvider({ children }) {
   useEffect(() => {
     writeCustomLayouts(customLayouts)
   }, [customLayouts])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    let frame = null
+    const handleResize = () => {
+      if (frame != null) {
+        return
+      }
+      frame = window.requestAnimationFrame(() => {
+        frame = null
+        const prevViewport = viewportRef.current
+        const nextViewport = getViewportSize()
+        if (!nextViewport) {
+          return
+        }
+        viewportRef.current = nextViewport
+        const ratioX =
+          prevViewport && prevViewport.width ? nextViewport.width / prevViewport.width : 1
+        const ratioY =
+          prevViewport && prevViewport.height ? nextViewport.height / prevViewport.height : 1
+        if (
+          !Number.isFinite(ratioX) ||
+          !Number.isFinite(ratioY) ||
+          (Math.abs(ratioX - 1) < VIEWPORT_SCALE_EPSILON &&
+            Math.abs(ratioY - 1) < VIEWPORT_SCALE_EPSILON)
+        ) {
+          return
+        }
+        setWindows((prev) => scaleWindowMap(prev, ratioX, ratioY))
+      })
+    }
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      if (frame != null) {
+        window.cancelAnimationFrame(frame)
+      }
+    }
+  }, [])
 
   const ensureWindow = useCallback((id, defaults = {}) => {
     setWindows((prev) => {

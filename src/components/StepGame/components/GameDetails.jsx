@@ -20,6 +20,8 @@ export default function GameDetails({
   opponentName,
   formattedAgo,
   isMyTurn,
+  nextTurnPlayer,
+  swapInfo,
 }) {
   if (!game) return null
 
@@ -65,23 +67,58 @@ export default function GameDetails({
    
   </>
 )}
-           <tr>     <td style={{ paddingRight: '10px' }}>
-                  <strong>Turn:</strong>
-                </td>
-                <td>
-                  {isMyTurn ? (
-                    <>
-                      <FontAwesomeIcon icon={faCirclePlay} style={{ marginRight: '10px' }} />
-                      <strong>your turn</strong>
-                    </>
-                  ) : (
-                    <>
-                      <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-                      {opponentName || ''}
-                    </>
-                  )}
-                </td>
-              </tr>
+            <tr>
+              <td style={{ paddingRight: '10px' }}>
+                <strong>Turn:</strong>
+              </td>
+              <td>
+                {isMyTurn ? (
+                  <>
+                    <FontAwesomeIcon icon={faCirclePlay} style={{ marginRight: '10px' }} />
+                    <strong>your turn</strong>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+                    {nextTurnPlayer ? formatHandle(nextTurnPlayer) : opponentName || ''}
+                  </>
+                )}
+              </td>
+            </tr>
+              {swapInfo?.active && (
+                <tr>
+                  <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>
+                    <strong>Swap opening:</strong>
+                  </td>
+                  <td>
+                    <div style={{ marginBottom: '6px' }}>{swapInfo.waitingText}</div>
+                    {swapInfo.description && (
+                      <div style={{ fontSize: '0.9rem', marginBottom: '6px', opacity: 0.85 }}>
+                        {swapInfo.description}
+                      </div>
+                    )}
+                    {swapInfo.remaining && (
+                      <div style={{ fontSize: '0.85rem', marginBottom: '4px', color: 'var(--color-primary-lighter)' }}>
+                        {swapInfo.remaining}
+                      </div>
+                    )}
+                    {swapInfo.nextStone && (
+                      <div style={{ fontSize: '0.85rem', marginBottom: '6px' }}>
+                        {swapInfo.nextStone}
+                      </div>
+                    )}
+                    {swapInfo.history?.length > 0 && (
+                      <div style={{ maxHeight: '90px', overflowY: 'auto' }}>
+                        <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem' }}>
+                          {swapInfo.history.slice(-5).map((entry, idx) => (
+                            <li key={`${entry}-${idx}`}>{entry}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </center>
@@ -96,6 +133,11 @@ export default function GameDetails({
 /* ---------------- Helpers ---------------- */
 
 const formatHandle = value => (value ? value.replace(/^hive:/, '') : '—')
+const colorLabel = (color) => {
+  if (Number(color) === 2) return 'O'
+  if (Number(color) === 1) return 'X'
+  return '?'
+}
 const toNumericVar = value =>
   value === null || value === undefined ? null : value.toString()
 
@@ -114,46 +156,109 @@ function GameMovesTable({ game }) {
     requestPolicy: 'cache-and-network',
   })
 
-  useSubscription(
-    {
-      query: GAME_MOVE_SUBSCRIPTION,
-      variables: numericGameId ? { gameId: numericGameId } : undefined,
-      pause: !numericGameId,
-    },
-    (_, event) => {
-      if (event) reexecute({ requestPolicy: 'network-only' })
-      return event
-    }
-  )
+  // useSubscription(
+  //   {
+  //     query: GAME_MOVE_SUBSCRIPTION,
+  //     variables: numericGameId ? { gameId: numericGameId } : undefined,
+  //     pause: !numericGameId,
+  //   },
+  //   (_, event) => {
+  //     if (event) reexecute({ requestPolicy: 'network-only' })
+  //     return event
+  //   }
+  // )
+  // useSubscription(
+  //   {
+  //     query: GAME_SWAP_SUBSCRIPTION,
+  //     variables: numericGameId ? { gameId: numericGameId } : undefined,
+  //     pause: !numericGameId,
+  //   },
+  //   (_, event) => {
+  //     if (event) reexecute({ requestPolicy: 'network-only' })
+  //     return event
+  //   }
+  // )
 
   const moves = data?.moves ?? []
+  const swaps = data?.swaps ?? []
 
   const entries = useMemo(() => {
-    return moves
-    
-      .map((move, idx) => {
-        const cellIndex = Number(move.cell)
+    const list = []
+
+    moves.forEach((move) => {
+      let coords = '—'
+      const cellIndex = Number(move.cell)
+      if (dimensions && Number.isFinite(cellIndex) && cellIndex >= 0) {
+        const row = Math.floor(cellIndex / dimensions.cols)
+        const col = cellIndex % dimensions.cols
+        coords = `R${row + 1}C${col + 1}`
+      }
+      let desc = coords
+      if ((game?.type || '').toLowerCase() === 'gomoku') {
+        const letter =
+          move.by && game?.playerX && move.by === game.playerX
+            ? '*'
+            : move.by && game?.playerY && move.by === game.playerY
+              ? '@'
+              : ''
+        if (letter) {
+          desc = `${letter} ${coords}`
+        }
+      }
+      list.push({
+        key: `move-${move.id}-${move.indexer_block_height}-${move.cell}`,
+        timestamp: move.indexer_ts,
+        block: Number(move.indexer_block_height) || 0,
+        player: formatHandle(move.by),
+        description: desc,
+      })
+    })
+
+    if ((game?.type || '').toLowerCase() === 'gomoku') {
+      swaps.forEach((swap) => {
+        const op = (swap.operation || '').toLowerCase()
+        const choice = (swap.choice || '').toLowerCase()
         let coords = '—'
+        const cellIndex = Number(swap.cell)
         if (dimensions && Number.isFinite(cellIndex) && cellIndex >= 0) {
           const row = Math.floor(cellIndex / dimensions.cols)
           const col = cellIndex % dimensions.cols
           coords = `R${row + 1}C${col + 1}`
         }
-        const timestamp = move.indexer_ts
-         
-        const rawId = Number(move.id)
-
-        return {
-          id: `${move.id ?? idx}-${idx}`,
-          rawId: Number.isFinite(rawId) ? rawId : idx,
-          turn: idx + 1,
-          player: formatHandle(move.by),
-          coords,
-          timestamp,
+        let description = ''
+        if (op === 'place' || op === 'add') {
+          const stone = colorLabel(swap.color)
+          description = `Swap ${stone} ${coords}`
+        } else if (op === 'choose') {
+          description = `Swap decision: ${choice || '—'}`
+        } else if (op === 'color') {
+          const stone = colorLabel(swap.color)
+          description = `Swap color choice: ${stone}`
+        } else {
+          description = `Swap ${op || 'event'}`
         }
+        list.push({
+          key: `swap-${swap.id}-${swap.indexer_block_height}-${op}-${swap.cell ?? 'na'}-${choice || 'none'}`,
+          timestamp: swap.indexer_ts,
+          block: Number(swap.indexer_block_height) || 0,
+          player: formatHandle(swap.by),
+          description,
+        })
       })
-      .reverse()  // ASC by numeric id
-  }, [moves, dimensions])
+    }
+
+    list.sort((a, b) => {
+      if (a.block !== b.block) return b.block - a.block
+      const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0
+      const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0
+      return tb - ta
+    })
+
+    return list.map((entry, idx) => ({
+      ...entry,
+      turn: idx + 1,
+    }))
+  }, [moves, swaps, dimensions, game?.type])
 
   return (
     <CyberContainer title={`History (${entries.length} moves)`}>
@@ -180,7 +285,7 @@ function GameMovesTable({ game }) {
         >
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', paddingRight: '12px' }}>#</th>
+              {/* <th style={{ textAlign: 'left', paddingRight: '12px' }}>#</th> */}
               <th style={{ textAlign: 'left', paddingRight: '12px' }}>Player</th>
               <th style={{ textAlign: 'left', paddingRight: '12px' }}>Move</th>
               <th style={{ textAlign: 'left' }}>Time</th>
@@ -189,11 +294,13 @@ function GameMovesTable({ game }) {
 
           <tbody>
             {entries.map(entry => (
-              <tr key={entry.id}>
-                <td style={{ paddingRight: '12px' }}>{entry.turn}</td>
+              <tr key={entry.renderKey}>
+                {/* <td style={{ paddingRight: '12px' }}>{entry.turn}</td> */}
                 <td style={{ paddingRight: '12px' }}>{entry.player}</td>
-                <td style={{ textAlign: 'left', paddingRight: '12px' }}>{entry.coords}</td>
-                <td style={{ textAlign: 'left' }}>{formatUTC(entry.timestamp)}</td>
+                <td style={{ textAlign: 'left', paddingRight: '12px' }}>{entry.description}</td>
+                <td style={{ textAlign: 'left' }}>
+                  {entry.timestamp ? formatUTC(entry.timestamp) : '—'}
+                </td>
               </tr>
             ))}
           </tbody>

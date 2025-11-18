@@ -93,6 +93,10 @@ export function App() {
     <AiohaProvider aioha={aioha}>
       <AccountBalanceProvider>
         <>
+          <div className="app-corner-logo" aria-hidden="true">
+            <span className="app-corner-logo__accent">ŌKIՈOKO</span>
+            <span className="app-corner-logo__muted">TERMINAL</span>
+          </div>
           {renderPage()}
           {showDesktopTerminals && (
             <>

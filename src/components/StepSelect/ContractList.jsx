@@ -39,6 +39,7 @@ export default function ContractList({
           borderRight: !isMobile ? '1px solid var(--color-primary-darkest)' : 'none',
           borderBottom: isMobile ? '1px solid var(--color-primary-darkest)' : 'none',
           paddingRight: !isMobile ? '10px' : 0,
+          zIndex: 1,
         }}
       >
         {contracts.map((c) => (
@@ -56,7 +57,7 @@ export default function ContractList({
                 : 'transparent',
               color:
                 contractId === c.vscId 
-                ? 'var(--color-primary-lightest)' 
+                ? 'black' 
                 : 'var(--color-primary-lighter)',
               textAlign: 'left',
               whiteSpace: 'nowrap',
@@ -68,6 +69,7 @@ export default function ContractList({
               textTransform: 'uppercase',
               fontSize: '0.85rem',
               letterSpacing: '0.05em',
+              zIndex: 1,
             }}
           >
             <FontAwesomeIcon icon={faFileContract} style={{ marginRight: '10px' }} />

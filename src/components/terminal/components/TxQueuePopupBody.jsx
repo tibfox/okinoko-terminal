@@ -83,7 +83,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               top: 0,
               zIndex: 1,
               padding: "6px 0",
-              background: "rgba(4, 15, 24, 0.95)",
+              background: 'transparent',
               borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
             }}
           >

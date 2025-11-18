@@ -31,9 +31,9 @@ const DESKTOP_MAX_HEIGHT = 980
 const DESKTOP_WIDTH_RATIO = 0.66
 const DESKTOP_HEIGHT_RATIO = 0.8
 const DEFAULT_VIEWPORT_PADDING = 32
-const GRID_ROW_COUNT = 30
-const DEFAULT_GRID_CELL_SIZE = 40
-const MIN_GRID_CELL_SIZE = 24
+const GRID_ROW_COUNT = 60
+const DEFAULT_GRID_CELL_SIZE = 10
+const MIN_GRID_CELL_SIZE = 6
 
 export default function TerminalContainer({
   title,
@@ -414,9 +414,8 @@ export default function TerminalContainer({
       ? `${MINIMIZED_DESKTOP_HEIGHT}px`
       : desktopHeight
 
-  const isPrimaryWindow = windowId === 'primary'
-  const resolvedBackground = backgroundColor ?? (isPrimaryWindow ? 'rgba(0, 0, 0, 0.5)' : undefined)
-  const resolvedBackdrop = isPrimaryWindow ? 'blur(6px)' : undefined
+  const resolvedBackground = backgroundColor ?? 'rgba(0, 0, 0, 0.1)'
+  const resolvedBackdrop = 'blur(6px)'
   const shouldShowGrid = !isMobile && (isDragging || isResizing)
   const activeGridCellSize = shouldShowGrid ? getSafeGridSize() : null
   const gridOverlay =

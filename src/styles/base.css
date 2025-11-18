@@ -121,11 +121,12 @@ body {
 .aioha-modal-theme .text-gray-900,
 .aioha-modal-theme .dark\:text-white {
   color: var(--color-primary-lighter) !important;
+  background-color: var(--color-primary-darkest) !important;
 }
 
 .aioha-modal-theme .bg-white,
 .aioha-modal-theme .dark\:bg-gray-900 {
-  background-color: #04151d !important;
+  background-color: var(--color-primary-darkest) !important;
 }
 
 

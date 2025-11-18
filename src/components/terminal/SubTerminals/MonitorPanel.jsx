@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {  faCheckCircle,   faHourglass } from '@fortawesome/free-solid-svg-icons'
-import {   faCircleXmark } from '@fortawesome/free-regular-svg-icons'
+import { faCheckCircle, faHourglass } from '@fortawesome/free-solid-svg-icons'
+import { faCircleXmark } from '@fortawesome/free-regular-svg-icons'
 import { TRANSACTION_API_HTTP } from '../../../lib/graphqlEndpoints.js'
 import { Tabs } from '../../common/Tabs.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
@@ -129,7 +129,8 @@ const headerCellStyle = {
   fontWeight: 600,
   position: 'sticky',
   top: 0,
-  background: 'rgba(4, 15, 24, 0.95)',
+  background: 'transparent',
+
   zIndex: 1,
 }
 
@@ -139,10 +140,10 @@ const renderStatusIcon = (status) => {
     case 'CONFIRMED':
       return <FontAwesomeIcon icon={faCheckCircle} />
     case 'FAILED':
-      return <FontAwesomeIcon icon={faCircleXmark}  />
+      return <FontAwesomeIcon icon={faCircleXmark} />
     case 'INCLUDED':
     default:
-      return <FontAwesomeIcon icon={faHourglass}  />
+      return <FontAwesomeIcon icon={faHourglass} />
   }
 }
 
@@ -475,8 +476,8 @@ export default function MonitorPanel() {
               <th style={headerCellStyle}>Account</th>
               <th style={headerCellStyle}>Operation</th>
               <th style={headerCellStyle}>Amount</th>
-              <th style={headerCellStyle}>Height</th>
               <th style={headerCellStyle}>Anchored</th>
+              <th style={headerCellStyle}>Height</th>
             </tr>
           </thead>
           <tbody>
@@ -495,11 +496,13 @@ export default function MonitorPanel() {
                 <td style={cellStyle}>
                   {tx.required_auths?.[0] ? (
                     <a
-                      href={`https://vsc.techcoderx.com/address/hive:${tx.required_auths[0]}`}
+                      href={`https://vsc.techcoderx.com/address/${tx.required_auths[0]}`}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      {tx.required_auths[0]}
+                      {tx.required_auths[0].length > 23
+                        ? tx.required_auths[0].slice(0, 23) + "..."
+                        : tx.required_auths[0]}
                     </a>
                   ) : (
                     '—'
@@ -507,8 +510,8 @@ export default function MonitorPanel() {
                 </td>
                 <td style={cellStyle}>{getOperationLabel(tx)}</td>
                 <td style={cellStyle}>{getAmountLabel(tx)}</td>
-                <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
                 <td style={cellStyle}>{formatUTC(tx.anchr_ts)}</td>
+                <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -549,7 +552,7 @@ export default function MonitorPanel() {
                 <td style={cellStyle}>
                   {witness?.account ? (
                     <a
-                      href={`https://vsc.techcoderx.com/address/${witness.account}`}
+                      href={`https://vsc.techcoderx.com/address/hive:${witness.account}`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -661,10 +664,10 @@ export default function MonitorPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, minHeight: 0 }}>
       <Tabs
-  tabs={TABS}
-  activeTab={activeTab}
-  onChange={setActiveTab}
-/>
+        tabs={TABS}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       <div style={{ flex: 1, minHeight: 0 }}>{renderActiveContent()}</div>
     </div>

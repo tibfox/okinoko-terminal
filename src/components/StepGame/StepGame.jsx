@@ -39,6 +39,7 @@ export default function StepGame({
   const resumedTx = usePendingTransaction()
   const [activePage, setActivePage] = useState('form')
   const [selectedCells, setSelectedCells] = useState([])
+  const [swapInfo, setSwapInfo] = useState(null)
 
   const {
     activeGame,
@@ -46,6 +47,7 @@ export default function StepGame({
     opponentName,
     formattedAgo,
     isMyTurn,
+    nextPlayer,
     selectGame,
     unselectGame,
     handleStateChange,
@@ -123,6 +125,12 @@ export default function StepGame({
     }
   }, [isMobile, activeGame])
 
+  useEffect(() => {
+    if (!activeGame) {
+      setSwapInfo(null)
+    }
+  }, [activeGame])
+
 
   return (
     <TerminalContainer title={fn.friendlyName}
@@ -184,6 +192,8 @@ export default function StepGame({
               opponentName={opponentName}
               formattedAgo={formattedAgo}
               isMyTurn={isMyTurn}
+              nextTurnPlayer={nextPlayer}
+              swapInfo={swapInfo}
             />
           )}
 
@@ -217,6 +227,9 @@ export default function StepGame({
               onStateChange={handleStateChange}
               defaultGameTypeId={derivedGameTypeId}
               gameDescription={fn?.description}
+              onExecuteAction={handleSend}
+              pendingAction={pending}
+              onSwapInfoChange={setSwapInfo}
             />)}
         </div>
       </div>

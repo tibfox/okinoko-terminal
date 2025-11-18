@@ -131,6 +131,7 @@ select {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  z-index: 1;
   
 }
 
@@ -321,4 +322,102 @@ select {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+.cyber-tile {
+    --tile-width: 100%;
+    --tile-padding-hor: 20px;
+    --tile-padding-vert: 10px;
+    --tile-edges: 20px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
+   --og-clip-path: polygon(
+    var(--tile-edges) 0,                 /* cut top-left */
+    100% 0,
+    100% calc(100% - var(--tile-edges)), /* full top/right edges */
+    calc(100% - var(--tile-edges)) 100%, /* cut bottom-right */
+    0 100%,
+    0 var(--tile-edges)
+);
+
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
+    padding-bottom: var(--tile-edges);
+    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+}
+
+.cyber-subheader {
+    --tile-width: 100%;
+    --tile-padding-hor: 20px;
+    --tile-padding-vert: 10px;
+    --tile-edges: 10px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
+   --og-clip-path: polygon(
+    var(--tile-edges) 0,                 /* cut top-left */
+    100% 0,
+    100% calc(100% - var(--tile-edges)), /* full top/right edges */
+    calc(100% - var(--tile-edges)) 100%, /* cut bottom-right */
+    0 100%,
+    0 var(--tile-edges)
+);
+
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
+    padding-bottom: var(--tile-edges);
+    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+    margin: 0;
+  
+}
+
+.cyber-popup {
+    --tile-width: 33%;
+    --tile-padding-hor: 2px;
+    --tile-padding-vert: 4px;
+    --tile-edges: 15px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
+   --og-clip-path: polygon(
+  0 0,
+  calc(100% - var(--tile-edges)) 0,              /* cut top-right */
+  100% var(--tile-edges),
+  100% 100%,
+  0 100%,
+    0 var(--tile-edges)
+);
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
+    padding-bottom: var(--tile-edges);
+   background-color: var(--cyber-bg, var(--color-primary-darkest));
+}
+
+.app-corner-logo {
+  position: fixed;
+  top: 13px;
+  left: 13px;
+  z-index: 2000;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  color: var(--color-primary-lightest);
+  text-transform: uppercase;
+  text-shadow: 0 0 12px var(--color-primary-lightest);
+  opacity: 0.8;
+}
+
+.app-corner-logo__accent {
+  font-size: 0.85rem;
+  letter-spacing: 0.35em;
+}
+
+.app-corner-logo__muted {
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  color: var(--color-primary-darker);
 }

@@ -117,7 +117,7 @@
           "parameters": []
         },{
           "name": "3",
-          "friendlyName": "Gomoku",
+          "friendlyName": "Gomoku (beta)",
           "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row (not more). To ensure fairness we use Swap2 rules for the opening moves.",
           "parse": "game",
           "parameters": []
@@ -351,6 +351,53 @@
           ]
         }
         
+      ]
+    }, {
+      "name": "Shared State Test",
+      "id": 1,
+      "vscId": "vsc1Bh87Heo6HaxuoeSPcxh2kW1Zt17D5ssCfs",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-11-10T19:58:45",
+      "verifiedOn": "-",
+      "description": "Testing share of contract state",
+      "functions": [
+        {
+          "name": "i_create",
+          "friendlyName": "Create Item",
+          "description": "Create an item and increment counter",
+          "parse":"csv",
+          "delimiter":"|",
+          "excludeKeys":true,
+          "parameters": [
+            {
+              "name": "Descriptive Name",
+              "payloadName": "name",
+              "type": "string",
+              "mandatory": true
+            },
+            {
+              "name": "Type String",
+              "payloadName": "typeStr",
+              "type": "string",
+              "mandatory": true
+            }
+          ]
+        },
+        {
+          "name": "i_get",
+          "friendlyName": "Get Item",
+          "description": "Retrieve the details of a specific item using its ID.",
+          "parse":"raw",
+          "parameters": [
+            {
+              "name": "Item Id",
+              "payloadName": "id",
+              "type": "number",
+              "asString": false,
+              "mandatory": true
+            }
+          ]
+        }
       ]
     }
   ]

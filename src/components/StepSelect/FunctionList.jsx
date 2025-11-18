@@ -27,17 +27,13 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
                 : 'transparent',
             color:
               fnName === fn.name
-                ? 'var(--color-primary-lightest)'
+                ? 'black'
                 : 'var(--color-primary-lighter)',
                 
             textAlign: 'left',
             whiteSpace: 'nowrap',
             padding: '0.5em 1em',
-            // border: 'none',
-            // borderRadius: '2px',
             cursor: 'pointer',
-
-            // 👇 prevent full-width stretch
             display: 'inline-flex',
             flex: '0 0 auto',
             width: 'auto',
@@ -45,6 +41,7 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
             textTransform: 'uppercase',
               fontSize: '0.85rem',
               letterSpacing: '0.05em',
+              
           }}
         >
          <FontAwesomeIcon icon={fn.parse =="game"?faDice:faCirclePlay} style={{marginRight: '10px'}} /> 

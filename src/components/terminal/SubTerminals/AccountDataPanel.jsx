@@ -157,7 +157,7 @@ export default function AccountDataPanel() {
             position: 'sticky',
             top: 0,
             zIndex: 1,
-            background: 'rgba(4, 15, 24, 0.95)',
+            background: 'transparent',
             paddingBottom: '1rem',
           }}
         >

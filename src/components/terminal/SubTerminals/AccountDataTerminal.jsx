@@ -11,7 +11,7 @@ export default function AccountDataTerminal() {
       title="Account Data"
       titleOnMinimize="Acc"
       initialState={INITIAL_STATE}
-      backgroundColor="rgba(0, 0, 0, 0.7)"
+      // backgroundColor="rgba(0, 0, 0, 0.7)"
       desktopBounds={{
         minWidth: 150,
         maxWidth: 1024,
@@ -25,7 +25,7 @@ export default function AccountDataTerminal() {
       viewportPadding={48}
       className="terminal--account-data"
       style={{
-        backdropFilter: 'blur(5px)',
+        backdropFilter: 'blur(6px)',
       }}
       headerVariant="compact"
       compactTitleOnMinimize="Acc"

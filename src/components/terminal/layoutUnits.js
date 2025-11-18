@@ -3,7 +3,7 @@ const DESIGN_BASE_HEIGHT = 1080
 const MIN_VIEWPORT_WIDTH = 320
 const MIN_VIEWPORT_HEIGHT = 568
 
-const getViewportSize = () => {
+export const getViewportSize = () => {
   if (typeof window === 'undefined') {
     return {
       width: DESIGN_BASE_WIDTH,

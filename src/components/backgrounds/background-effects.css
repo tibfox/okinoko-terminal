@@ -18,39 +18,23 @@
 
 .color-bends__layer {
   position: absolute;
-  width: 50vw;
-  height: 50vw;
-  max-width: 720px;
-  max-height: 720px;
+  width: var(--bend-size, 50vw);
+  height: var(--bend-size, 50vw);
+  max-width: var(--bend-max-size, 720px);
+  max-height: var(--bend-max-size, 720px);
+  top: var(--bend-top, -15%);
+  left: var(--bend-left, -15%);
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.55;
+  filter: blur(var(--bend-blur, 60px));
+  opacity: var(--bend-opacity, 0.55);
   mix-blend-mode: screen;
   transform-origin: center;
-}
-
-.color-bends__layer--one {
-  top: -15%;
-  left: -15%;
-  /* filter: blur(80px); */
-  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary-darker) 55%, transparent) 0%, transparent 72%);
-  animation: color-bends-orbit-one 9s ease-in-out infinite alternate;
-}
-
-.color-bends__layer--two {
-  bottom: -25%;
-  right: -10%;
-  /* filter: blur(80px); */
-  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary-darker) 45%, transparent) 0%, transparent 72%);
-  animation: color-bends-orbit-two 10s ease-in-out infinite alternate;
-}
-
-.color-bends__layer--three {
-  top: -10%;
-  right: -5%;
-  /* filter: blur(80px); */
-  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary-darker) 60%, transparent) 0%, transparent 72%);
-  animation: color-bends-orbit-three 14s ease-in-out infinite alternate;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary-darker) var(--bend-intensity, 55%), transparent) 0%,
+    transparent 72%
+  );
+  animation: var(--bend-animation, color-bends-orbit-one 12s ease-in-out infinite alternate);
 }
 
 @keyframes color-bends-orbit-one {
@@ -86,6 +70,30 @@
   }
   100% {
     transform: translate(-100%, 50%) scale(0.6);
+  }
+}
+
+@keyframes color-bends-orbit-four {
+  0% {
+    transform: translate(-40%, 0%) scale(0.7);
+  }
+  45% {
+    transform: translate(20%, -40%) scale(1.3);
+  }
+  100% {
+    transform: translate(60%, 10%) scale(0.9);
+  }
+}
+
+@keyframes color-bends-orbit-five {
+  0% {
+    transform: translate(30%, -30%) scale(1.1);
+  }
+  50% {
+    transform: translate(-60%, 30%) scale(0.7);
+  }
+  100% {
+    transform: translate(15%, 60%) scale(1.25);
   }
 }
 
@@ -280,75 +288,23 @@
   position: absolute;
   top: -200%;
   bottom: -200%;
-  width: 2px;
+  width: var(--strand-width, 2px);
+  left: var(--strand-left, 50%);
   background: linear-gradient(
     180deg,
     transparent,
-    color-mix(in srgb, var(--color-primary-darker) 70%, transparent),
+    color-mix(in srgb, var(--color-primary-darker) var(--strand-intensity, 70%), transparent),
     transparent
   );
-  opacity: 0.55;
-  filter: blur(0.3px);
-  animation: threads-flow 3s linear infinite alternate;
+  opacity: var(--strand-opacity, 0.55);
+  filter: blur(var(--strand-blur, 0.3px));
+  animation-name: threads-flow;
+  animation-duration: var(--strand-duration, 18s);
+  animation-delay: var(--strand-delay, 0s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: var(--strand-direction, alternate);
   will-change: transform;
-}
-.threads__strand--7 {
-  left: 10%;
-  animation-duration: 16s;
-  animation-delay: -2s;
-}
-.threads__strand--1 {
-  left: 20%;
-  animation-duration: 22s;
-}
-.threads__strand--2 {
-  left: 35%;
-  animation-duration: 14s;
-  animation-delay: -4s;
-}
-.threads__strand--9 {
-  left: 42%;
-  animation-duration: 6s;
-}
-.threads__strand--3 {
-  left: 50%;
-  animation-duration: 26s;
-}
-.threads__strand--10 {
-  left: 52%;
-  animation-duration: 4s;
-}
-.threads__strand--13 {
-  left: 58%;
-  animation-duration: 5s;
-}
-.threads__strand--4 {
-  left: 65%;
-  animation-duration: 20s;
-  animation-delay: -8s;
-}
-.threads__strand--8 {
-  left: 70%;
-  animation-duration: 16s;
-  animation-delay: -2s;
-}
-
-.threads__strand--11 {
-  left: 72%;
-  animation-duration: 4s;
-}
-.threads__strand--12 {
-  left: 78%;
-  animation-duration: 5s;
-}
-.threads__strand--5 {
-  left: 80%;
-  animation-duration: 24s;
-}
-.threads__strand--6 {
-  left: 90%;
-  animation-duration: 16s;
-  animation-delay: -2s;
 }
 
 

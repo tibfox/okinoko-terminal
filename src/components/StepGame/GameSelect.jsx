@@ -123,6 +123,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       nextTurnPlayer: row.creator,
       turn: '1',
       state: 'waiting',
+      moveType: 'm',
       board: null,
       lastMoveMinutesAgo: 0,
       lastMoveOn: row.created_block ?? null,
@@ -158,6 +159,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
         opponent = row.creator || row.joiner
       }
       const nextTurnPlayer = row.next_turn_player
+      const moveType = row.movetype || 'm'
       return {
         id: row.id,
         name: row.name,
@@ -171,7 +173,8 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
         type: typeNameFromId(row.type),
         turn: nextTurnPlayer === playerX ? '1' : '2',
         nextTurnPlayer,
-        state: 'play',
+        moveType,
+        state: moveType || 'play',
         board: null,
         lastMoveBy: row.last_move_by,
         lastMoveMinutesAgo: 0,

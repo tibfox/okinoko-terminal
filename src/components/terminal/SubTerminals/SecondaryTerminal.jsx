@@ -11,7 +11,7 @@ export default function SecondaryTerminal() {
       title="Monitor"
       titleOnMinimize="Mon"
       initialState={INITIAL_STATE}
-      backgroundColor="rgba(0, 0, 0, 0.7)"
+      // backgroundColor="rgba(0, 0, 0, 0.7)"
       desktopBounds={{
         minWidth: 240,
         maxWidth: 1024,

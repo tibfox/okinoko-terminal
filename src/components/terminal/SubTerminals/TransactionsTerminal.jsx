@@ -21,10 +21,10 @@ export default function TransactionsTerminal() {
         width: 324,
         height: 324,
       }}
-      backgroundColor="rgba(0, 0, 0, 0.7)"
+      // backgroundColor="rgba(0, 0, 0, 0.7)"
       className="terminal--transactions"
       style={{
-        backdropFilter: 'blur(4px)',
+        backdropFilter: 'blur(6px)',
       }}
       headerVariant="compact"
       compactTitleOnMinimize="Tx"

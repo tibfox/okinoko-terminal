@@ -32,6 +32,7 @@ export const ACTIVE_GAMES_FOR_PLAYER_QUERY = gql`
       o_player
       last_move_by
       next_turn_player
+      movetype
       betamount
       betasset
       fmc
@@ -68,10 +69,22 @@ export const GAME_MOVES_QUERY = gql`
     ) {
       id
       by
+      cell
       operation
       choice
       color
       indexer_block_height
+      indexer_ts
+    }
+    stateinfo: okinoko_iarv2_active_with_turn(
+      where: { id: { _eq: $gameId } }
+      limit: 1
+    ) {
+      id
+      movetype
+      next_turn_player
+      x_player
+      o_player
     }
   }
 `;
@@ -79,6 +92,19 @@ export const GAME_MOVES_QUERY = gql`
 export const GAME_MOVE_SUBSCRIPTION = gql`
   subscription OnGameMove($gameId: numeric!) {
     okinoko_iarv2_move_events_stream(
+      batch_size: 1
+      cursor: { initial_value: { indexer_block_height: 0 }, ordering: ASC }
+      where: { id: { _eq: $gameId } }
+    ) {
+      id
+      indexer_block_height
+    }
+  }
+`;
+
+export const GAME_SWAP_SUBSCRIPTION = gql`
+  subscription OnGameSwap($gameId: numeric!) {
+    okinoko_iarv2_swap_events_stream(
       batch_size: 1
       cursor: { initial_value: { indexer_block_height: 0 }, ordering: ASC }
       where: { id: { _eq: $gameId } }
