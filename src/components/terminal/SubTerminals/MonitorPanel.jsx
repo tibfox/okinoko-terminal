@@ -70,45 +70,11 @@ const ACCOUNT_CONSENSUS_QUERY = /* GraphQL */ `
 const WI_POLL_INTERVAL_MS = 60000
 const BE_POLL_INTERVAL_MS = 15000
 const TX_POLL_INTERVAL_MS = 5000
-const MAX_ROWS = 40
 const TX_PAGE_SIZE = 20
 const WITNESS_PAGE_SIZE = 20
 const BLOCK_PAGE_SIZE = 20
+const BLOCK_FETCH_COUNT = 200
 const BLOCKS_API_BASE_URL = 'https://vscapi.okinoko.io/backend/be-api/v1'
-
-const FINAL_STATUSES = new Set(['CONFIRMED', 'FAILED'])
-
-const mergeTransactions = (previous, incoming) => {
-  if (!Array.isArray(incoming) || incoming.length === 0) {
-    return previous
-  }
-
-  const byId = new Map(previous.map((item) => [item.id, item]))
-  incoming.forEach((item) => {
-    if (item?.id) {
-      const existing = byId.get(item.id)
-      if (!existing) {
-        byId.set(item.id, item)
-        return
-      }
-
-      const existingStatus = existing.status?.toUpperCase?.() ?? ''
-      const nextStatus = item.status?.toUpperCase?.() ?? ''
-      if (FINAL_STATUSES.has(existingStatus) && nextStatus === 'INCLUDED') {
-        return
-      }
-
-      byId.set(item.id, {
-        ...existing,
-        ...item,
-      })
-    }
-  })
-
-  return Array.from(byId.values())
-    .sort((a, b) => Number(b?.anchr_height ?? 0) - Number(a?.anchr_height ?? 0))
-    .slice(0, MAX_ROWS)
-}
 
 const formatWeight = (value) => {
   if (!Number.isFinite(value)) {
@@ -305,6 +271,15 @@ export default function MonitorPanel() {
     }),
     [TRANSACTION_API_HTTP],
   )
+  const txVariables = useMemo(
+    () => ({
+      filterOptions: {
+        limit: TX_PAGE_SIZE,
+        offset: Math.max(0, (txPage - 1) * TX_PAGE_SIZE),
+      },
+    }),
+    [txPage],
+  )
 
   const runTxQuery = useCallback(
     async (query, variables = {}) => {
@@ -333,7 +308,7 @@ export default function MonitorPanel() {
 
   const [{ data, fetching, error }, reexecuteQuery] = useQuery({
     query: FIND_TRANSACTION_QUERY,
-    variables: { filterOptions: null },
+    variables: txVariables,
     context: txQueryContext,
     pause: false,
     requestPolicy: 'network-only',
@@ -347,20 +322,14 @@ export default function MonitorPanel() {
   }, [reexecuteQuery, txQueryContext])
 
   useEffect(() => {
-    const incoming = data?.findTransaction ?? []
-    if (incoming.length === 0) {
-      return
-    }
-
-    setTransactions((prev) => mergeTransactions(prev, incoming))
+    setTransactions(data?.findTransaction ?? [])
   }, [data])
 
   useEffect(() => {
-    setTxPage((prev) => {
-      const total = Math.max(1, Math.ceil(transactions.length / TX_PAGE_SIZE))
-      return Math.min(prev, total)
-    })
-  }, [transactions])
+    if (!fetching && txPage > 1 && transactions.length === 0) {
+      setTxPage((prev) => Math.max(1, prev - 1))
+    }
+  }, [transactions, fetching, txPage])
 
   const fetchWitnesses = useCallback(async () => {
     setWitnessLoading(true)
@@ -456,7 +425,7 @@ export default function MonitorPanel() {
 
         const params = new URLSearchParams({
           last_block_id: String(height),
-          count: '50',
+          count: String(BLOCK_FETCH_COUNT),
         })
         const blocksResponse = await fetch(`${BLOCKS_API_BASE_URL}/blocks?${params.toString()}`)
         if (!blocksResponse.ok) {
@@ -519,8 +488,9 @@ export default function MonitorPanel() {
       return <div style={{ fontSize: '0.9rem' }}>No transactions yet. Monitoring...</div>
     }
 
-    const totalPages = Math.max(1, Math.ceil(rows.length / TX_PAGE_SIZE))
-    const pageRows = paginateRows(rows, txPage, TX_PAGE_SIZE)
+    const pageRows = rows
+    const disablePrev = txPage <= 1 || fetching
+    const disableNext = fetching || rows.length < TX_PAGE_SIZE
 
     return (
       <>
@@ -578,12 +548,13 @@ export default function MonitorPanel() {
           </tbody>
         </table>
         </div>
-        {renderPaginationControls(
-          txPage,
-          totalPages,
-          () => setTxPage((prev) => Math.max(1, prev - 1)),
-          () => setTxPage((prev) => Math.min(totalPages, prev + 1)),
-        )}
+        {renderPaginationControls({
+          disablePrev,
+          disableNext,
+          onPrev: () => setTxPage((prev) => Math.max(1, prev - 1)),
+          onNext: () =>
+            setTxPage((prev) => (disableNext ? prev : prev + 1)),
+        })}
       </>
     )
   }
@@ -596,14 +567,11 @@ export default function MonitorPanel() {
     return rows.slice(start, start + pageSize)
   }
 
-  const renderPaginationControls = (page, totalPages, onPrev, onNext) => {
-    if (totalPages <= 1) {
-      return null
-    }
-    return (
-      <div
-        style={{
-          display: 'flex',
+const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) => {
+  return (
+    <div
+      style={{
+        display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '8px 0',
@@ -613,7 +581,7 @@ export default function MonitorPanel() {
         <button
           type="button"
           onClick={onPrev}
-          disabled={page <= 1}
+          disabled={disablePrev}
           style={{
             minWidth: '70px',
             padding: '4px 10px',
@@ -621,19 +589,17 @@ export default function MonitorPanel() {
             border: '1px solid rgba(255, 255, 255, 0.2)',
             background: 'transparent',
             color: 'inherit',
-            cursor: page <= 1 ? 'not-allowed' : 'pointer',
-            opacity: page <= 1 ? 0.4 : 1,
+            cursor: disablePrev ? 'not-allowed' : 'pointer',
+            opacity: disablePrev ? 0.4 : 1,
           }}
         >
           Prev
         </button>
-        <span style={{ letterSpacing: '0.05em' }}>
-          Page {page} / {totalPages}
-        </span>
+        <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)', margin: '0 12px' }} />
         <button
           type="button"
           onClick={onNext}
-          disabled={page >= totalPages}
+          disabled={disableNext}
           style={{
             minWidth: '70px',
             padding: '4px 10px',
@@ -641,8 +607,8 @@ export default function MonitorPanel() {
             border: '1px solid rgba(255, 255, 255, 0.2)',
             background: 'transparent',
             color: 'inherit',
-            cursor: page >= totalPages ? 'not-allowed' : 'pointer',
-            opacity: page >= totalPages ? 0.4 : 1,
+            cursor: disableNext ? 'not-allowed' : 'pointer',
+            opacity: disableNext ? 0.4 : 1,
           }}
         >
           Next
@@ -670,6 +636,8 @@ export default function MonitorPanel() {
 
     const totalPages = Math.max(1, Math.ceil(witnesses.length / WITNESS_PAGE_SIZE))
     const pageRows = paginateRows(witnesses, witnessPage, WITNESS_PAGE_SIZE)
+    const disablePrev = witnessPage <= 1
+    const disableNext = witnessPage >= totalPages
 
     return (
       <>
@@ -703,12 +671,13 @@ export default function MonitorPanel() {
           </tbody>
         </table>
         </div>
-        {renderPaginationControls(
-          witnessPage,
-          totalPages,
-          () => setWitnessPage((prev) => Math.max(1, prev - 1)),
-          () => setWitnessPage((prev) => Math.min(totalPages, prev + 1)),
-        )}
+        {renderPaginationControls({
+          disablePrev,
+          disableNext,
+          onPrev: () => setWitnessPage((prev) => Math.max(1, prev - 1)),
+          onNext: () =>
+            setWitnessPage((prev) => (disableNext ? prev : Math.min(totalPages, prev + 1))),
+        })}
       </>
     )
   }
@@ -732,6 +701,8 @@ export default function MonitorPanel() {
 
     const totalPages = Math.max(1, Math.ceil(blocks.length / BLOCK_PAGE_SIZE))
     const pageRows = paginateRows(blocks, blockPage, BLOCK_PAGE_SIZE)
+    const disablePrev = blockPage <= 1
+    const disableNext = blockPage >= totalPages
 
     return (
       <>
@@ -792,12 +763,13 @@ export default function MonitorPanel() {
           </tbody>
         </table>
         </div>
-        {renderPaginationControls(
-          blockPage,
-          totalPages,
-          () => setBlockPage((prev) => Math.max(1, prev - 1)),
-          () => setBlockPage((prev) => Math.min(totalPages, prev + 1)),
-        )}
+        {renderPaginationControls({
+          disablePrev,
+          disableNext,
+          onPrev: () => setBlockPage((prev) => Math.max(1, prev - 1)),
+          onNext: () =>
+            setBlockPage((prev) => (disableNext ? prev : Math.min(totalPages, prev + 1))),
+        })}
       </>
     )
   }
