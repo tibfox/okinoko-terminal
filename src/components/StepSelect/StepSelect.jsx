@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks'
+import { useContext, useEffect, useMemo, useState } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
@@ -9,6 +9,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import MobileTabs from '../common/MobileTabs.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import { useAioha } from '@aioha/react-ui'
+import { PopupContext } from '../../popup/context.js'
 
 const STORAGE_KEY = 'stepSelectActivePage'
 const IN_A_ROW_VSC_ID = 'vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh'
@@ -30,7 +31,7 @@ export default function StepSelect({
   const { user } = useAioha()
   const isMobile = useDeviceBreakpoint()
   const [activePage, setActivePage] = useState(getStoredPage)
-  const [showPopup, setShowPopup] = useState(false)
+  const popup = useContext(PopupContext)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -109,7 +110,23 @@ export default function StepSelect({
       >
         These are{' '}
         <span
-          onClick={() => setShowPopup(true)}
+          onClick={() =>
+            popup?.openPopup?.({
+              title: 'Currently Supported Contracts',
+              body: () => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', lineHeight: 1.5 }}>
+                  <p>
+                    If you’re a developer with your own creations on-chain, drop a signal to{' '}
+                    <a href="https://discord.gg/mG5tUWWXB3" target="_blank" rel="noreferrer">
+                      @tibfox
+                    </a>
+                    . He’ll sync your contract metadata into the system so it becomes available via the Ōkinoko
+                    terminal soon.
+                  </p>
+                </div>
+              ),
+            })
+          }
           style={{
             color: 'var(--color-primary)',
             fontStyle: 'italic',
@@ -120,49 +137,6 @@ export default function StepSelect({
         </span>{' '}
         smart contracts running on the Magi blockchain.
       </p>
-
-      {/* Popup */}
-      {showPopup && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999,
-          }}
-          onClick={() => setShowPopup(false)}
-        >
-          <div
-            style={{
-              backgroundColor: '#111',
-              // border: '1px solid #0ff',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              maxWidth: '80vw',
-              // color: '#0ff',
-              textAlign: 'justify',
-              lineHeight: 1.5,
-              boxShadow: '0 0 10px #0ff',
-            }}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-          >
-            <p>If you’re a developer with your own creations on-chain, drop a signal to 
-              <a href="https://discord.gg/mG5tUWWXB3"> @tibfox</a>.<br></br><br></br>He’ll sync your contract metadata into the system so it becomes
-              available via the Ōkinoko terminal soon.
-            </p>
-
-            <NeonButton onClick={() => setShowPopup(false)} style={{ marginTop: '2rem' }}>
-              Close
-            </NeonButton>
-          </div>
-        </div>
-      )}
 
       <MobileTabs
         visible={isMobile}

@@ -6,7 +6,13 @@ import { PopupContext } from "./context.js";
 export function PopupProvider({ children }) {
   const [popup, setPopup] = useState(null);
 
-  const openPopup = ({ title, body }) => setPopup({ title, body });
+  const openPopup = ({ title, body }) => {
+    setPopup({
+      title,
+      body,
+      showCloseButton: true,
+    })
+  }
   const closePopup = () => setPopup(null);
 // 🔁 Re-render the overlay every second while a popup is open
   const [tick, setTick] = useState(0);
@@ -47,63 +53,54 @@ export function PopupProvider({ children }) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* HEADER CARD */}
             <div
-              class="cyber-popup"
               style={{
                 position: "relative",
                 width: "100%",
-                zIndex: 2,
-                marginBottom: "-20px",
-                padding: "14px",
+                zIndex: 1,
+                padding: "18px 20px 16px",
+                background: "black",
+                border: "1px solid var(--color-primary-darkest)",
                 color: "var(--color-primary-lighter, #9be8ff)",
+                borderRadius: "12px",
+                boxShadow: "0 0 18px rgba(0, 0, 0, 0.6)",
               }}
             >
-              <h5>{popup.title}</h5>
+              <div
+                style={{
+                  marginBottom: "18px",
+                  color: "var(--color-primary-lightest)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.2em",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {popup.title}
+              </div>
+
+              <div style={{ maxHeight: "60vh", overflowY: "auto", lineHeight: 1.5 }}>
+                {typeof popup.body === "function" ? popup.body() : popup.body}
+                <div style={{ display: "none" }}>{tick}</div>
+              </div>
+
               <button
                 onClick={closePopup}
                 aria-label="Close popup"
                 style={{
-                  position: "absolute",
-                  top: "50%",
-                  right: "10px",
-                  transform: "translateY(-50%)",
+                  marginTop: "20px",
+                  width: "100%",
+                  border: "1px solid var(--color-primary-darkest)",
                   background: "transparent",
-                  border: "none",
-                  color: "var(--color-primary-lighter, #9be8ff)",
-                  fontSize: "1.1rem",
+                  color: "var(--color-primary-lighter)",
+                  fontFamily: "'Share Tech Mono', monospace",
+                  letterSpacing: "0.2em",
+                  padding: "10px",
                   cursor: "pointer",
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  textTransform: "uppercase",
                 }}
               >
-                <FontAwesomeIcon icon={faTimes} />
+                Close
               </button>
-            </div>
-
-            {/* BACK PANEL */}
-            <div
-              // class="cyber-popup"
-               style={{
-        position: "relative",
-        width: "100%",
-        zIndex: 1,
-        padding: "14px",
-        background: "black",
-        border: "1px solid var(--color-primary-darkest)",
-        color: "var(--color-primary-lighter, #9be8ff)",
-      }}
-            >
-                <div style={{padding: '8px',marginTop:'10px', maxHeight: '65vh', overflowY: 'auto'}}>
-              {/* If a render function is provided, call it each render */}
-              {typeof popup.body === "function" ? popup.body() : popup.body}
-
-              {/* use `tick` to appease VDOM diff optimizers (forces repaint) */}
-              <div style={{ display: "none" }}>{tick}</div>
-
-              </div>
             </div>
           </div>
         </div>

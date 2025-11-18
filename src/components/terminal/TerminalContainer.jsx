@@ -10,11 +10,9 @@ import {
   faWindowMinimize,
   faWindowMaximize,
   faCaretDown,
-  faRotateLeft,
   faLayerGroup,
   faBookmark,
   faTrash,
-  faPalette,
   faTornado,
   faCircleQuestion,
 } from '@fortawesome/free-solid-svg-icons'

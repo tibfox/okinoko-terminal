@@ -20,11 +20,11 @@ const tableStyle = {
 }
 
 const cellLabelStyle = {
-  textTransform: 'uppercase',
+  // textTransform: 'uppercase',
   letterSpacing: '0.04em',
   color: 'var(--color-primary-lighter)',
   padding: '0.25rem 0.35rem 0.25rem 0',
-  width: '70%',
+  width: '40%',
 }
 
 const cellValueStyle = {
@@ -116,19 +116,19 @@ export default function AccountDataPanel() {
       { label: 'HIVE', value: balances ? formatNumber(Number(balances.hive) / 1000, true) : '—' },
       { label: 'HBD', value: balances ? formatNumber(Number(balances.hbd) / 1000, true) : '—' },
       {
-        label: 'HBD Savings',
+        label: 'sHBD',
         value: balances ? formatNumber(Number(balances.hbd_savings) / 1000, true) : '—',
       },
       {
-        label: 'Consensus HP',
+        label: 'cHIVE',
         value: balances ? formatNumber(Number(balances.hive_consensus) / 1000, true) : '—',
       },
       {
-        label: 'Consensus Unstaking',
-        value: balances ? formatNumber(Number(balances.consensus_unstaking) / 1000, true) : '—',
+        label: 'cHIVE unst.',
+        value: balances ? formatNumber(Number(balances.sHiveUnstaking) / 1000, true) : '—',
       },
       {
-        label: 'Pending HBD Unstake',
+        label: 'sHBD unst.',
         value: balances ? formatNumber(Number(balances.pending_hbd_unstaking) / 1000, true) : '—',
       },
     ],
@@ -185,7 +185,7 @@ export default function AccountDataPanel() {
 
           <div style={{ ...progressWrapperStyle, marginTop: '0.75rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
-              <span style={{ color: 'var(--color-primary-lighter)' }}>Resource Credits</span>
+              <span style={{ color: 'var(--color-primary-lighter)' }}>RC</span>
               <span style={{ color: 'var(--color-primary-lighter)' }}>
                 {showSkeleton ? '—' : `${rcPercent.toFixed(1)}%`}
               </span>

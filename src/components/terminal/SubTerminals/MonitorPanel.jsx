@@ -71,6 +71,9 @@ const WI_POLL_INTERVAL_MS = 60000
 const BE_POLL_INTERVAL_MS = 15000
 const TX_POLL_INTERVAL_MS = 5000
 const MAX_ROWS = 40
+const TX_PAGE_SIZE = 20
+const WITNESS_PAGE_SIZE = 20
+const BLOCK_PAGE_SIZE = 20
 const BLOCKS_API_BASE_URL = 'https://vscapi.okinoko.io/backend/be-api/v1'
 
 const FINAL_STATUSES = new Set(['CONFIRMED', 'FAILED'])
@@ -174,13 +177,39 @@ const getOperationLabel = (tx) => {
   return primaryType ?? tx?.type ?? '—'
 }
 
+const getNormalizedOperation = (tx) => {
+  const label = getOperationLabel(tx)
+  return typeof label === 'string' ? label.toLowerCase() : ''
+}
+
+const getAccountLabel = (tx) => {
+  const data = getFirstOpData(tx)
+  const op = getNormalizedOperation(tx)
+  if (op === 'deposit') {
+    if (data?.account) {
+      return data.account
+    }
+    if (data?.from) {
+      return data.from
+    }
+  }
+  return tx?.required_auths?.[0] ?? null
+}
+
 const getAmountLabel = (tx) => {
   const data = getFirstOpData(tx)
   if (!data) {
     return ''
   }
 
-  if (data.amount != null) {
+  const op = getNormalizedOperation(tx)
+  if (op === 'deposit' && data.amount != null) {
+    const numericAmount = Number(data.amount)
+    if (Number.isFinite(numericAmount)) {
+      const assetSuffix = data.asset ? ` ${String(data.asset).toUpperCase()}` : ''
+      return `${(numericAmount / 1000).toFixed(3)}${assetSuffix}`
+    }
+  } else if (data.amount != null) {
     const assetSuffix = data.asset ? ` ${String(data.asset).toUpperCase()}` : ''
     return `${data.amount}${assetSuffix}`
   }
@@ -262,6 +291,9 @@ export default function MonitorPanel() {
   const [blocks, setBlocks] = useState([])
   const [blocksLoading, setBlocksLoading] = useState(false)
   const [blocksError, setBlocksError] = useState(null)
+  const [txPage, setTxPage] = useState(1)
+  const [witnessPage, setWitnessPage] = useState(1)
+  const [blockPage, setBlockPage] = useState(1)
   const txQueryContext = useMemo(
     () => ({
       url: TRANSACTION_API_HTTP,
@@ -322,6 +354,13 @@ export default function MonitorPanel() {
 
     setTransactions((prev) => mergeTransactions(prev, incoming))
   }, [data])
+
+  useEffect(() => {
+    setTxPage((prev) => {
+      const total = Math.max(1, Math.ceil(transactions.length / TX_PAGE_SIZE))
+      return Math.min(prev, total)
+    })
+  }, [transactions])
 
   const fetchWitnesses = useCallback(async () => {
     setWitnessLoading(true)
@@ -390,6 +429,13 @@ export default function MonitorPanel() {
   }, [fetchWitnesses])
 
   useEffect(() => {
+    setWitnessPage((prev) => {
+      const total = Math.max(1, Math.ceil(witnesses.length / WITNESS_PAGE_SIZE))
+      return Math.min(prev, total)
+    })
+  }, [witnesses])
+
+  useEffect(() => {
     let cancelled = false
     const fetchBlocks = async () => {
       if (cancelled) {
@@ -447,6 +493,13 @@ export default function MonitorPanel() {
     }
   }, [])
 
+  useEffect(() => {
+    setBlockPage((prev) => {
+      const total = Math.max(1, Math.ceil(blocks.length / BLOCK_PAGE_SIZE))
+      return Math.min(prev, total)
+    })
+  }, [blocks])
+
   const renderTxTable = () => {
     if (error) {
       return (
@@ -466,9 +519,13 @@ export default function MonitorPanel() {
       return <div style={{ fontSize: '0.9rem' }}>No transactions yet. Monitoring...</div>
     }
 
+    const totalPages = Math.max(1, Math.ceil(rows.length / TX_PAGE_SIZE))
+    const pageRows = paginateRows(rows, txPage, TX_PAGE_SIZE)
+
     return (
-      <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <>
+        <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th style={headerCellStyle}>Tx</th>
@@ -481,7 +538,7 @@ export default function MonitorPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((tx) => (
+            {pageRows.map((tx) => (
               <tr key={tx.id}>
                 <td style={cellStyle}>
                   {tx?.id ? (
@@ -494,19 +551,23 @@ export default function MonitorPanel() {
                 </td>
                 <td style={{ ...cellStyle, width: '2rem', textAlign: 'center' }}>{renderStatusIcon(tx.status)}</td>
                 <td style={cellStyle}>
-                  {tx.required_auths?.[0] ? (
-                    <a
-                      href={`https://vsc.techcoderx.com/address/${tx.required_auths[0]}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {tx.required_auths[0].length > 23
-                        ? tx.required_auths[0].slice(0, 23) + "..."
-                        : tx.required_auths[0]}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
+                  {(() => {
+                    const accountLabel = getAccountLabel(tx)
+                    if (!accountLabel) {
+                      return '—'
+                    }
+                    const displayLabel =
+                      accountLabel.length > 23 ? `${accountLabel.slice(0, 23)}...` : accountLabel
+                    return (
+                      <a
+                        href={`https://vsc.techcoderx.com/address/${accountLabel}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {displayLabel}
+                      </a>
+                    )
+                  })()}
                 </td>
                 <td style={cellStyle}>{getOperationLabel(tx)}</td>
                 <td style={cellStyle}>{getAmountLabel(tx)}</td>
@@ -516,6 +577,76 @@ export default function MonitorPanel() {
             ))}
           </tbody>
         </table>
+        </div>
+        {renderPaginationControls(
+          txPage,
+          totalPages,
+          () => setTxPage((prev) => Math.max(1, prev - 1)),
+          () => setTxPage((prev) => Math.min(totalPages, prev + 1)),
+        )}
+      </>
+    )
+  }
+
+  const paginateRows = (rows, page, pageSize) => {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return []
+    }
+    const start = (page - 1) * pageSize
+    return rows.slice(start, start + pageSize)
+  }
+
+  const renderPaginationControls = (page, totalPages, onPrev, onNext) => {
+    if (totalPages <= 1) {
+      return null
+    }
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 0',
+          fontSize: '0.85rem',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={page <= 1}
+          style={{
+            minWidth: '70px',
+            padding: '4px 10px',
+            borderRadius: '4px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: 'transparent',
+            color: 'inherit',
+            cursor: page <= 1 ? 'not-allowed' : 'pointer',
+            opacity: page <= 1 ? 0.4 : 1,
+          }}
+        >
+          Prev
+        </button>
+        <span style={{ letterSpacing: '0.05em' }}>
+          Page {page} / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={page >= totalPages}
+          style={{
+            minWidth: '70px',
+            padding: '4px 10px',
+            borderRadius: '4px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: 'transparent',
+            color: 'inherit',
+            cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+            opacity: page >= totalPages ? 0.4 : 1,
+          }}
+        >
+          Next
+        </button>
       </div>
     )
   }
@@ -537,9 +668,13 @@ export default function MonitorPanel() {
       return <div style={{ fontSize: '0.9rem' }}>No witness data yet.</div>
     }
 
+    const totalPages = Math.max(1, Math.ceil(witnesses.length / WITNESS_PAGE_SIZE))
+    const pageRows = paginateRows(witnesses, witnessPage, WITNESS_PAGE_SIZE)
+
     return (
-      <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <>
+        <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th style={headerCellStyle}>Witness</th>
@@ -547,7 +682,7 @@ export default function MonitorPanel() {
             </tr>
           </thead>
           <tbody>
-            {witnesses.map((witness) => (
+            {pageRows.map((witness) => (
               <tr key={witness.account}>
                 <td style={cellStyle}>
                   {witness?.account ? (
@@ -567,7 +702,14 @@ export default function MonitorPanel() {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
+        {renderPaginationControls(
+          witnessPage,
+          totalPages,
+          () => setWitnessPage((prev) => Math.max(1, prev - 1)),
+          () => setWitnessPage((prev) => Math.min(totalPages, prev + 1)),
+        )}
+      </>
     )
   }
 
@@ -588,9 +730,13 @@ export default function MonitorPanel() {
       return <div style={{ fontSize: '0.9rem' }}>No block data yet.</div>
     }
 
+    const totalPages = Math.max(1, Math.ceil(blocks.length / BLOCK_PAGE_SIZE))
+    const pageRows = paginateRows(blocks, blockPage, BLOCK_PAGE_SIZE)
+
     return (
-      <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }} >
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <>
+        <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }} >
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th style={headerCellStyle}>Block</th>
@@ -600,7 +746,7 @@ export default function MonitorPanel() {
             </tr>
           </thead>
           <tbody>
-            {blocks.map((block) => {
+            {pageRows.map((block) => {
               const blockId = parseNumeric(block?.be_info?.block_id) ?? '—'
               const proposer = block?.proposer ?? '—'
               const ts = block?.be_info?.ts ?? block?.ts
@@ -645,7 +791,14 @@ export default function MonitorPanel() {
             })}
           </tbody>
         </table>
-      </div>
+        </div>
+        {renderPaginationControls(
+          blockPage,
+          totalPages,
+          () => setBlockPage((prev) => Math.max(1, prev - 1)),
+          () => setBlockPage((prev) => Math.min(totalPages, prev + 1)),
+        )}
+      </>
     )
   }
 

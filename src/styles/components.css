@@ -372,6 +372,31 @@ select {
   
 }
 
+.cyber-subheader2 {
+    --tile-width: 100%;
+    --tile-padding-hor: 20px;
+    --tile-padding-vert: 10px;
+    --tile-edges: 15px;
+    --label-margins: calc(var(--tile-edges) - var(--tile-padding-hor));
+   --og-clip-path: polygon(
+    var(--tile-edges) 0,                         /* cut top-left */
+    calc(100% - var(--tile-edges)) 0,            /* run to near top-right */
+    100% var(--tile-edges),                      /* cut top-right */
+    100% 100%,                                   /* regular right edge down */
+    0 100%,
+    0 var(--tile-edges)                          /* return to left cut */
+);
+
+    width: var(--tile-width);
+    min-height: 30px;
+    clip-path: var(--og-clip-path);
+    padding: var(--tile-padding-vert) var(--tile-padding-hor) !important;
+    padding-bottom: var(--tile-edges);
+    background-color: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+    margin: 0;
+  
+}
+
 .cyber-popup {
     --tile-width: 33%;
     --tile-padding-hor: 2px;
@@ -420,4 +445,38 @@ select {
   font-size: 0.7rem;
   letter-spacing: 0.4em;
   color: var(--color-primary-darker);
+}
+
+.floating-label-input {
+  position: relative;
+  min-height: 50px;
+  border: 1px solid var(--color-primary-darkest);
+  /* border-radius: 10px; */
+  padding: 16px 16px 10px;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.floating-label-input:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary-darkest);
+}
+
+.floating-label-input__field {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-primary-lightest);
+  font-size: 1rem;
+  line-height: 1.4;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+.floating-label-input__field::placeholder {
+  color: var(--color-primary-darkest);
+  font-style: italic;
 }

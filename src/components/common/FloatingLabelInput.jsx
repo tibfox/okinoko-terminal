@@ -25,12 +25,8 @@ const FloatingLabelInput = ({
 
   return (
     <div
-      className={`relative border border-cyan-400/40 rounded-md px-4 pt-4 pb-2 flex items-center focus-within:border-cyan-400 transition-all ${className}`}
-      style={{
-        minHeight: "50px",
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
-        ...style,
-      }}
+      className={`floating-label-input ${className}`}
+      style={style}
     >
       {/* ✅ Floating Label */}
       {label && (
@@ -60,7 +56,7 @@ const FloatingLabelInput = ({
         value={value}
         onChange={onChange}
         onKeyDown={handleKeyDown} // ✅ keypress sound
-        className="w-full border-none outline-none bg-transparent text-cyan-100 placeholder-cyan-700 text-base leading-relaxed relative z-10"
+        className="floating-label-input__field"
         {...props}
       />
     </div>

@@ -1,7 +1,7 @@
 // src/eruda-setup.ts
 import eruda from 'eruda';
 
-import { useState } from 'preact/hooks'
+import { useState, useEffect, useRef } from 'preact/hooks'
 
 import { initAioha } from '@aioha/aioha'
 import { AiohaProvider } from '@aioha/react-ui'
@@ -17,6 +17,23 @@ import TransactionsTerminal from './components/terminal/SubTerminals/Transaction
 import AccountDataTerminal from './components/terminal/SubTerminals/AccountDataTerminal.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 
+const MAX_PAGE_INDEX = 3
+const clampPageIndex = (value) => Math.min(Math.max(value, 0), MAX_PAGE_INDEX)
+const getInitialPageIndex = () => {
+  if (typeof window === 'undefined') {
+    return 0
+  }
+  const statePage = window.history.state?.page
+  if (typeof statePage === 'number') {
+    return clampPageIndex(statePage)
+  }
+  const hashMatch = window.location.hash.match(/^#p(\d)$/)
+  if (hashMatch) {
+    return clampPageIndex(Number(hashMatch[1]))
+  }
+  return 0
+}
+
 const aioha = initAioha({
   hiveauth: {
     name: 'Okinoko Terminal',
@@ -27,12 +44,13 @@ const aioha = initAioha({
 
 
 export function App() {
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(() => getInitialPageIndex())
   const [contractId, setContractId] = useState('')
     const [fnName, setFnName] = useState('')
     const [params, setParams] = useState({})
   const isMobile = useDeviceBreakpoint()
   const showDesktopTerminals = isMobile === false
+  const popNavigationRef = useRef(false)
 
     if (import.meta.env.VITE_EXPOSE_ERUDA === 'true') {
   import('eruda').then((eruda) => {
@@ -40,10 +58,35 @@ export function App() {
   });
 }
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    window.history.replaceState({ page }, '', `#p${page}`)
+    const handlePopState = (event) => {
+      const nextPage =
+        typeof event.state?.page === 'number' ? clampPageIndex(event.state.page) : 0
+      popNavigationRef.current = true
+      setPage(nextPage)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    if (popNavigationRef.current) {
+      popNavigationRef.current = false
+      return
+    }
+    window.history.pushState({ page }, '', `#p${page}`)
+  }, [page])
 
   // simple helper to move between pages safely
-  const nextPage = () => setPage((prev) => Math.min(prev + 1, 4))
-  const prevPage = () => setPage((prev) => Math.max(prev - 1, 0))
+  const nextPage = () => setPage((prev) => clampPageIndex(prev + 1))
+  const prevPage = () => setPage((prev) => clampPageIndex(prev - 1))
 
   const renderPage = () => {
     switch (page) {

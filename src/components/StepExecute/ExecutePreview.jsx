@@ -60,12 +60,24 @@ export default function ExecutePreview({ jsonPreview, logs }) {
         minHeight: 0,
       }}
     >
-      <h3 className="cyber-tile" style={{maxWidth: '75%'}}>Payload Preview</h3>
+      <h1 className="cyber-subheader2" style={{
+        maxWidth: '75%', 
+        margin: 0,
+            marginRight: '75px',
+            // fontFamily: "'Share Tech Mono',monospace",
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            letterSpacing: '0.15em',
+            display: 'inline-block',
+            fontSize: `0.8rem`,
+    lineHeight: 1.05,
+      }}>PAYLOAD PREVIEW</h1>
       <div
   className="neon-scroll"
   style={{
     border: '1px solid var(--color-primary-darkest)',
-    borderRadius: '8px',
     padding: '8px',
     backgroundColor: 'rgba(0,0,0,0.6)',
     fontFamily: "'Share Tech Mono', monospace",
@@ -85,7 +97,22 @@ export default function ExecutePreview({ jsonPreview, logs }) {
 
 
       
-      <h3 className="cyber-tile" style={{maxWidth: '75%'}}>Log Console</h3>
+      <h1 className="cyber-subheader2" style={{
+        
+        maxWidth: '75%', 
+        margin: 0,
+            marginRight: '75px',
+            // fontFamily: "'Share Tech Mono',monospace",
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            letterSpacing: '0.15em',
+            display: 'inline-block',
+            fontSize: `0.8rem`,
+    lineHeight: 1.05,
+        
+        }}>Log Console</h1>
       
 
       {/* ✅ Wrapper (relative) */}
@@ -105,7 +132,6 @@ export default function ExecutePreview({ jsonPreview, logs }) {
   style={{
     flex: 1,
     border: '1px solid var(--color-primary-darkest)',
-    borderRadius: '8px',
     padding: '8px',
     backgroundColor: 'rgba(0,0,0,0.6)',
     fontFamily: "'Share Tech Mono', monospace",

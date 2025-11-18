@@ -87,7 +87,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
             }}
           >
-            <span>{`Recent transactions (${txs.length})`}</span>
+            <span>{`TXs (${txs.length})`}</span>
             <button
               type="button"
               onClick={handleDeleteAll}
