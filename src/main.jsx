@@ -10,6 +10,16 @@ import { createClient, Provider, cacheExchange, fetchExchange, subscriptionExcha
 import { createClient as createWSClient } from 'graphql-ws';
 import { HASURA_HTTP, HASURA_WS } from './lib/graphqlEndpoints.js'
 
+// Guard against browsers where adoptedStyleSheets is unsupported or not array-like (e.g., missing Array methods)
+if (typeof document !== 'undefined') {
+  const sheets = document.adoptedStyleSheets
+  if (sheets && typeof sheets.filter !== 'function') {
+    // Lightweight polyfill so code using filter/push does not break; operates on a shallow copy
+    sheets.filter = (...args) => Array.prototype.filter.apply(Array.from(sheets), args)
+    sheets.push = (...args) => Array.prototype.push.apply(sheets, args)
+  }
+}
+
 import { TransactionProvider } from './transactions/provider';
 import { PopupProvider } from "./popup/PopupProvider.jsx";
 import { TerminalWindowProvider } from './components/terminal/providers/TerminalWindowProvider.jsx';
