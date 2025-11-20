@@ -184,3 +184,28 @@ export const PLAYER_LEADERBOARD_SEASON_QUERY = gql`
     }
   }
 `;
+
+export const COMPLETED_GAMES_HISTORY_QUERY = gql`
+  query CompletedGamesHistory($gameType: numeric!, $user: String!) {
+    okinoko_iarv2_completed_games(
+      where: {
+        type: { _eq: $gameType }
+        _or: [{ creator: { _eq: $user } }, { joined_by: { _eq: $user } }]
+      }
+      order_by: { id: desc }
+      limit: 50
+    ) {
+      id
+      betamount
+      betasset
+      creator
+      joined_by
+      name
+      type
+      winner
+      resigner
+      timedout
+      indexer_ts
+    }
+  }
+`;

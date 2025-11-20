@@ -426,7 +426,9 @@ select {
   z-index: 2000;
   pointer-events: none;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.4rem;
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.8rem;
   letter-spacing: 0.3em;
@@ -442,9 +444,53 @@ select {
 }
 
 .app-corner-logo__muted {
-  font-size: 0.7rem;
-  letter-spacing: 0.4em;
+  font-size: 0.85rem;
+  letter-spacing: 0.35em;
   color: var(--color-primary-darker);
+}
+
+.app-footer-credit {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-primary-lightest);
+  text-shadow: 0 0 10px var(--color-primary-lightest);
+  opacity: 0.85;
+}
+
+.app-footer-credit__accent {
+  color: var(--color-primary-lightest);
+}
+
+.app-footer-credit__muted {
+  color: var(--color-primary-darker);
+}
+
+.app-footer-credit__separator {
+  color: var(--color-primary);
+  letter-spacing: 0.1em;
+}
+
+.app-footer-credit__link {
+  pointer-events: auto;
+  text-decoration: none;
+  transition: color 120ms ease, text-shadow 120ms ease;
+  font-style: normal;
+}
+
+.app-footer-credit__link:hover {
+  color: var(--color-primary-lightest);
+  text-shadow: 0 0 12px var(--color-primary);
 }
 
 .floating-label-input {

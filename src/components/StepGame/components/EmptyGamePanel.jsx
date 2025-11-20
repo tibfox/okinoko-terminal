@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'preact/hooks'
+import { useAioha } from '@aioha/react-ui'
 import { useQuery } from '@urql/preact'
 import {
   PLAYER_LEADERBOARD_QUERY,
   PLAYER_LEADERBOARD_SEASON_QUERY,
+  COMPLETED_GAMES_HISTORY_QUERY,
 } from '../../../data/inarow_gql.js'
 import { GAME_TYPE_OPTIONS } from '../gameTypes.js'
 import { Tabs } from '../../common/Tabs.jsx'
@@ -23,6 +25,11 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
   const [leaderboardScope, setLeaderboardScope] = useState('season')
   const [sortKey, setSortKey] = useState('ratio')
   const [sortDirection, setSortDirection] = useState('desc')
+  const { user } = useAioha()
+  const normalizedUser = useMemo(() => {
+    if (!user) return ''
+    return user.startsWith('hive:') ? user : `hive:${user}`
+  }, [user])
   const selectedType = defaultGameTypeId ?? DEFAULT_LEADERBOARD_GAME_TYPE
 
   const orderBy = useMemo(() => {
@@ -58,10 +65,26 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     requestPolicy: 'cache-and-network',
   })
 
+  const historyPaused = activeTab !== 'history' || !hasSelectedType || !normalizedUser
+  const [{ data: historyData, fetching: historyFetching, error: historyError }] = useQuery({
+    query: COMPLETED_GAMES_HISTORY_QUERY,
+    variables:
+      hasSelectedType && normalizedUser
+        ? {
+            gameType: selectedType,
+            user: normalizedUser,
+          }
+        : undefined,
+    pause: historyPaused,
+    requestPolicy: 'cache-and-network',
+  })
+
   const rows =
     data?.okinoko_iarv2_player_stats_by_type ??
     data?.okinoko_iarv2_player_stats_by_type_current_season ??
     []
+
+  const historyRows = historyData?.okinoko_iarv2_completed_games ?? []
 
   const handleSortChange = (nextKey) => {
     if (!LEADERBOARD_FIELD_MAP[nextKey]) return
@@ -88,6 +111,39 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     const num = Number(value)
     if (Number.isNaN(num)) return '–'
     return `${(num * 100).toFixed(1)}%`
+  }
+
+  const normalizeId = (value) => (value || '').replace(/^hive:/i, '')
+  const formatId = (value) => {
+    const cleaned = normalizeId(value)
+    return cleaned.length > 0 ? cleaned : '—'
+  }
+
+  const formatOutcome = (row) => {
+    const winner = normalizeId(row.winner)
+    const resigner = normalizeId(row.resigner)
+    const timedout = normalizeId(row.timedout)
+    if (winner) return winner === normalizedUser ? 'Win' : 'Loss'
+    if (resigner)
+      return resigner === normalizedUser ? 'Loss (resigned)' : 'Win (opponent resigned)'
+    if (timedout) return timedout === normalizedUser ? 'Loss (timeout)' : 'Win (timeout)'
+    return 'Completed'
+  }
+
+  const formatOpponent = (row) => {
+    const creator = normalizeId(row.creator)
+    const joiner = normalizeId(row.joined_by)
+    if (!normalizedUser) return formatId(joiner) || formatId(creator)
+    if (creator === normalizedUser) return formatId(joiner)
+    if (joiner === normalizedUser) return formatId(creator)
+    return formatId(joiner || creator)
+  }
+
+  const formatCompletedAt = (value) => {
+    if (!value) return '—'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return '—'
+    return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
   }
 
   const tabButtonStyle = (active) => ({
@@ -210,11 +266,91 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     </div>
   )
 
+  const historyTab = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {!user && (
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-primary-lighter)' }}>
+          Sign in to view your recent games.
+        </div>
+      )}
+      {user && !hasSelectedType && (
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-primary-lighter)' }}>
+          Choose a game type to see your completed games.
+        </div>
+      )}
+      {user && hasSelectedType && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px', fontSize: '0.85rem' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                  Game
+                </th>
+                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                  Opponent
+                </th>
+                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                  Outcome
+                </th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                  Bet
+                </th>
+                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                  Completed
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {historyFetching && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '18px', textAlign: 'center' }}>
+                    Loading history…
+                  </td>
+                </tr>
+              )}
+              {historyError && !historyFetching && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    style={{ padding: '18px', textAlign: 'center', color: 'var(--color-error, #ff5c8d)' }}
+                  >
+                    Failed to load history. Please try again.
+                  </td>
+                </tr>
+              )}
+              {!historyFetching && !historyError && historyRows.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '18px', textAlign: 'center' }}>
+                    No completed games found.
+                  </td>
+                </tr>
+              )}
+              {!historyFetching &&
+                !historyError &&
+                historyRows.map((row) => (
+                  <tr key={row.id}>
+                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{row.name || `Game #${row.id}`}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{formatOpponent(row)}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{formatOutcome(row)}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                      {row.betamount ? `${row.betamount} ${row.betasset || ''}`.trim() : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{formatCompletedAt(row.indexer_ts)}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
      <Tabs
   tabs={[
     { id: 'leaderboard', label: 'Leaderboard' },
+    { id: 'history', label: 'History' },
     { id: 'info', label: 'Game Info' },
   ]}
   activeTab={activeTab}
@@ -234,7 +370,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
                 padding: '6px 12px',
                 border: '1px solid var(--color-primary-darkest)',
                 background: leaderboardScope === key ? 'var(--color-primary-darker)' : 'transparent',
-                color: 'var(--color-primary-lightest)',
+                color: leaderboardScope === key ? 'black' : 'var(--color-primary-lightest)',
                 cursor: 'pointer',
                 fontSize: '0.8rem',
                 letterSpacing: '0.04em',
@@ -247,7 +383,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
         </div>
       )}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        {activeTab === 'info' ? infoTab : leaderboardTab}
+        {activeTab === 'info' ? infoTab : activeTab === 'history' ? historyTab : leaderboardTab}
       </div>
     </div>
   )

@@ -140,6 +140,32 @@ export function App() {
             <span className="app-corner-logo__accent">ŌKIՈOKO</span>
             <span className="app-corner-logo__muted">TERMINAL</span>
           </div>
+          <div className="app-footer-credit" aria-hidden="true">
+            <span className="app-footer-credit__accent">Created by</span>
+            <a
+              className="app-footer-credit__link app-footer-credit__muted"
+              href="https://ecency.com/@tibfox"
+              target="_blank"
+              rel="noreferrer"
+            >
+              @tibfox
+            </a>
+            <span className="app-footer-credit__separator">|</span>
+            <span className="app-footer-credit__accent">Powered by</span>
+              <a
+              className="app-footer-credit__link app-footer-credit__muted"
+              href="https://magi.eco"
+              target="_blank"
+              rel="noreferrer"
+            >Magi</a>
+            <span className="app-footer-credit__accent">and</span>
+            <a
+              className="app-footer-credit__link app-footer-credit__muted"
+              href="https://hive.io"
+              target="_blank"
+              rel="noreferrer"
+            >Hive</a>
+          </div>
           {renderPage()}
           {showDesktopTerminals && (
             <>

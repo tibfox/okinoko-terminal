@@ -170,14 +170,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               {/* Created / Status table (matches your table structure & labels) */}
               <table style={{ width: "100%", fontSize: "0.9rem" }}>
                 <tbody>
-                  <tr>
-                    <td style={{ paddingRight: "8px" }}>Created:</td>
-                    <td style={{ wordBreak: "break-all", textAlign: "left" }}>
-                       {formatUTC(new Date(tx.startedAt).toISOString())} 
-                     
-                    </td>
-                  </tr>
-
+                 
                   <tr>
                     {/* You used `{tx.status}:` as the label; kept intact */}
                     <td style={{ paddingRight: "8px" }}>{tx.status}:</td>
