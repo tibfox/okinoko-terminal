@@ -56,7 +56,7 @@ export default function CompactHeader({
           className="cyber-tile"
           style={{
             margin: 0,
-            marginRight: '75px',
+            marginRight: '15px',
             // fontFamily: "'Share Tech Mono',monospace",
             textTransform: 'uppercase',
             whiteSpace: 'nowrap',

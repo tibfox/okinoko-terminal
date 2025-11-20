@@ -4,7 +4,7 @@ import { getWindowDefaults } from '../windowDefaults.js'
 
 const INITIAL_STATE = getWindowDefaults('aux-monitor')
 
-export default function SecondaryTerminal() {
+export default function MonitorTerminal() {
   return (
     <TerminalContainer
       windowId="aux-monitor"

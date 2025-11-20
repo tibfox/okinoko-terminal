@@ -657,7 +657,10 @@ export default function GameField({
                   }}
                 >
                   {(game.type === 'TicTacToe' || game.type === 'TicTacToe5') && (
-                    <span class="pixel-ttt-font">{cellLetter}</span>
+                    <span class="pixel-ttt-font" style={{
+                      color: 'black'
+                       
+                    }}>{cellLetter}</span>
                   )}
                 </div>
               )

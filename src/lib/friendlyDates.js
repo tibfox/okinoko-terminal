@@ -21,5 +21,6 @@ register('en_short', (number, index) => {
 });
 
 export function formatUTC(str) {
-  return format(new Date(str + 'Z'),'en_short')
+  const formatString = str.endsWith('Z') ? str : str + 'Z';
+  return format(new Date(formatString),'en_short');
 }

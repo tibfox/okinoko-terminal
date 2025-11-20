@@ -98,7 +98,7 @@ const headerCellStyle = {
   fontWeight: 600,
   position: 'sticky',
   top: 0,
-  background: 'transparent',
+  background: 'var(--color-primary-darkest)',
 
   zIndex: 1,
 }

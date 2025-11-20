@@ -173,7 +173,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   <tr>
                     <td style={{ paddingRight: "8px" }}>Created:</td>
                     <td style={{ wordBreak: "break-all", textAlign: "left" }}>
-                      {formatUTC(tx.startedAt)}
+                       {formatUTC(new Date(tx.startedAt).toISOString())} 
+                     
                     </td>
                   </tr>
 
@@ -191,7 +192,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                     >
                       {tx.status === "pending"
                         ? `${seconds}s`
-                        : `${formatUTC(tx.completedAt)}`}
+                        : `${formatUTC(new Date(tx.completedAt).toISOString())}`}
 
                       <FontAwesomeIcon icon={stateIcon[tx.status]} />
                     </td>
