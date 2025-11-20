@@ -154,7 +154,7 @@ export default function AccountDataPanel() {
       <div className="neon-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem' }}>
         <div
           style={{
-            position: 'sticky',
+            // position: 'sticky',
             top: 0,
             zIndex: 1,
             background: 'transparent',

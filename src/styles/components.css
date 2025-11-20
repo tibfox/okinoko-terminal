@@ -465,7 +465,7 @@ select {
   text-transform: uppercase;
   color: var(--color-primary-lightest);
   text-shadow: 0 0 10px var(--color-primary-lightest);
-  opacity: 0.85;
+  opacity: 0.4;
 }
 
 .app-footer-credit__accent {

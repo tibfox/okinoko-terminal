@@ -16,6 +16,19 @@ import { usePendingTransaction } from './hooks/usePendingTransaction.js'
 import { useGameSelection } from './hooks/useGameSelection.js'
 import { deriveGameTypeId } from './gameTypes.js'
 import { Tabs } from '../common/Tabs.jsx'
+import { useRef } from 'preact/hooks'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronRight, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import { getCookie, setCookie } from '../../lib/cookies.js'
+
+const DIVIDER_COOKIE = 'stepGameDivider'
+const SPLITTER_WIDTH_PX = 2
+
+const clampPosition = (value, fallback = 0.5) => {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return fallback
+  return Math.min(1, Math.max(0, num))
+}
 
 const resolveBrowseLabel = (activeGame, mode) => {
   if (!activeGame) return 'BROWSE'
@@ -40,6 +53,13 @@ export default function StepGame({
   const [activePage, setActivePage] = useState('form')
   const [selectedCells, setSelectedCells] = useState([])
   const [swapInfo, setSwapInfo] = useState(null)
+  const [shouldRedirectHome, setShouldRedirectHome] = useState(false)
+  const [dividerPosition, setDividerPosition] = useState(() => {
+    const saved = typeof document !== 'undefined' ? getCookie(DIVIDER_COOKIE) : null
+    return clampPosition(saved, 0.5)
+  })
+  const [draggingDivider, setDraggingDivider] = useState(false)
+  const layoutRef = useRef(null)
 
   const {
     activeGame,
@@ -131,9 +151,64 @@ export default function StepGame({
     }
   }, [activeGame])
 
+  useEffect(() => {
+    if (!contract || !fn) {
+      setShouldRedirectHome(true)
+    } else {
+      setShouldRedirectHome(false)
+    }
+  }, [contract, fn])
+
+  useEffect(() => {
+    if (shouldRedirectHome) {
+      setStep?.(0)
+    }
+  }, [shouldRedirectHome, setStep])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    setCookie(DIVIDER_COOKIE, dividerPosition, 30)
+  }, [dividerPosition])
+
+  useEffect(() => {
+    if (!draggingDivider) return
+    const handleMove = (event) => {
+      const clientX = event.touches?.[0]?.clientX ?? event.clientX
+      const rect = layoutRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const relative = (clientX - rect.left) / rect.width
+      const clamped = Math.min(1, Math.max(0, relative))
+      const snapped = clamped < 0.06 ? 0 : clamped > 0.94 ? 1 : clamped
+      setDividerPosition(snapped)
+    }
+    const handleUp = () => setDraggingDivider(false)
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleMove, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleMove)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [draggingDivider])
+
+  const leftCollapsed = !isMobile && dividerPosition <= 0.05
+  const rightCollapsed = !isMobile && dividerPosition >= 0.95
+  const leftFraction = dividerPosition
+  const rightFraction = Math.max(0, 1 - dividerPosition)
+  const gridTemplateColumns = isMobile
+    ? '1fr'
+    : leftCollapsed
+      ? `0px ${SPLITTER_WIDTH_PX}px 1fr`
+      : rightCollapsed
+        ? `1fr ${SPLITTER_WIDTH_PX}px 0px`
+        : `${leftFraction}fr ${SPLITTER_WIDTH_PX}px ${rightFraction}fr`
+
 
   return (
-    <TerminalContainer title={fn.friendlyName}
+    <TerminalContainer title={fn?.friendlyName || fn?.name || 'Function'}
       titleOnMinimize="Function"
       backgroundColor="rgba(0, 0, 0, 0.5)"
     >
@@ -153,7 +228,7 @@ export default function StepGame({
         style={{
           display: isMobile ? 'flex' : 'grid',
           flexDirection: isMobile ? 'column' : 'unset',
-          gridTemplateColumns: isMobile ? 'none' : '1fr 1fr',
+          gridTemplateColumns,
           gap: isMobile ? '0' : '20px',
           flex: 1,
           minHeight: 0,
@@ -162,14 +237,19 @@ export default function StepGame({
           overflow: 'hidden',
           position: 'relative',
         }}
+        ref={layoutRef}
       >
+        {/** Desktop keeps both columns mounted so grid columns remain stable; mobile still toggles */} 
         <div
           style={{
-            display: !isMobile || activePage === 'form' ? 'flex' : 'none',
+            display: isMobile ? (activePage === 'form' ? 'flex' : 'none') : 'flex',
             flexDirection: 'column',
             height: '100%',
             overflowY: 'auto',
             flex: 1,
+            minWidth: 0,
+            pointerEvents: leftCollapsed ? 'none' : 'auto',
+            visibility: leftCollapsed ? 'hidden' : 'visible',
           }}
         >
           {!showingGameDetails ? (
@@ -194,18 +274,88 @@ export default function StepGame({
               isMyTurn={isMyTurn}
               nextTurnPlayer={nextPlayer}
               swapInfo={swapInfo}
+              onResign={handleSend}
+              onTimeout={handleSend}
             />
           )}
 
         </div>
 
+        {!isMobile && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'col-resize',
+              position: 'relative',
+              background: 'var(--color-primary-darkest)',
+              userSelect: 'none',
+              width: '100%',
+            }}
+            onMouseDown={() => setDraggingDivider(true)}
+            onTouchStart={(e) => {
+              e.preventDefault()
+              setDraggingDivider(true)
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '0px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '28px',
+                height: '28px',
+                borderRadius: '8px',
+                background: 'black',
+                border: '1px solid var(--color-primary-darker)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                // boxShadow: '0 0 8px rgba(0,0,0,0.4)',
+              }}
+            >
+              {leftCollapsed ? (
+                <FontAwesomeIcon
+                  icon={faChevronRight}
+                  style={{ color: 'var(--color-primary-lightest)', fontSize: '0.9rem' }}
+                />
+              ) : rightCollapsed ? (
+                <FontAwesomeIcon
+                  icon={faChevronLeft}
+                  style={{ color: 'var(--color-primary-lightest)', fontSize: '0.9rem' }}
+                />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+                  <FontAwesomeIcon
+                    icon={faChevronLeft}
+                    style={{ color: 'var(--color-primary-lightest)', fontSize: '0.9rem' }}
+                  />
+                  <FontAwesomeIcon
+                    icon={faChevronRight}
+                    style={{
+                      color: 'var(--color-primary-lightest)',
+                      fontSize: '0.9rem',
+                      marginLeft: '-6px',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div
           style={{
-            display: !isMobile || activePage === 'preview' ? 'flex' : 'none',
+            display: isMobile ? (activePage === 'preview' ? 'flex' : 'none') : 'flex',
             flexDirection: 'column',
             height: '100%',
             overflowY: 'auto',
             flex: 1,
+            minWidth: 0,
+            pointerEvents: rightCollapsed ? 'none' : 'auto',
+            visibility: rightCollapsed ? 'hidden' : 'visible',
           }}
         >
           {displayMode == 'g_join' ? (

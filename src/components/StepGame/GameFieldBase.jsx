@@ -384,11 +384,11 @@ export default function GameField({
       })()}
       {isMobile ? (
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
-          <NeonButton
-            onClick={() => handleResignClick([])}
-            style={{ marginBottom: '10px', flex: 1 }}
-          >
-            <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
+      <NeonButton
+        onClick={() => handleResignClick([])}
+        style={{ marginBottom: '10px', flex: 1 }}
+      >
+        <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
             Resign
           </NeonButton>
 
@@ -397,29 +397,11 @@ export default function GameField({
             onClick={() => handleTimeoutClick([])}
             style={{ marginBottom: '10px', flex: 1 }}
           >
-            <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-            Claim Timeout
-          </NeonButton>
-        </div>
-      ) : (
-        <div style={{ textAlign: 'center' }}>
-          <NeonButton
-            onClick={() => handleResignClick([])}
-            style={{ marginBottom: '10px', marginRight: '10px', minWidth: '120px' }}
-          >
-            <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
-            Resign
-          </NeonButton>
-          <NeonButton
-            disabled={!hasOpponent || isMyTurn || daysAgo < 7}
-            onClick={() => handleTimeoutClick([])}
-            style={{ marginBottom: '10px', minWidth: '120px' }}
-          >
-            <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-            Claim Timeout
-          </NeonButton>
-        </div>
-      )}
+        <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+        Claim Timeout
+      </NeonButton>
+    </div>
+      ) : null}
       <div
         style={{
           flex: 1,

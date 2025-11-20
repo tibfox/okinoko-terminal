@@ -29,7 +29,8 @@ const getInitialPageIndex = () => {
   }
   const hashMatch = window.location.hash.match(/^#p(\d)$/)
   if (hashMatch) {
-    return clampPageIndex(Number(hashMatch[1]))
+    const candidate = clampPageIndex(Number(hashMatch[1]))
+    return Number.isFinite(candidate) ? candidate : 0
   }
   return 0
 }
@@ -51,6 +52,7 @@ export function App() {
   const isMobile = useDeviceBreakpoint()
   const showDesktopTerminals = isMobile === false
   const popNavigationRef = useRef(false)
+  const [invalidHash, setInvalidHash] = useState(false)
 
     if (import.meta.env.VITE_EXPOSE_ERUDA === 'true') {
   import('eruda').then((eruda) => {
@@ -62,12 +64,20 @@ export function App() {
     if (typeof window === 'undefined') {
       return
     }
-    window.history.replaceState({ page }, '', `#p${page}`)
+    const hashMatch = window.location.hash.match(/^#p(\d)$/)
+    if (!hashMatch || Number(hashMatch[1]) !== page) {
+      window.history.replaceState({ page }, '', `#p${page}`)
+    }
     const handlePopState = (event) => {
-      const nextPage =
-        typeof event.state?.page === 'number' ? clampPageIndex(event.state.page) : 0
+      const nextPage = typeof event.state?.page === 'number' ? event.state.page : null
+      if (nextPage === null) {
+        setInvalidHash(true)
+        setPage(0)
+        return
+      }
+      const safe = clampPageIndex(nextPage)
       popNavigationRef.current = true
-      setPage(nextPage)
+      setPage(safe)
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -89,7 +99,8 @@ export function App() {
   const prevPage = () => setPage((prev) => clampPageIndex(prev - 1))
 
   const renderPage = () => {
-    switch (page) {
+    const safePage = invalidHash ? 0 : page
+    switch (safePage) {
       case 0:
         return (
           <StepConnect setStep={setPage}/>

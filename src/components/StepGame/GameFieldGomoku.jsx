@@ -84,6 +84,8 @@ export default function GameField({
     [swapEvents],
   )
   const fullUser = user ? (user.startsWith('hive:') ? user : `hive:${user}`) : null
+  const normalizeId = (value) => (value || '').replace(/^hive:/i, '').toLowerCase()
+  const normalizedFullUser = normalizeId(fullUser)
   const applyTerminalEvent = useCallback(
     (entry) => {
       if (!entry || !fullUser) return
@@ -247,12 +249,13 @@ export default function GameField({
     }
   }, [gameDetails.data, size, game, swapEvents])
   const persistedBoard = typeof game?.board === 'string' ? game.board : ''
-  const isCompactGrid =
-    game?.type === 'Gomoku' || game?.type === 'Connect4'
+  const isCompactGrid = true
 
   const board = boardState ?? (persistedBoard.length === totalCells ? persistedBoard : defaultBoard)
   const playerX = resolvedRoles.playerX ?? game?.playerX
   const playerY = resolvedRoles.playerY ?? game?.playerY
+  const normalizedPlayerX = normalizeId(playerX)
+  const normalizedPlayerY = normalizeId(playerY)
   const hasOpponent = Boolean(playerX && playerY)
   const normalizedMoveType = (serverMoveType || game?.moveType || 'm') || 'm'
   const swapStage = normalizedMoveType.toLowerCase()
@@ -461,15 +464,7 @@ export default function GameField({
       updateSelection([{ r, c }])
     }
   }
-  const stoneFillForG = (val) => {
-    if (val !== '1' && val !== '2') return null
-    const isPlayerXStone = val === '1'
-    const isPlayerYStone = val === '2'
-    const isMyStone =
-      (fullUser === playerX && isPlayerXStone) ||
-      (fullUser === playerY && isPlayerYStone)
-    return isMyStone ? 'var(--color-primary)' : 'var(--color-primary-darker)'
-  }
+
   const minsAgo = game.lastMoveMinutesAgo
   const daysAgo = Math.floor(minsAgo / (24 * 60))
 
@@ -660,25 +655,7 @@ export default function GameField({
             Claim Timeout
           </NeonButton>
         </div>
-      ) : (
-        <div style={{ textAlign: 'center' }}>
-          <NeonButton
-            onClick={() => handleResignClick([])}
-            style={{ marginBottom: '10px', marginRight: '10px', minWidth: '120px' }}
-          >
-            <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
-            Resign
-          </NeonButton>
-          <NeonButton
-            disabled={!hasOpponent || isMyTurn || daysAgo < 7}
-            onClick={() => handleTimeoutClick([])}
-            style={{ marginBottom: '10px', minWidth: '120px' }}
-          >
-            <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-            Claim Timeout
-          </NeonButton>
-        </div>
-      )}
+      ) : null}
       <div
         style={{
           flex: 1,
@@ -749,245 +726,79 @@ export default function GameField({
               const r = Math.floor(i / size.cols)
               const c = i % size.cols
               const val = board.charAt(i)
-              const isUsed = val !== '0'
               const selectedCell = isSelected(r, c)
-              const isFalling = fallingFrame && fallingFrame.r === r && fallingFrame.c === c
-              // Clickability: for C4 allow only top row; otherwise as before
-              const clickable = isMyTurn && !isUsed && (
-                game.type !== 'Connect4' ? true : r === 0
-              )
-              // G-type: filled stones with glow; empty calm; selected empty = ultra
-              if (game.type === 'Gomoku') {
-                let background = 'transparent'
-                let boxShadow = 'none'
-                let draftContent = null
-                if (isAddingExtra) {
-                  const placement = extraPlacements.find((entry) => entry.r === r && entry.c === c)
-                  if (placement) {
-                    draftContent = placement.color === 1 ? 'X' : 'O'
-                  }
-                }
-                const stoneLetter =
-                  val === '1' ? 'X' : val === '2' ? 'O' : null
-                const pendingSelectionLetter =
-                  !stoneLetter && !draftContent && selectedCell
-                    ? fullUser === playerX
-                      ? 'X'
-                      : fullUser === playerY
-                        ? 'O'
-                        : null
-                    : null
-                const cellLetter = stoneLetter || draftContent || pendingSelectionLetter
-                const glyph =
-                  cellLetter === 'X'
-                    ? '*'
-                    : cellLetter === 'O'
-                      ? '@'
-                      : null
-                const letterColor =
-                  cellLetter === 'X'
-                    ? 'var(--color-primary-darker)'
-                    : cellLetter === 'O'
-                      ? 'var(--color-primary-lightest)'
-                      : 'transparent'
-                const stoneBackground =
-                  stoneLetter === 'X'
-                    ? 'var(--color-primary)'
-                    : stoneLetter === 'O'
-                      ? 'var(--color-primary-darker)'
-                      : null
-                const draftBackground =
-                  !stoneBackground && draftContent
-                    ? draftContent === 'X'
-                      ? 'var(--color-primary)'
-                      : 'var(--color-primary-darker)'
-                    : null
-                const pendingBackground =
-                  !stoneBackground && !draftBackground && pendingSelectionLetter
-                    ? pendingSelectionLetter === 'X'
-                      ? 'var(--color-primary)'
-                      : 'var(--color-primary-darker)'
-                    : null
-                if (stoneBackground) {
-                  background = stoneBackground
-                } else if (draftBackground) {
-                  background = draftBackground
-                } else if (pendingBackground) {
-                  background = pendingBackground
-                } else if (selectedCell) {
-                  background = 'var(--color-primary)'
-                }
-                return (
-                  <div
-                    key={`${r}-${c}`}
-                    class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
-                    onClick={() => toggleCell(r, c)}
-                    style={{
-                      aspectRatio: '1 / 1',
-                      border: selectedCell ? '2px solid var(--color-primary-lightest)' :
-                        val === '0' && !selectedCell ? '1px solid var(--color-primary-darker)' : 'none',
-                      background,
-                      boxShadow,
-                      display: 'flex',
-                      borderRadius: '50px',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: letterColor,
-                      fontWeight: cellLetter ? 'bold' : 'normal',
-                      cursor: clickable ? 'pointer' : 'not-allowed',
-                      transition: 'box-shadow 1s ease, background 1s ease'
-                    }}
-                  >
-                    {cellLetter ? (
-                      <span
-                        class="pixel-ttt-font"
-                        style={{
-                          fontSize: '1em',
-                        }}
-                      >
-                        {glyph}
-                      </span>
-                    ) : null}
-                  </div>
-                )
-              }
-              // C4: frame-by-frame falling animation (soft glow while falling), selected uses ULTRA on landing
-              if (game.type === 'Connect4') {
-                const isSelectedLanding = selectedCell
-                const owningPlayer = val === '1' ? playerX : val === '2' ? playerY : null
-                const isMyStone = owningPlayer && owningPlayer === fullUser
-                const bgBase =
-                  isSelectedLanding
-                    ? 'var(--color-primary)'   // final landed cell filled
-                    : isUsed
-                      ? isMyStone
-                        ? 'var(--color-primary)'
-                        : 'var(--color-primary-darker)'
-                      : 'transparent'   // empty or falling stays transparent-ish
-                const shadow =
-                  isFalling
-                    ? SOFT_GLOW_PRIMARY  // animation frame: soft glow only
-                    : 'none'
-                // : isSelectedLanding
-                //   ? SOFT_GLOW_PRIMARY       // final position: ULTRA
-                //   : 'none'
-                const borderdef = isSelectedLanding ?
-                  '4px solid var(--color-primary-lightest)' :
-                  isFalling ? '2px solid var(--color-primary-lightest)' :
-                    '1px solid ' + (clickable ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)');
-                return (
-                  <div
-                    key={`${r}-${c}`}
-                    class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
-                    onClick={() => toggleCell(r, c)}
-                    style={{
-                      aspectRatio: '1 / 1',
-                      border:
-                        borderdef,
-                      //  border: 'none',
-                      background: bgBase,
-                      boxShadow: shadow,
-                      borderRadius: '90px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: isUsed
-                        ? isMyStone
-                          ? 'var(--color-primary)'
-                          : 'var(--color-primary-darker)'
-                        : (clickable ? 'var(--color-primary)' : '#555'),
-                      // fontSize: 'clamp(0.6rem, 1vw, 1rem)',
-                      // fontWeight: 'bold',
-                      cursor: clickable ? 'pointer' : 'not-allowed',
-                      transition: 'box-shadow 10ms linear, background 500ms linear'
-                    }}
-                  >
-                    {val === '1' ? 'X' : val === '2' ? 'O' : ''}
-                  </div>
-                )
-              }
-              if (game.type == 'Squava') {
-                const myLetter = fullUser === playerX ? 'X' : 'O'
-                const cellLetter = val === '1' ? 'X' : val === '2' ? 'O' : selectedCell ? myLetter : ''
-                return (
-                  <div
-                    key={`${r}-${c}`}
-                    class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
-                    onClick={() => toggleCell(r, c)}
-                    style={{
-                      aspectRatio: '1 / 1',
-                      border: selectedCell && !isUsed ? '5px solid var(--color-primary-lightest)' : '1px solid var(--color-primary-darker)',
-                      borderRadius: '90px',
-                      background: isUsed
-                        ? cellLetter == myLetter ? 'var(--color-primary)' : 'var(--color-primary-darkest)'
-                        : selectedCell
-                          ? 'var(--color-primary)'
-                          : 'transparent',
-                      boxShadow: selectedCell && !isUsed
-                        ? '0 0 10px var(--color-primary), inset 0 0 8px var(--color-primary)'
-                        : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: isUsed
-                        ? cellLetter == myLetter ? 'var(--color-primary-lighter)' : 'var(--color-primary)'
-                        : selectedCell
-                          ? 'var(--color-primary-darkest)'
-                          : '#555',
-                      fontSize: 'clamp(0.6rem, 2.5vw, 2.5rem)',
-                      cursor: clickable ? 'pointer' : 'not-allowed',
-                      transition: 'box-shadow 120ms ease, background 120ms ease'
-                    }}
-                  >
-                    <span class="pixel-ttt-font">{!selectedCell ? "" : cellLetter == "X" ? "*" : "@"}</span>
-                  </div>
-                )
-              }
-              const myLetter = fullUser === playerX ? 'X' : 'O'
-              const cellLetter = val === '1' ? 'X' : val === '2' ? 'O' : selectedCell ? myLetter : ''
+              const clickable = isMyTurn && val === '0'
+              const draftPlacement =
+                isAddingExtra &&
+                extraPlacements.find((entry) => entry.r === r && entry.c === c)
+console.log({ normalizedFullUser, normalizedPlayerX, normalizedPlayerY  })
               return (
-                <div
+                <GomokuCell
                   key={`${r}-${c}`}
-                  class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
+                  selected={selectedCell}
+                  clickable={clickable}
+                  isMobile={isMobile}
+                  val={val}
+                  draftPlacement={draftPlacement}
+                  normalizedFullUser={normalizedFullUser}
+                  normalizedPlayerX={normalizedPlayerX}
+                  normalizedPlayerY={normalizedPlayerY}
                   onClick={() => toggleCell(r, c)}
-                  style={{
-                    aspectRatio: '1 / 1',
-                    border: '1px solid var(--color-primary-darker)',
-                    background: isUsed
-                      ? cellLetter == myLetter ? 'var(--color-primary-darker)' : 'var(--color-primary-darkest)'
-                      : selectedCell
-                        ? 'var(--color-primary)'
-                        : 'transparent',
-                    boxShadow: selectedCell && !isUsed
-                      ? '0 0 10px var(--color-primary), inset 0 0 8px var(--color-primary)'
-                      : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: isUsed
-                      ? cellLetter == myLetter ? 'var(--color-primary-lighter)' : 'var(--color-primary)'
-                      : selectedCell
-                        ? 'var(--color-primary-darkest)'
-                        : '#555',
-                    fontSize: isMobile ? 'clamp(1.2rem, 10vw, 4rem)' : 'clamp(1.2rem, 3vw, 4rem)',
-                    cursor: clickable ? 'pointer' : 'not-allowed',
-                    transition: 'box-shadow 120ms ease, background 120ms ease',
-                    fontFamily:
-                      game.type === 'TicTacToe' || game.type === 'TicTacToe5'
-                        ? "'Press Start 2P', monospace"
-                        : 'inherit',
-                  }}
-                >
-                   <span class="pixel-ttt-font">{cellLetter}</span>
-                  
-                </div>
+                />
               )
-
             })}
           </div>
         </div>
       </div>
     </div>
+  )
+}
 
+function GomokuCell({
+  selected,
+  clickable,
+  val,
+  isMobile,
+  onClick,
+  draftPlacement,
+  normalizedFullUser,
+  normalizedPlayerX,
+  normalizedPlayerY,
+}) {
+  const myLetter = normalizedFullUser && normalizedPlayerX === normalizedFullUser ? 'X' : 'O'
+  const cellLetter = val === '1' ? 'X' : val === '2' ? 'O' : selected ? myLetter : ''
+  const owner = val === '1' ? normalizedPlayerX : val === '2' ? normalizedPlayerY : null
+  const isMine = owner && normalizedFullUser && owner === normalizedFullUser
+  const fillColor = owner ? (isMine ? 'var(--color-primary)' : 'var(--color-primary-darkest)') : null
+  const fgColor = owner ? (isMine ? 'black' : 'var(--color-primary-lighter)') : null
+  const background =
+    fillColor || (draftPlacement || selected ? 'var(--color-primary)' : 'transparent')
+  const glyph = cellLetter === 'X' ? '*' : cellLetter === 'O' ? '@' : ''
+  return (
+    <div
+      class={!isMobile && (`board-cell ${clickable ? 'clickable' : ''}`)}
+      onClick={onClick}
+      style={{
+        aspectRatio: '1 / 1',
+        border: selected
+          ? '2px solid var(--color-primary-lightest)'
+          : val === '0'
+            ? '1px solid var(--color-primary-darker)'
+            : 'none',
+        background,
+        boxShadow: 'none',
+        display: 'flex',
+        borderRadius: '50px',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: fgColor,
+        
+        // fontWeight: 'bold',
+        cursor: clickable ? 'pointer' : 'not-allowed',
+        transition: 'box-shadow 0.3s ease, background 0.3s ease',
+      }}
+    >
+      <span class="pixel-ttt-font" style={{ color: fgColor, fontSize: '1.2rem' }}>{glyph}</span>
+    </div>
   )
 }

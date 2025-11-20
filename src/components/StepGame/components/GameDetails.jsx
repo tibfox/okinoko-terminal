@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCirclePlay,
   faHourglassStart,
+  faFlag
 } from '@fortawesome/free-solid-svg-icons'
 import {
   GAME_MOVES_QUERY,
@@ -12,6 +13,7 @@ import {
 import { getBoardDimensions } from '../utils/boardDimensions.js'
 import { CyberContainer } from '../../common/CyberContainer.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
+import NeonButton from '../../buttons/NeonButton.jsx'
 
 /* ---------------- GameDetails ---------------- */
 
@@ -22,11 +24,41 @@ export default function GameDetails({
   isMyTurn,
   nextTurnPlayer,
   swapInfo,
+  onResign,
+  onTimeout,
 }) {
   if (!game) return null
 
   const prizePool =
     game.bet > 0 ? `${game.bet * 2} ${game.asset}` : 'none'
+  const hasOpponent = Boolean(game?.playerX && game?.playerY)
+  const daysAgo = Math.floor(Number(game?.lastMoveMinutesAgo ?? 0) / (24 * 60))
+
+  const handleResignClick = () => {
+    if (!onResign) return
+    const confirmResign = window.confirm(
+      'Are you sure you want to resign from this game? This action cannot be undone.'
+    )
+    if (!confirmResign) return
+    onResign({
+      __gameId: game?.id ?? null,
+      __gameAction: 'g_resign',
+      __gameCell: undefined,
+    })
+  }
+
+  const handleTimeoutClick = () => {
+    if (!onTimeout) return
+    const confirmTimeout = window.confirm(
+      'Are you sure you want to timeout your opponent? This action cannot be undone.'
+    )
+    if (!confirmTimeout) return
+    onTimeout({
+      __gameId: game?.id ?? null,
+      __gameAction: 'g_timeout',
+      __gameCell: undefined,
+    })
+  }
 
   return (
     <div
@@ -47,31 +79,30 @@ export default function GameDetails({
         </h2>
 
         {/* Game metadata */}
-        <center>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <table
             style={{
-              textAlign: 'left',
+              textAlign: 'center',
+              margin: '0 auto',
               tableLayout: 'auto',
               borderCollapse: 'collapse',
+              width: 'auto',
             }}
           >
             <tbody>
-            {prizePool != 'none'&& (
-  <>
-    <tr>
-      <td style={{ paddingRight: '10px' }}>
-        <strong>Prize Pool:</strong>
-      </td>
-      <td>{prizePool}</td>
-    </tr>
-   
-  </>
-)}
+              {prizePool !== 'none' && (
+                <tr>
+                  <td style={{ padding: '6px 10px' }}>
+                    <strong>Prize Pool:</strong>
+                  </td>
+                  <td style={{ padding: '6px 10px' }}>{prizePool}</td>
+                </tr>
+              )}
             <tr>
-              <td style={{ paddingRight: '10px' }}>
+              <td style={{ padding: '6px 10px' }}>
                 <strong>Turn:</strong>
               </td>
-              <td>
+              <td style={{ padding: '6px 10px' }}>
                 {isMyTurn ? (
                   <>
                     <FontAwesomeIcon icon={faCirclePlay} style={{ marginRight: '10px' }} />
@@ -80,48 +111,67 @@ export default function GameDetails({
                 ) : (
                   <>
                     <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-                    {nextTurnPlayer ? formatHandle(nextTurnPlayer) : opponentName || ''}
+                  {nextTurnPlayer ? formatHandle(nextTurnPlayer) : opponentName || ''}
                   </>
                 )}
               </td>
             </tr>
-              {swapInfo?.active && (
-                <tr>
-                  <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>
-                    <strong>Swap opening:</strong>
-                  </td>
-                  <td>
-                    <div style={{ marginBottom: '6px' }}>{swapInfo.waitingText}</div>
-                    {swapInfo.description && (
-                      <div style={{ fontSize: '0.9rem', marginBottom: '6px', opacity: 0.85 }}>
-                        {swapInfo.description}
-                      </div>
-                    )}
-                    {swapInfo.remaining && (
-                      <div style={{ fontSize: '0.85rem', marginBottom: '4px', color: 'var(--color-primary-lighter)' }}>
-                        {swapInfo.remaining}
-                      </div>
-                    )}
-                    {swapInfo.nextStone && (
-                      <div style={{ fontSize: '0.85rem', marginBottom: '6px' }}>
-                        {swapInfo.nextStone}
-                      </div>
-                    )}
-                    {swapInfo.history?.length > 0 && (
-                      <div style={{ maxHeight: '90px', overflowY: 'auto' }}>
-                        <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem' }}>
-                          {swapInfo.history.slice(-5).map((entry, idx) => (
-                            <li key={`${entry}-${idx}`}>{entry}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
-        </center>
+        </div>
+
+        <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          <NeonButton onClick={handleResignClick} style={{ minWidth: '120px' }}>
+            <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
+            Resign
+          </NeonButton>
+          <NeonButton
+            disabled={!hasOpponent || isMyTurn || daysAgo < 7}
+            onClick={handleTimeoutClick}
+            style={{ minWidth: '120px' }}
+          >
+            <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+            Claim Timeout
+          </NeonButton>
+        </div>
+
+        {swapInfo?.active && (
+          <div
+            style={{
+              marginTop: '12px',
+              textAlign: 'center',
+              maxWidth: '420px',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+            }}
+          >
+            <div style={{ marginBottom: '6px' }}>{swapInfo.waitingText}</div>
+            {swapInfo.description && (
+              <div style={{ fontSize: '0.9rem', marginBottom: '6px', opacity: 0.85 }}>
+                {swapInfo.description}
+              </div>
+            )}
+            {swapInfo.remaining && (
+              <div style={{ fontSize: '0.85rem', marginBottom: '4px', color: 'var(--color-primary-lighter)' }}>
+                {swapInfo.remaining}
+              </div>
+            )}
+            {swapInfo.nextStone && (
+              <div style={{ fontSize: '0.85rem', marginBottom: '6px' }}>
+                {swapInfo.nextStone}
+              </div>
+            )}
+            {swapInfo.history?.length > 0 && (
+              <div style={{ maxHeight: '90px', overflowY: 'auto' }}>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', textAlign: 'left' }}>
+                  {swapInfo.history.slice(-5).map((entry, idx) => (
+                    <li key={`${entry}-${idx}`}>{entry}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Move history */}
         <GameMovesTable game={game} />

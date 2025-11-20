@@ -79,7 +79,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               marginBottom: "10px",
               fontSize: "0.9rem",
               fontWeight: "600",
-              position: "sticky",
+              // position: "sticky",
               top: 0,
               zIndex: 1,
               padding: "6px 0",
