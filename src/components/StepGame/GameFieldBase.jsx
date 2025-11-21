@@ -497,8 +497,10 @@ export default function GameField({
                     onClick={() => toggleCell(r, c)}
                     style={{
                       aspectRatio: '1 / 1',
-                      border: selectedCell ? '2px solid var(--color-primary-lightest)' :
-                        val === '0' && !selectedCell ? '1px solid var(--color-primary-darker)' : 'none',
+                      border: val === '0' && !selectedCell ? '1px solid var(--color-primary-darker)' : 'none',
+                      boxShadow: selectedCell
+                        ? 'inset 0 0 0 2px var(--color-primary-lightest)'
+                        : 'none',
                       background,
                       boxShadow,
                       display: 'flex',

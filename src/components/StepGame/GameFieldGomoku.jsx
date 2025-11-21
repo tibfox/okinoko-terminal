@@ -41,6 +41,7 @@ export default function GameField({
   gameDescription,
   onExecuteAction,
   pendingAction,
+  onSwapInfoChange,
 }) {
   const size = useMemo(() => getBoardDimensions(game?.type), [game?.type])
   const allowMultiple = false
@@ -55,9 +56,30 @@ export default function GameField({
   const [extraPlacements, setExtraPlacements] = useState([])
   const [awaitingAddChoice, setAwaitingAddChoice] = useState(false)
   const [isSubmittingAddChoice, setIsSubmittingAddChoice] = useState(false)
+  const [swapPlacements, setSwapPlacements] = useState([])
+  const disableSwapChoiceButtons = pendingAction || isSubmittingAddChoice || awaitingAddChoice
+  const requestSwapAdd = useCallback(async () => {
+    if (!onExecuteAction || !game?.id) return
+    setAwaitingAddChoice(true)
+    setIsSubmittingAddChoice(true)
+    try {
+      await onExecuteAction({
+        __gameId: game.id,
+        __gameAction: 'g_swap',
+        __gameSwapOp: 'choose',
+        __gameSwapArgs: ['add'],
+      })
+    } catch (err) {
+      console.error('Failed to start extra placements', err)
+      setAwaitingAddChoice(false)
+    } finally {
+      setIsSubmittingAddChoice(false)
+    }
+  }, [game?.id, onExecuteAction])
   const boardWrapperRef = useRef(null)
   const [boardSize, setBoardSize] = useState(null)
   const fallingTimerRef = useRef(null)
+  const lastSwapInfoRef = useRef(null)
   const FRAME_MS = 100
   const SOFT_GLOW_PRIMARY = '0 0 18px var(--color-primary), inset 0 0 12px var(--color-primary)'
   const ULTRA_GLOW = '0 0 50px var(--color-primary), 0 0 30px var(--color-primary), inset 0 0 25px var(--color-primary), inset 0 0 15px var(--color-primary)'
@@ -82,6 +104,26 @@ export default function GameField({
           (swap.choice || '').toLowerCase() === 'add',
       ),
     [swapEvents],
+  )
+  const countSwapColors = useCallback((placements) => {
+    return placements.reduce(
+      (acc, entry) => {
+        if (entry.color === 2) acc.o += 1
+        else acc.x += 1
+        return acc
+      },
+      { x: 0, o: 0 },
+    )
+  }, [])
+
+  const determineNextSwapColor = useCallback(
+    (placements) => {
+      const counts = countSwapColors(placements)
+      if (counts.x < 2) return 1
+      if (counts.o < 1) return 2
+      return null
+    },
+    [countSwapColors],
   )
   const fullUser = user ? (user.startsWith('hive:') ? user : `hive:${user}`) : null
   const normalizeId = (value) => (value || '').replace(/^hive:/i, '').toLowerCase()
@@ -259,8 +301,13 @@ export default function GameField({
   const hasOpponent = Boolean(playerX && playerY)
   const normalizedMoveType = (serverMoveType || game?.moveType || 'm') || 'm'
   const swapStage = normalizedMoveType.toLowerCase()
-  const isSwapDecisionPhase = game?.type === 'Gomoku' && swapStage === 's_2'
-  const isSwapFinalChoicePhase = game?.type === 'Gomoku' && swapStage === 's_3'
+  const isSwapPlacementPhase =
+    game?.type === 'Gomoku' &&
+    (swapStage === 's_1' || swapStage === 'swap' || swapStage === 'swap1')
+  const isSwapDecisionPhase =
+    game?.type === 'Gomoku' && (swapStage === 's_2' || swapStage === 'swap2')
+  const isSwapFinalChoicePhase =
+    game?.type === 'Gomoku' && (swapStage === 's_3' || swapStage === 'swap3')
   const isMyTurn =
     hasOpponent &&
     fullUser &&
@@ -297,16 +344,19 @@ export default function GameField({
       __gameCell: undefined,
     })
   }
-  const handleSwapDecision = async (choice) => {
-    if (choice === 'add') return
-    if (!onExecuteAction || !game?.id) return
-    await onExecuteAction({
-      __gameId: game.id,
-      __gameAction: 'g_swap',
-      __gameSwapOp: 'choose',
-      __gameSwapArgs: [choice],
-    })
-  }
+  const handleSwapDecision = useCallback(
+    async (choice) => {
+      if (choice === 'add') return
+      if (!onExecuteAction || !game?.id) return
+      await onExecuteAction({
+        __gameId: game.id,
+        __gameAction: 'g_swap',
+        __gameSwapOp: 'choose',
+        __gameSwapArgs: [choice],
+      })
+    },
+    [game?.id, onExecuteAction],
+  )
   // helper to sync selection and params
   const updateSelection = (cells) => {
     setSelected(cells)
@@ -333,12 +383,25 @@ export default function GameField({
           : undefined,
     }))
   }
+  function syncSwapPlaceParams(placements) {
+    setParams((prev) => ({
+      ...prev,
+      __gameCell: undefined,
+      __gameAction: placements.length === 3 ? 'g_swap' : undefined,
+      __gameSwapOp: placements.length === 3 ? 'place' : undefined,
+      __gameSwapArgs:
+        placements.length === 3
+          ? placements.map((entry) => `${entry.r}-${entry.c}-${entry.color}`)
+          : undefined,
+    }))
+  }
   useEffect(() => {
     updateSelection([])
     setExtraPlacements([])
     setIsAddingExtra(false)
     setFallingFrame(null)
     setAwaitingAddChoice(false)
+    setSwapPlacements([])
   }, [game?.id, game?.state])
 
   useEffect(() => {
@@ -365,6 +428,100 @@ export default function GameField({
   }, [swapStage, hasAddChoice, isAddingExtra, awaitingAddChoice])
 
   useEffect(() => {
+    if (!isSwapPlacementPhase) {
+      if (swapPlacements.length) {
+        setSwapPlacements([])
+        syncSwapPlaceParams([])
+        setSelected([])
+        onSelectionChange?.([])
+      }
+      return
+    }
+    // keep selection in sync with placements during the opening phase
+    const coordsOnly = swapPlacements.map(({ r, c }) => ({ r, c }))
+    setSelected(coordsOnly)
+    onSelectionChange?.(coordsOnly)
+    syncSwapPlaceParams(swapPlacements)
+  }, [isSwapPlacementPhase, swapPlacements])
+
+  const swapInfoPayload = useMemo(() => {
+    if ((game?.type || '').toLowerCase() !== 'gomoku') {
+      return null
+    }
+    const labelStone = (color) => (color === 2 ? 'O' : 'X')
+    if (isSwapPlacementPhase) {
+      const counts = countSwapColors(swapPlacements)
+      const remainingParts = []
+      if (counts.x < 2) remainingParts.push(`${2 - counts.x} X`)
+      if (counts.o < 1) remainingParts.push(`${1 - counts.o} O`)
+      const nextColor = determineNextSwapColor(swapPlacements)
+      return {
+        active: true,
+        waitingText: isMyTurn ? 'Swap Opening' : 'Swap Opening (opponent placing)',
+        description: 'Place three stones (two X, one O) to start the Swap2 opening.',
+        remaining: remainingParts.length ? `Remaining: ${remainingParts.join(' and ')}` : 'All swap stones placed',
+        nextStone: nextColor ? `Next stone: ${labelStone(nextColor)}` : undefined,
+      }
+    }
+    if (isAddingExtra) {
+      const nextColor = extraPlacements.length === 0 ? 1 : extraPlacements.length === 1 ? 2 : null
+      return {
+        active: true,
+        waitingText: isMyTurn ? 'Swap Add Phase' : 'Swap Add Phase (opponent placing)',
+        description: 'Place two extra stones; the opponent will pick their final color.',
+        remaining: extraPlacements.length < 2 ? `Remaining: ${2 - extraPlacements.length} stones` : 'Ready to submit',
+        nextStone: nextColor ? `Next stone: ${labelStone(nextColor)}` : undefined,
+      }
+    }
+    if (isSwapDecisionPhase) {
+      return {
+        active: true,
+        waitingText: isMyTurn ? 'Swap Decision' : 'Waiting for opponent swap decision…',
+        description: 'Choose to stay, swap colors, or request two extra stones.',
+        actions: isMyTurn
+          ? {
+              disabled: disableSwapChoiceButtons,
+              onStay: () => handleSwapDecision('stay'),
+              onSwap: () => handleSwapDecision('swap'),
+              onAdd: requestSwapAdd,
+            }
+          : undefined,
+      }
+    }
+    if (isSwapFinalChoicePhase) {
+      return {
+        active: true,
+        waitingText: isMyTurn ? 'Swap Final Choice' : 'Waiting for opponent color choice…',
+        description: 'Opponent placed two extra stones. Pick your final color.',
+      }
+    }
+    return null
+  }, [
+    game?.type,
+    isSwapPlacementPhase,
+    isSwapDecisionPhase,
+    isSwapFinalChoicePhase,
+    isMyTurn,
+    swapPlacements,
+    extraPlacements,
+    isAddingExtra,
+    countSwapColors,
+    determineNextSwapColor,
+    disableSwapChoiceButtons,
+    handleSwapDecision,
+    requestSwapAdd,
+  ])
+
+  useEffect(() => {
+    if (!onSwapInfoChange) return
+    const serialized =
+      swapInfoPayload === null ? 'null' : JSON.stringify(swapInfoPayload)
+    if (lastSwapInfoRef.current === serialized) return
+    lastSwapInfoRef.current = serialized
+    onSwapInfoChange(swapInfoPayload)
+  }, [onSwapInfoChange, swapInfoPayload])
+
+  useEffect(() => {
     if (!boardWrapperRef.current || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return
@@ -383,7 +540,7 @@ export default function GameField({
     )
   }
   const highlightedCells = isAddingExtra ? extraPlacements : selected
-  const isSelected = (r, c) => highlightedCells.some((s) => s.r === r && s.c === c)
+  const swapHighlightedCells = isSwapPlacementPhase ? swapPlacements : highlightedCells
   const findC4LandingRow = (col) => {
     for (let r = size.rows - 1; r >= 0; r--) {
       const idx = r * size.cols + col
@@ -399,6 +556,23 @@ export default function GameField({
 
   const toggleCell = (r, c) => {
     if (isSwapDecisionPhase && !isAddingExtra) return
+    const index = r * size.cols + c
+    const cellVal = board.charAt(index)
+    if (isSwapPlacementPhase) {
+      if (cellVal !== '0') return
+      const already = swapPlacements.some((entry) => entry.r === r && entry.c === c)
+      if (already) {
+        const remaining = swapPlacements.filter((entry) => !(entry.r === r && entry.c === c))
+        setSwapPlacements(remaining)
+        return
+      }
+      if (swapPlacements.length >= 3) return
+      const nextColor = determineNextSwapColor(swapPlacements)
+      if (nextColor == null) return
+      const next = [...swapPlacements, { r, c, color: nextColor }]
+      setSwapPlacements(next)
+      return
+    }
     if (isAddingExtra) {
       const already = extraPlacements.some((entry) => entry.r === r && entry.c === c)
       if (already) {
@@ -451,15 +625,13 @@ export default function GameField({
       return
     }
     // Non-C4 behavior (respect G/TTT rules)
-    const index = r * size.cols + c
-    const cellVal = board.charAt(index)
     if (cellVal !== '0') return
     if (allowMultiple) {
-      updateSelection(
-        exists
-          ? prev.filter(s => !(s.r === r && s.c === c))
-          : [...prev, { r, c }]
-      )
+      const exists = selected.some((s) => s.r === r && s.c === c)
+      const next = exists
+        ? selected.filter((s) => !(s.r === r && s.c === c))
+        : [...selected, { r, c }]
+      updateSelection(next)
     } else {
       updateSelection([{ r, c }])
     }
@@ -467,81 +639,7 @@ export default function GameField({
 
   const minsAgo = game.lastMoveMinutesAgo
   const daysAgo = Math.floor(minsAgo / (24 * 60))
-
-  const disableSwapChoiceButtons = pendingAction || isSubmittingAddChoice || awaitingAddChoice
-  const swapDecisionOverlay = isSwapDecisionPhase && isMyTurn && !isAddingExtra ? (
-    <div
-      style={{
-        position: 'absolute',
-        top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'rgba(0,0,0,0.85)',
-        border: '1px solid var(--color-primary)',
-        borderRadius: '10px',
-        padding: '18px',
-        zIndex: 5,
-        width: isMobile ? 'calc(100% - 40px)' : 'auto',
-        maxWidth: '420px',
-        textAlign: 'center',
-        boxShadow: '0 0 20px rgba(0,0,0,0.8)',
-      }}
-    >
-      <div style={{ fontWeight: 600, marginBottom: '12px' }}>Swap Opening Decision</div>
-      <div style={{ fontSize: '0.85rem', marginBottom: '14px' }}>
-        Choose whether to keep the layout, swap roles, or place two more stones.
-      </div>
-      {awaitingAddChoice && (
-        <div
-          style={{
-            marginBottom: '10px',
-            fontSize: '0.85rem',
-            color: 'var(--color-primary-lightest)',
-          }}
-        >
-          Waiting for add decision confirmation…
-        </div>
-      )}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: '10px',
-          justifyContent: 'center',
-        }}
-      >
-        <NeonButton disabled={disableSwapChoiceButtons} onClick={() => handleSwapDecision('stay')}>
-          Stay
-        </NeonButton>
-        <NeonButton disabled={disableSwapChoiceButtons} onClick={() => handleSwapDecision('swap')}>
-          Swap Roles
-        </NeonButton>
-        <NeonButton
-          disabled={disableSwapChoiceButtons}
-          onClick={async () => {
-            if (!onExecuteAction || !game?.id) return
-            setAwaitingAddChoice(true)
-            setIsSubmittingAddChoice(true)
-            try {
-              await onExecuteAction({
-                __gameId: game.id,
-                __gameAction: 'g_swap',
-                __gameSwapOp: 'choose',
-                __gameSwapArgs: ['add'],
-              })
-            } catch (err) {
-              console.error('Failed to start extra placements', err)
-              setAwaitingAddChoice(false)
-            } finally {
-              setIsSubmittingAddChoice(false)
-            }
-          }}
-        >
-          Place Two More
-        </NeonButton>
-      </div>
-    </div>
-  ) : null
+  const swapDecisionOverlay = null
 
   const swapFinalOverlay = isSwapFinalChoicePhase && isMyTurn ? (
     <div
@@ -726,12 +824,13 @@ export default function GameField({
               const r = Math.floor(i / size.cols)
               const c = i % size.cols
               const val = board.charAt(i)
-              const selectedCell = isSelected(r, c)
+              const selectedCell = swapHighlightedCells.some((s) => s.r === r && s.c === c)
               const clickable = isMyTurn && val === '0'
               const draftPlacement =
-                isAddingExtra &&
-                extraPlacements.find((entry) => entry.r === r && entry.c === c)
-console.log({ normalizedFullUser, normalizedPlayerX, normalizedPlayerY  })
+                (isAddingExtra &&
+                  extraPlacements.find((entry) => entry.r === r && entry.c === c)) ||
+                (isSwapPlacementPhase &&
+                  swapPlacements.find((entry) => entry.r === r && entry.c === c))
               return (
                 <GomokuCell
                   key={`${r}-${c}`}
@@ -766,13 +865,33 @@ function GomokuCell({
   normalizedPlayerY,
 }) {
   const myLetter = normalizedFullUser && normalizedPlayerX === normalizedFullUser ? 'X' : 'O'
-  const cellLetter = val === '1' ? 'X' : val === '2' ? 'O' : selected ? myLetter : ''
+  const draftLetter = draftPlacement ? (draftPlacement.color === 2 ? 'O' : 'X') : null
+  const cellLetter =
+    val === '1'
+      ? 'X'
+      : val === '2'
+        ? 'O'
+        : draftLetter ?? (selected ? myLetter : '')
   const owner = val === '1' ? normalizedPlayerX : val === '2' ? normalizedPlayerY : null
   const isMine = owner && normalizedFullUser && owner === normalizedFullUser
-  const fillColor = owner ? (isMine ? 'var(--color-primary)' : 'var(--color-primary-darkest)') : null
-  const fgColor = owner ? (isMine ? 'black' : 'var(--color-primary-lighter)') : null
-  const background =
-    fillColor || (draftPlacement || selected ? 'var(--color-primary)' : 'transparent')
+  const isDraft = Boolean(draftPlacement)
+  const fillColor = owner
+    ? isMine
+      ? 'var(--color-primary)'
+      : 'var(--color-primary-darkest)'
+    : isDraft
+      ? draftPlacement.color === 2
+        ? 'var(--color-primary-darkest)'
+        : 'var(--color-primary)'
+      : null
+  const fgColor = owner
+    ? isMine
+      ? 'black'
+      : 'var(--color-primary-lighter)'
+    : isDraft
+      ? 'black'
+      : 'black'
+  const background = fillColor || (selected ? 'var(--color-primary)' : 'transparent')
   const glyph = cellLetter === 'X' ? '*' : cellLetter === 'O' ? '@' : ''
   return (
     <div
@@ -780,13 +899,14 @@ function GomokuCell({
       onClick={onClick}
       style={{
         aspectRatio: '1 / 1',
-        border: selected
-          ? '2px solid var(--color-primary-lightest)'
-          : val === '0'
+        border:
+          val === '0' && !selected && !draftPlacement
             ? '1px solid var(--color-primary-darker)'
             : 'none',
+        boxShadow: selected || draftPlacement
+          ? 'inset 0 0 0 2px var(--color-primary-lightest)'
+          : 'none',
         background,
-        boxShadow: 'none',
         display: 'flex',
         borderRadius: '50px',
         alignItems: 'center',

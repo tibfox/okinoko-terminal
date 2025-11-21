@@ -25,6 +25,7 @@ const DIVIDER_COOKIE = 'stepGameDivider'
 const SPLITTER_WIDTH_PX = 2
 
 const clampPosition = (value, fallback = 0.5) => {
+  if (value === null || value === undefined || value === '') return fallback
   const num = Number(value)
   if (!Number.isFinite(num)) return fallback
   return Math.min(1, Math.max(0, num))

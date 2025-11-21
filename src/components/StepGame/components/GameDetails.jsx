@@ -161,6 +161,39 @@ export default function GameDetails({
                 {swapInfo.nextStone}
               </div>
             )}
+            {swapInfo.actions && (
+              <div
+                style={{
+                  marginTop: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  alignItems: 'center',
+                }}
+              >
+                <NeonButton
+                  disabled={swapInfo.actions.disabled}
+                  onClick={swapInfo.actions.onStay}
+                  style={{ width: '100%', maxWidth: '260px' }}
+                >
+                  Stay
+                </NeonButton>
+                <NeonButton
+                  disabled={swapInfo.actions.disabled}
+                  onClick={swapInfo.actions.onSwap}
+                  style={{ width: '100%', maxWidth: '260px' }}
+                >
+                  Swap Roles
+                </NeonButton>
+                <NeonButton
+                  disabled={swapInfo.actions.disabled}
+                  onClick={swapInfo.actions.onAdd}
+                  style={{ width: '100%', maxWidth: '260px' }}
+                >
+                  Place Two More
+                </NeonButton>
+              </div>
+            )}
             {swapInfo.history?.length > 0 && (
               <div style={{ maxHeight: '90px', overflowY: 'auto' }}>
                 <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', textAlign: 'left' }}>
