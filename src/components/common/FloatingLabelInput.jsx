@@ -3,6 +3,7 @@ import { playBeep } from "../../lib/beep.js" // adjust the import path as needed
 
 const FloatingLabelInput = ({
   label,
+  hideLabel = false,
   type = "text",
   value,
   onChange,
@@ -29,7 +30,7 @@ const FloatingLabelInput = ({
       style={style}
     >
       {/* ✅ Floating Label */}
-      {label && (
+      {!hideLabel && label && (
         <label
           className={`absolute left-4 px-2 bg-black text-cyan-300 text-sm font-medium tracking-wide transition-all duration-200 ${
             hasValue ? "-top-3" : "-top-3"

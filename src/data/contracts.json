@@ -13,61 +13,71 @@
           "name": "e_create",
           "friendlyName": "Create Escrow",
           "description": "Set up a new escrow by choosing who will receive the funds, how much to send, and who will act as arbitrator.\n! Don’t forget: You’ll get an escrow ID after creation. You’ll need it later to manage the escrow.",
-          "parse":"csv",
-          "delimiter":"|",
-          "excludeKeys":true,
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
           "parameters": [
             {
               "name": "Descriptive Name",
               "payloadName": "name",
               "type": "string",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             },
             {
               "name": "Receiver of the Amount",
               "payloadName": "to",
               "type": "address",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             },
             {
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             },
             {
               "name": "Arbitrator (in case of Disputes)",
               "payloadName": "arb",
               "type": "address",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": ""
         },
         {
           "name": "e_decide",
           "friendlyName": "Add Decision",
           "description": "If you’re part of the escrow, you can send in your decision. Don’t worry: you can change it anytime before the escrow is finalized.",
-          "parse":"csv",
-          "delimiter":"|",
-          "excludeKeys":true,
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
           "parameters": [
             {
               "name": "Escrow Id",
               "payloadName": "id",
               "type": "number",
               "asString": false,
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             },
             {
               "name": "Release Funds to the Receiver?",
               "payloadName": "d",
               "type": "bool",
-              "boolFalse":"f",
-              "boolTrue":"r",
+              "boolFalse": "f",
+              "boolTrue": "r",
               "asString": true,
-              "mandatory": false
+              "mandatory": false,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": ""
         },
         {
           "name": "e_get",
@@ -80,9 +90,12 @@
               "payloadName": "id",
               "type": "number",
               "asString": false,
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": ""
         }
       ]
     },
@@ -100,195 +113,503 @@
           "friendlyName": "Tic Tac Toe",
           "description": "Tic Tac Toe is a classic 3×3 grid game where two players alternate placing Xs and Os. The goal is to get three in a row horizontally, vertically, or diagonally.",
           "parse": "game",
-          "parameters": []
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
         },
         {
           "name": "4",
           "friendlyName": "Tic Tac Toe 5",
           "description": "Tic Tac Toe 5 is an extended version of Tic Tac Toe played on a larger 5×5 grid. The aim is to align 4 marks in a row instead of three.",
           "parse": "game",
-          "parameters": []
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
         },
         {
           "name": "2",
           "friendlyName": "Connect 4",
           "description": "Connect Four is a vertical board game where players drop colored discs into a 7×6 grid. The objective is to be the first to align four pieces in a row in any direction.",
           "parse": "game",
-          "parameters": []
-        },{
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
+        },
+        {
           "name": "3",
           "friendlyName": "Gomoku (beta)",
           "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row (not more). To ensure fairness we use Swap2 rules for the opening moves.",
           "parse": "game",
-          "parameters": []
-        },{
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
+        },
+        {
           "name": "5",
           "friendlyName": "Squava",
           "description": "Squava is a Yavalath variant played on a 5×5 grid. Players try to create a row of 4 of their symbol while avoiding a row of 3, which results in an immediate loss.",
           "parse": "game",
-          "parameters": []
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
         }
       ]
     },
-    
-{
-  "name": "Ōkinoko DAO",
-  "id": 2,
-  "vscId": "vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt",
-  "owner": "tibfox.vsc",
-  "deployedOn": "2025-11-28T22:20:57",
-  "verifiedOn": "unverified",
-  "description": "Create your own DAO with your own rules!",
-  "functions": [
     {
-      "name": "project_create",
-      "friendlyName": "Create DAO Project",
-      "description": "Bootstraps a DAO, using the caller’s transfer.allow intent to split funds between initial stake and treasury.",
-      "parse": "csv",
-      "delimiter": "|",
-      "excludeKeys": true,
-      "parameters": [
-        { "name": "Descriptive Name", "payloadName": "name", "type": "string", "mandatory": true },
-        { "name": "Description", "payloadName": "description", "type": "string", "mandatory": true },
-        { "name": "Voting System (0=democratic,1=stake)", "payloadName": "votingSystem", "type": "string", "mandatory": true },
-        { "name": "Threshold Percent", "payloadName": "threshold", "type": "number", "mandatory": false },
-        { "name": "Quorum Percent", "payloadName": "quorum", "type": "number", "mandatory": false },
-        { "name": "Proposal Duration (hours)", "payloadName": "proposalDuration", "type": "number", "mandatory": false },
-        { "name": "Execution Delay (hours)", "payloadName": "executionDelay", "type": "number", "mandatory": false },
-        { "name": "Leave Cooldown (hours)", "payloadName": "leaveCooldown", "type": "number", "mandatory": false },
-        { "name": "Proposal Cost", "payloadName": "proposalCost", "type": "number", "mandatory": false },
-        { "name": "Minimum Stake Amount", "payloadName": "stakeMin", "type": "number", "mandatory": false },
-        { "name": "Membership NFT Contract", "payloadName": "membershipContract", "type": "string", "mandatory": false },
-        { "name": "Membership NFT Function", "payloadName": "membershipFunction", "type": "string", "mandatory": false },
-        { "name": "Membership NFT Token ID", "payloadName": "membershipNftId", "type": "number", "mandatory": false },
-        { "name": "Project Metadata", "payloadName": "metadata", "type": "string", "mandatory": false },
-        { "name": "Proposal Creator Restriction (members/public)", "payloadName": "creatorRestriction", "type": "string", "mandatory": false },
-        { "name": "Membership Payload Format ({nft}|{caller})", "payloadName": "membershipPayloadFormat", "type": "string", "mandatory": false },
-        { "name": "transfer.allow intent (stake + treasury)", "payloadName": "vscIntent", "type": "vscIntent", "mandatory": true }
+      "name": "Ōkinoko DAO",
+      "id": 2,
+      "vscId": "vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-11-28T22:20:57",
+      "verifiedOn": "unverified",
+      "description": "Create your own DAO with your own rules!",
+      "functions": [
+        {
+          "name": "project_create",
+          "friendlyName": "Create DAO Project",
+          "description": "Bootstraps a DAO, using the caller’s transfer.allow intent to split funds between initial stake and treasury.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Name",
+              "payloadName": "name",
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
+            },
+            {
+              "name": "Description",
+              "payloadName": "description",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "Add a description but always remember the more characters you use, the higher the gas cost."
+            },
+            {
+              "name": "Voting System",
+              "payloadName": "votingSystem",
+              "type": "bool",
+              "mandatory": true,
+              "hintText": "Choose between democratic (1 vote per member) or stake-weighted voting.",
+              "boolFalse": "0",
+              "boolTrue": "1"
+            },
+            {
+              "name": "Threshold Percent",
+              "payloadName": "threshold",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the percentage where a proposal is considered passed. Defaults to 50.01%",
+              "min": 0.1,
+              "max": 100
+            },
+            {
+              "name": "Quorum Percent",
+              "payloadName": "quorum",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the minimum percentage of total stake/members that need to vote for a proposal to be valid. Defaults to 50.01%",
+              "min": 0.1,
+              "max": 100
+            },
+            {
+              "name": "Proposal Duration (hours)",
+              "payloadName": "proposalDuration",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the duration for which a proposal is open for voting. Defaults to 24 hours."
+            },
+            {
+              "name": "Execution Delay (hours)",
+              "payloadName": "executionDelay",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the delay before a proposal is executed after it is approved."
+            },
+            {
+              "name": "Leave Cooldown (hours)",
+              "payloadName": "leaveCooldown",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the cooldown period after leaving the DAO before rejoining."
+            },
+            {
+              "name": "Proposal Cost",
+              "payloadName": "proposalCost",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the cost associated with submitting a proposal. This cost is added to the project the treasury."
+            },
+            {
+              "name": "Minimum Stake Amount",
+              "payloadName": "stakeMin",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the minimum amount of stake required to participate in the DAO. For democratic DAOs, this is the exact member fee."
+            },
+            {
+              "name": "Membership NFT Contract",
+              "payloadName": "membershipContract",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "In future you will be able to set a membership NFT contract to gate access to the DAO."
+            },
+            {
+              "name": "Membership NFT Function",
+              "payloadName": "membershipFunction",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "This is the function that will be called on the membership NFT contract."
+            },
+            {
+              "name": "Membership NFT Token ID",
+              "payloadName": "membershipNftId",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the ID of the membership NFT. The NFT needs to be an editioned NFT."
+            },
+            {
+              "name": "Project Metadata",
+              "payloadName": "metadata",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "This is the metadata associated with the project. It will not get used/checked by the contract but can be useful for frontends."
+            },
+            {
+              "name": "Proposal Creator Restriction (members/public)",
+              "payloadName": "creatorRestriction",
+              "type": "bool",
+              "mandatory": false,
+              "hintText": "Restrict proposal creation to members only or allow the public.",
+              "boolFalse": "members",
+              "boolTrue": "public"
+            },
+            {
+              "name": "Membership Payload Format ({nft}|{caller})",
+              "payloadName": "membershipPayloadFormat",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "This is the format for the membership NFT payload."
+            },
+            {
+              "name": "Initial deposit (stake + treasury)",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "This is the initial deposit required to create the project. Excess funds after stake will go to the treasury."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Projects"
+        },
+        {
+          "name": "project_join",
+          "friendlyName": "Join DAO",
+          "description": "Validates membership requirements (NFT gate if configured) and stakes via transfer.allow.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Project Id",
+              "payloadName": "id",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the project you want to join."
+            },
+            {
+              "name": "transfer.allow intent (membership stake)",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "This is the membership fee. For democratic DAOs this needs to equal the minimum stake amount."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Projects"
+        },
+        {
+          "name": "project_leave",
+          "friendlyName": "Leave DAO",
+          "description": "Requests exit (or finalizes it after cooldown) and withdraws stake when safe.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Project Id",
+              "payloadName": "id",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the project you want to leave."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Projects"
+        },
+        {
+          "name": "project_funds",
+          "friendlyName": "Add Funds",
+          "description": "Adds funds to personal stake or the treasury using transfer.allow; democratic DAOs can only top up the treasury.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Project Id",
+              "payloadName": "projectId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the project you want to add funds to."
+            },
+            {
+              "name": "Add To Stake? (true/false)",
+              "payloadName": "toStake",
+              "type": "bool",
+              "boolTrue": "true",
+              "boolFalse": "false",
+              "asString": true,
+              "mandatory": true,
+              "hintText": "Indicates whether the funds should be added to the personal stake or the treasury."
+            },
+            {
+              "name": "Deposit amount / asset",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "This is the amount and asset you want to deposit. The asset must match the project's asset."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Projects"
+        },
+        {
+          "name": "project_transfer",
+          "friendlyName": "Transfer Ownership",
+          "description": "Owner-only transfer of project ownership to another member.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Project Id",
+              "payloadName": "projectId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the project you want to transfer ownership of."
+            },
+            {
+              "name": "New Owner Address",
+              "payloadName": "newOwner",
+              "type": "address",
+              "mandatory": true,
+              "hintText": "This is the address of the new owner."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Projects"
+        },
+        {
+          "name": "project_pause",
+          "friendlyName": "Pause / Unpause",
+          "description": "Owner toggles pause state immediately; paused projects only accept unpause proposals.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Project Id",
+              "payloadName": "projectId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the project you want to pause or unpause."
+            },
+            {
+              "name": "Pause Flag (true/false, default true)",
+              "payloadName": "pause",
+              "type": "bool",
+              "boolTrue": "true",
+              "boolFalse": "false",
+              "asString": true,
+              "mandatory": false,
+              "hintText": "Indicates whether the project should be paused or unpaused."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Projects"
+        },
+        {
+          "name": "proposal_create",
+          "friendlyName": "Create Proposal",
+          "description": "Creates governance or payout proposals; options default to no/yes unless provided. Costs are charged via transfer.allow when configured.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Project Id",
+              "payloadName": "projectId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the project you want to create a proposal for."
+            },
+            {
+              "name": "Proposal Title",
+              "payloadName": "title",
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
+            },
+            {
+              "name": "Proposal Description",
+              "payloadName": "description",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "This is the description of the proposal. Remember that longer descriptions increase gas costs."
+            },
+            {
+              "name": "Custom Duration (hours)",
+              "payloadName": "duration",
+              "type": "number",
+              "mandatory": false,
+              "hintText": "This is the custom duration for the proposal in hours. If not set, the project's default duration will be used."
+            },
+            {
+              "name": "Options (semicolon separated)",
+              "payloadName": "options",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "These are the options for the proposal, separated by semicolons. If not provided, defaults to No;Yes."
+            },
+            {
+              "name": "Force Poll Mode?",
+              "payloadName": "forcePoll",
+              "type": "bool",
+              "boolTrue": "true",
+              "boolFalse": "false",
+              "asString": true,
+              "mandatory": false,
+              "hintText": "Indicates whether the proposal should be forced into poll mode. In poll mode, proposals cannot execute actions / transfers."
+            },
+            {
+              "name": "Payout Instructions (addr:amount;...)",
+              "payloadName": "payouts",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "These are the payout instructions for the proposal, specifying the address and amount for each payout. Separate multiple instructions with semicolons."
+            },
+            {
+              "name": "Meta Actions (key=value;...)",
+              "payloadName": "meta",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "These are the meta actions for the proposal, specified as key-value pairs. Separate multiple actions with semicolons. TODO: Define supported meta actions."
+            },
+            {
+              "name": "Proposal Metadata",
+              "payloadName": "metadata",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "These are the metadata for the proposal. Will not be used/checked by the contract but can be useful for frontends."
+            },
+            {
+              "name": "Proposal cost",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": false,
+              "hintText": "This is the cost of the proposal you will pay in order to create the proposal."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Proposals"
+        },
+        {
+          "name": "proposals_vote",
+          "friendlyName": "Vote on Proposal",
+          "description": "Members cast or update votes by passing option indexes (comma/semicolon separated). Weight equals current stake.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Proposal Id",
+              "payloadName": "proposalId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the proposal you want to vote on."
+            },
+            {
+              "name": "Choices (comma/semicolon indexes)",
+              "payloadName": "choices",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "These are the choices you want to vote for, specified as comma or semicolon separated indexes."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Proposals"
+        },
+        {
+          "name": "proposal_tally",
+          "friendlyName": "Tally Proposal",
+          "description": "Tallies votes after the deadline, sets proposal state, and schedules execution if passed.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Proposal Id",
+              "payloadName": "proposalId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the proposal you want to tally."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Proposals"
+        },
+        {
+          "name": "proposal_execute",
+          "friendlyName": "Execute Proposal",
+          "description": "Executes passed proposals after execution delay, moving funds and applying meta updates.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Proposal Id",
+              "payloadName": "proposalId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the proposal you want to execute."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Proposals"
+        },
+        {
+          "name": "proposal_cancel",
+          "friendlyName": "Cancel Proposal",
+          "description": "Creator or owner cancels an active proposal; owner-triggered cancels refund the proposal cost when funds exist.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Proposal Id",
+              "payloadName": "proposalId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "This is the ID of the proposal you want to cancel."
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Proposals"
+        }
       ]
     },
     {
-      "name": "project_join",
-      "friendlyName": "Join DAO",
-      "description": "Validates membership requirements (NFT gate if configured) and stakes via transfer.allow.",
-      "parse": "raw",
-      "parameters": [
-        { "name": "Project Id", "payloadName": "id", "type": "number", "asString": false, "mandatory": true },
-        { "name": "transfer.allow intent (membership stake)", "payloadName": "vscIntent", "type": "vscIntent", "mandatory": true }
-      ]
-    },
-    {
-      "name": "project_leave",
-      "friendlyName": "Leave DAO",
-      "description": "Requests exit (or finalizes it after cooldown) and withdraws stake when safe.",
-      "parse": "raw",
-      "parameters": [
-        { "name": "Project Id", "payloadName": "id", "type": "number", "asString": false, "mandatory": true }
-      ]
-    },
-    {
-      "name": "project_funds",
-      "friendlyName": "Add Funds",
-      "description": "Adds funds to personal stake or the treasury using transfer.allow; democratic DAOs can only top up the treasury.",
-      "parse": "csv",
-      "delimiter": "|",
-      "excludeKeys": true,
-      "parameters": [
-        { "name": "Project Id", "payloadName": "projectId", "type": "number", "asString": false, "mandatory": true },
-        { "name": "Add To Stake? (true/false)", "payloadName": "toStake", "type": "bool", "boolTrue": "true", "boolFalse": "false", "asString": true, "mandatory": true },
-        { "name": "transfer.allow intent (deposit)", "payloadName": "vscIntent", "type": "vscIntent", "mandatory": true }
-      ]
-    },
-    {
-      "name": "project_transfer",
-      "friendlyName": "Transfer Ownership",
-      "description": "Owner-only transfer of project ownership to another member.",
-      "parse": "csv",
-      "delimiter": "|",
-      "excludeKeys": true,
-      "parameters": [
-        { "name": "Project Id", "payloadName": "projectId", "type": "number", "asString": false, "mandatory": true },
-        { "name": "New Owner Address", "payloadName": "newOwner", "type": "address", "mandatory": true }
-      ]
-    },
-    {
-      "name": "project_pause",
-      "friendlyName": "Pause / Unpause",
-      "description": "Owner toggles pause state immediately; paused projects only accept unpause proposals.",
-      "parse": "csv",
-      "delimiter": "|",
-      "excludeKeys": true,
-      "parameters": [
-        { "name": "Project Id", "payloadName": "projectId", "type": "number", "asString": false, "mandatory": true },
-        { "name": "Pause Flag (true/false, default true)", "payloadName": "pause", "type": "bool", "boolTrue": "true", "boolFalse": "false", "asString": true, "mandatory": false }
-      ]
-    },
-    {
-      "name": "proposal_create",
-      "friendlyName": "Create Proposal",
-      "description": "Creates governance or payout proposals; options default to no/yes unless provided. Costs are charged via transfer.allow when configured.",
-      "parse": "csv",
-      "delimiter": "|",
-      "excludeKeys": true,
-      "parameters": [
-        { "name": "Project Id", "payloadName": "projectId", "type": "number", "asString": false, "mandatory": true },
-        { "name": "Proposal Title", "payloadName": "title", "type": "string", "mandatory": true },
-        { "name": "Proposal Description", "payloadName": "description", "type": "string", "mandatory": true },
-        { "name": "Custom Duration (hours)", "payloadName": "duration", "type": "number", "mandatory": false },
-        { "name": "Options (semicolon separated)", "payloadName": "options", "type": "string", "mandatory": false },
-        { "name": "Force Poll Mode?", "payloadName": "forcePoll", "type": "bool", "boolTrue": "true", "boolFalse": "false", "asString": true, "mandatory": false },
-        { "name": "Payout Instructions (addr:amount;...)", "payloadName": "payouts", "type": "string", "mandatory": false },
-        { "name": "Meta Actions (key=value;...)", "payloadName": "meta", "type": "string", "mandatory": false },
-        { "name": "Proposal Metadata", "payloadName": "metadata", "type": "string", "mandatory": false },
-        { "name": "transfer.allow intent (proposal cost)", "payloadName": "vscIntent", "type": "vscIntent", "mandatory": false }
-      ]
-    },
-    {
-      "name": "proposals_vote",
-      "friendlyName": "Vote on Proposal",
-      "description": "Members cast or update votes by passing option indexes (comma/semicolon separated). Weight equals current stake.",
-      "parse": "csv",
-      "delimiter": "|",
-      "excludeKeys": true,
-      "parameters": [
-        { "name": "Proposal Id", "payloadName": "proposalId", "type": "number", "asString": false, "mandatory": true },
-        { "name": "Choices (comma/semicolon indexes)", "payloadName": "choices", "type": "string", "mandatory": true }
-      ]
-    },
-    {
-      "name": "proposal_tally",
-      "friendlyName": "Tally Proposal",
-      "description": "Tallies votes after the deadline, sets proposal state, and schedules execution if passed.",
-      "parse": "raw",
-      "parameters": [
-        { "name": "Proposal Id", "payloadName": "proposalId", "type": "number", "asString": false, "mandatory": true }
-      ]
-    },
-    {
-      "name": "proposal_execute",
-      "friendlyName": "Execute Proposal",
-      "description": "Executes passed proposals after execution delay, moving funds and applying meta updates.",
-      "parse": "raw",
-      "parameters": [
-        { "name": "Proposal Id", "payloadName": "proposalId", "type": "number", "asString": false, "mandatory": true }
-      ]
-    },
-    {
-      "name": "proposal_cancel",
-      "friendlyName": "Cancel Proposal",
-      "description": "Creator or owner cancels an active proposal; owner-triggered cancels refund the proposal cost when funds exist.",
-      "parse": "raw",
-      "parameters": [
-        { "name": "Proposal Id", "payloadName": "proposalId", "type": "number", "asString": false, "mandatory": true }
-      ]
-    }
-  ]
-}
-
-
-
-
-    ,{
       "name": "SDK Function Tests",
       "id": 3,
       "vscId": "vsc1BdaaUWkeEoCkHrFDt9uVMq7LXKSxcSFoPK",
@@ -306,10 +627,13 @@
             {
               "name": "log message",
               "payloadName": "",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Logging"
         },
         {
           "name": "c_state_set",
@@ -317,21 +641,25 @@
           "description": "sdk.StateSetObject(key, value)",
           "parse": "csv",
           "delimiter": "|",
-          "excludeKeys":true,
+          "excludeKeys": true,
           "parameters": [
             {
               "name": "key",
               "payloadName": "key",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             },
             {
               "name": "value",
               "payloadName": "value",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Contract State"
         },
         {
           "name": "c_state_get",
@@ -342,10 +670,13 @@
             {
               "name": "key",
               "payloadName": "key",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Contract State"
         },
         {
           "name": "c_state_del",
@@ -356,28 +687,31 @@
             {
               "name": "key",
               "payloadName": "key",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Contract State"
         },
         {
           "name": "c_get_env",
           "friendlyName": "Get full env and convert to string",
           "description": "sdk.GetEnv()",
           "parse": "raw",
-          "parameters": [
-           
-          ]
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
         },
         {
           "name": "c_get_env_string",
           "friendlyName": "Get full env string",
           "description": "sdk.GetEnvStr()",
           "parse": "raw",
-          "parameters": [
-           
-          ]
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": "Environment"
         },
         {
           "name": "c_get_envkey",
@@ -388,10 +722,13 @@
             {
               "name": "key",
               "payloadName": "key",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Environment"
         },
         {
           "name": "c_get_balance",
@@ -402,10 +739,13 @@
             {
               "name": "user",
               "payloadName": "key",
-              "type": "address", 
-              "mandatory": true
+              "type": "address",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Assets"
         },
         {
           "name": "c_hive_draw",
@@ -417,10 +757,14 @@
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
-        },{
+          ],
+          "hintText": "",
+          "groupHeader": "Assets"
+        },
+        {
           "name": "c_hive_transfer",
           "friendlyName": "Send 0.001 Hive from contract to user",
           "description": "sdk.HiveTransfer(sdk.Address(*receiver), 1, sdk.AssetHive)",
@@ -429,10 +773,13 @@
             {
               "name": "user",
               "payloadName": "key",
-              "type": "address", 
-              "mandatory": true
+              "type": "address",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Assets"
         },
         {
           "name": "c_hive_withdraw",
@@ -443,72 +790,83 @@
             {
               "name": "user",
               "payloadName": "key",
-              "type": "address", 
-              "mandatory": true
+              "type": "address",
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Assets"
         },
         {
           "name": "c_contract_read",
           "friendlyName": "Read state of other contract",
           "description": "sdk.ContractStateGet(contractId, key)",
           "parse": "csv",
-          "delimiter":"|",
-          "excludeKeys":true, 
+          "delimiter": "|",
+          "excludeKeys": true,
           "parameters": [
             {
               "name": "contract",
               "payloadName": "contract",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             },
-              {
+            {
               "name": "key",
               "payloadName": "key",
-              "type": "string", 
-              "mandatory": false
+              "type": "string",
+              "mandatory": false,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Contracts"
         },
         {
           "name": "c_contract_call",
           "friendlyName": "Call method of other contract",
           "description": "sdk.ContractCall(contractId, method, callPayload, callOptions)",
           "parse": "csv",
-          "delimiter":"|",
-          "excludeKeys":true,
+          "delimiter": "|",
+          "excludeKeys": true,
           "parameters": [
             {
               "name": "contract",
               "payloadName": "contract",
-              "type": "string", 
-              "mandatory": true
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
             },
-              {
+            {
               "name": "method",
               "payloadName": "method",
-              "type": "string", 
-              "mandatory": true
-            }
-            ,
-              {
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
+            },
+            {
               "name": "payload",
               "payloadName": "payload",
-              "type": "string", 
-              "mandatory": true
-            }
-         ,
+              "type": "string",
+              "mandatory": true,
+              "hintText": ""
+            },
             {
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
-              "mandatory":false
+              "mandatory": false,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": "Contracts"
         }
-        
       ]
-    }, {
+    },
+    {
       "name": "Shared State Test",
       "id": 1,
       "vscId": "vsc1Bh87Heo6HaxuoeSPcxh2kW1Zt17D5ssCfs",
@@ -521,41 +879,47 @@
           "name": "i_create",
           "friendlyName": "Create Item",
           "description": "Create an item and increment counter",
-          "parse":"csv",
-          "delimiter":"|",
-          "excludeKeys":true,
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
           "parameters": [
             {
               "name": "Descriptive Name",
               "payloadName": "name",
               "type": "string",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             },
             {
               "name": "Type String",
               "payloadName": "typeStr",
               "type": "string",
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": ""
         },
         {
           "name": "i_get",
           "friendlyName": "Get Item",
           "description": "Retrieve the details of a specific item using its ID.",
-          "parse":"raw",
+          "parse": "raw",
           "parameters": [
             {
               "name": "Item Id",
               "payloadName": "id",
               "type": "number",
               "asString": false,
-              "mandatory": true
+              "mandatory": true,
+              "hintText": ""
             }
-          ]
+          ],
+          "hintText": "",
+          "groupHeader": ""
         }
       ]
     }
-    
   ]
 }

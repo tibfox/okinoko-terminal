@@ -1,9 +1,15 @@
-import { useState, useEffect, useMemo } from 'preact/hooks'
+import { useState, useEffect, useMemo, useContext } from 'preact/hooks'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ImageUploadField from '../common/ImageUploadField.jsx'
 import MetaInputField from '../common/MetaInputField.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
+import { CyberContainer } from '../common/CyberContainer.jsx'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
+import { PopupContext } from '../../popup/context.js'
+
+const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 
 export default function ExecuteForm({
   user,
@@ -17,6 +23,8 @@ export default function ExecuteForm({
 }) {
   const [isMobile, setIsMobile] = useState(false)
   const [insufficient, setInsufficient] = useState(false)
+  const [hintOverlay, setHintOverlay] = useState(null)
+  const { openPopup } = useContext(PopupContext)
   const { balances: accountBalances } = useAccountBalances()
   const balances = useMemo(() => {
     if (!accountBalances) {
@@ -52,7 +60,58 @@ export default function ExecuteForm({
     setInsufficient(over)
   }, [fn, params, balances])
 
+  const isDaoProjectCreate =
+    contract?.vscId === DAO_VSC_ID && fn?.name === 'project_create'
+
+  const clampNumber = (val, min, max) => {
+    let num = parseFloat(val)
+    if (Number.isNaN(num)) return val
+    if (min !== undefined) num = Math.max(min, num)
+    if (max !== undefined) num = Math.min(max, num)
+    return num
+  }
+
+  const renderDaoSwitch = (p, leftLabel, rightLabel) => {
+    const checked = !!params[p.name]
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+          {leftLabel}
+        </span>
+        <NeonSwitch
+          name=""
+          checked={checked}
+          onChange={(val) =>
+            setParams((prev) => ({
+              ...prev,
+              [p.name]: val,
+            }))
+          }
+        />
+        <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+          {rightLabel}
+        </span>
+      </div>
+    )
+  }
+
   const renderParamInput = (p) => {
+    const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
+
+    if (isDaoProjectCreate && p.payloadName === 'votingSystem') {
+      return renderDaoSwitch(p, 'Democratic', 'Stake-based')
+    }
+
+    if (isDaoProjectCreate && p.payloadName === 'creatorRestriction') {
+      return renderDaoSwitch(p, 'Members', 'Public')
+    }
+
     if (p.type?.startsWith('meta-')) {
       return (
         <MetaInputField
@@ -79,7 +138,7 @@ export default function ExecuteForm({
     if (p.type === 'bool') {
       return (
         <NeonSwitch
-          name={p.name}
+          name=""
           checked={!!params[p.name]}
           onChange={(val) =>
             setParams((prev) => ({ ...prev, [p.name]: val }))
@@ -129,7 +188,8 @@ export default function ExecuteForm({
             type="text"
             inputMode="decimal"
             placeholder="Amount"
-            label={`${p.name}${p.mandatory ? ' *' : ''}`}
+            label={labelText}
+            hideLabel
             value={current.amount}
             onChange={onAmountChange}
             onBlur={onAmountBlur}
@@ -192,11 +252,12 @@ export default function ExecuteForm({
 
       return (
         <FloatingLabelInput
-          label={`${p.name}${p.mandatory ? ' *' : ''}`}
+          label={labelText}
           type="text"
           placeholder="hive:username"
           value={value}
           onChange={handleChange}
+          hideLabel
           style={{ marginTop: '4px' }}
         />
       )
@@ -204,19 +265,100 @@ export default function ExecuteForm({
 
     return (
       <FloatingLabelInput
-        label={`${p.name}${p.mandatory ? ' *' : ''}`}
+        label={labelText}
         type={p.type === 'number' ? 'number' : 'text'}
         value={params[p.name] ?? ''}
-        onChange={(e) =>
+        hideLabel
+        onChange={(e) => {
+          const val = e.target.value
           setParams((prev) => ({
             ...prev,
-            [p.name]: e.target.value,
+            [p.name]: val,
           }))
+        }}
+        onBlur={
+          p.type === 'number' || p.min !== undefined || p.max !== undefined
+            ? (e) => {
+                const clamped = clampNumber(e.target.value, p.min, p.max)
+                if (clamped !== e.target.value && !Number.isNaN(parseFloat(clamped))) {
+                  setParams((prev) => ({
+                    ...prev,
+                    [p.name]: clamped.toString(),
+                  }))
+                }
+              }
+            : undefined
         }
+        min={p.min}
+        max={p.max}
+        step={p.min !== undefined || p.max !== undefined ? '0.1' : undefined}
         style={{ marginTop: '4px' }}
       />
     )
   }
+
+  const renderParamRow = (p) => {
+    const hint = (p.hintText || '').trim()
+    const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
+    return (
+      <div key={p.name} style={{ marginBottom: '12px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '6px',
+          }}
+        >
+          <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+            {labelText}
+          </span>
+          {hint ? (
+            <FontAwesomeIcon
+              icon={faCircleInfo}
+              title={hint}
+              style={{ color: 'var(--color-primary-lighter)', cursor: 'help' }}
+              onMouseEnter={(e) =>
+                setHintOverlay({
+                  text: hint,
+                  x: e.clientX - 60,
+                  y: e.clientY - 60,
+                })
+              }
+              onMouseMove={(e) =>
+                setHintOverlay((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        x: e.clientX - 60,
+                        y: e.clientY - 60,
+                      }
+                    : prev
+                )
+              }
+              onMouseLeave={() => setHintOverlay(null)}
+              onClick={() =>
+                openPopup?.({
+                  title: labelText || 'Hint',
+                  body: hint,
+                })
+              }
+            />
+          ) : null}
+        </div>
+        <div style={{ flex: 1 }}>{renderParamInput(p)}</div>
+      </div>
+    )
+  }
+
+  const parameters = fn?.parameters ?? []
+  const supportsOptionalGrouping = fn?.parse !== 'game'
+  const mandatoryParams = supportsOptionalGrouping
+    ? parameters.filter((p) => p.mandatory)
+    : parameters
+  const optionalParams = supportsOptionalGrouping
+    ? parameters.filter((p) => !p.mandatory)
+    : []
 
   return (
     <div
@@ -265,12 +407,43 @@ export default function ExecuteForm({
           </tbody>
         </table>
 
-        {fn?.parameters?.length ? (
-          fn.parameters.map((p) => (
-            <div key={p.name} style={{ display: 'flex', flexDirection: 'column' }}>
-              {renderParamInput(p)}
-            </div>
-          ))
+        {parameters.length ? (
+          <>
+            {mandatoryParams.map(renderParamRow)}
+
+            {optionalParams.length ? (
+              <CyberContainer title="Optional settings" defaultCollapsed maxContentHeight="40vh">
+                <div style={{ display: 'flex', flexDirection: 'column'}}>
+                  <div style={{ marginTop: '20px' }}>
+                  {optionalParams.map(renderParamRow)}
+                  </div>
+                </div>
+              </CyberContainer>
+            ) : null}
+
+            {hintOverlay ? (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: hintOverlay.y,
+                  left: hintOverlay.x,
+                  zIndex: 9999,
+                  background: 'rgba(0, 0, 0, 0.9)',
+                  border: '1px solid var(--color-primary-darker)',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  maxWidth: '280px',
+                  color: 'var(--color-primary-lighter)',
+                  fontSize: '0.85rem',
+                  pointerEvents: 'none',
+                  boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                  backdropFilter: 'blur(3px)',
+                }}
+              >
+                {hintOverlay.text}
+              </div>
+            ) : null}
+          </>
         ) : (
           <p>No parameters for this function.</p>
         )}
