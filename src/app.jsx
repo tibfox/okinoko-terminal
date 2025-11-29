@@ -115,6 +115,7 @@ export function App() {
                         setContractId={setContractId}
                         fnName={fnName}
                         setFnName={setFnName}
+                        setParams={setParams}
                         setStep={setPage}
                       />
         )

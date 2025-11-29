@@ -19,6 +19,7 @@ export default function ContractDetails({
   isDaoContract,
   onCreateDao,
   onCreateProposal,
+  setParams,
 }) {
   if (!selectedContract) {
     return <p>Select a contract to view details.</p>
@@ -240,6 +241,7 @@ export default function ContractDetails({
           isMobile={isMobile}
           onCreateDao={onCreateDao}
           onCreateProposal={onCreateProposal}
+          setParams={setParams}
         />
       )}
     </div>

@@ -14,6 +14,7 @@ import { PopupContext } from '../../popup/context.js'
 const STORAGE_KEY = 'stepSelectActivePage'
 const IN_A_ROW_VSC_ID = 'vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh'
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
+const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 // const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 
 const getStoredPage = () => {
@@ -26,6 +27,7 @@ export default function StepSelect({
   setContractId,
   fnName,
   setFnName,
+  setParams,
   setStep,
 }) {
   const contracts = contractsCfg.contracts || []
@@ -75,11 +77,21 @@ export default function StepSelect({
     setStep(2)
   }, [setContractId, setFnName, setStep])
 
-  const handleCreateProposal = useCallback(() => {
+  const handleCreateProposal = useCallback((projectId) => {
     setContractId(DAO_VSC_ID)
     setFnName('proposal_create')
+    if (projectId) {
+      try {
+        sessionStorage.setItem(DAO_PROPOSAL_PREFILL_KEY, String(projectId))
+      } catch {}
+      setParams((prev) => ({
+        ...prev,
+        'Project Id': projectId,
+        projectId: projectId,
+      }))
+    }
     setStep(2)
-  }, [setContractId, setFnName, setStep])
+  }, [setContractId, setFnName, setParams, setStep])
 
   const handleNext = () => {
     if (!selectedContract) return

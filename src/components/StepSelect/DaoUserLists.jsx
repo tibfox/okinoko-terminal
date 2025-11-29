@@ -1,12 +1,13 @@
 import { useMemo, useState, useContext, useCallback } from 'preact/hooks'
-import { gql, useQuery } from '@urql/preact'
+import { gql, useQuery, useClient } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronDown, faChevronUp, faCircleInfo, faUserPlus } from '@fortawesome/free-solid-svg-icons'
+import { faChevronDown, faChevronUp, faCircleInfo, faPlusCircle, faUserPlus } from '@fortawesome/free-solid-svg-icons'
 import ListButton from '../buttons/ListButton.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import contractsCfg from '../../data/contracts.json'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import { PopupContext } from '../../popup/context.js'
+
 
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 const DAO_JOIN_FN = 'project_join'
@@ -52,14 +53,231 @@ const DAO_USER_QUERY = gql`
       member
       member_active
     }
+  }`
+
+  const DaoDetail = ({ projectId, client, onCreateProposal: detailCreate }) => {
+    const [{ data: detailData, fetching: detailFetching, error: detailError }] = useQuery({
+      query: DAO_DETAIL_QUERY,
+      variables: { projectId },
+      requestPolicy: 'network-only',
+    })
+
+    if (detailFetching) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* <Spinner size={16} /> */}
+          <span>Loading DAO details…</span>
+        </div>
+      )
+    }
+
+    if (detailError || !detailData) {
+      return <div style={{ color: 'var(--color-primary-lighter)' }}>Could not load DAO details.</div>
+    }
+
+    const projRows = detailData.project || []
+    const base = projRows[0] || {}
+
+    const memberMap = new Map()
+    projRows.forEach((r) => {
+      if (!r.member) return
+      const name = r.member
+      const active = r.active
+      const existing = memberMap.get(name)
+      if (!existing || active) {
+        memberMap.set(name, { name, active })
+      }
+    })
+    const creatorName = base.created_by
+    if (creatorName && !memberMap.has(creatorName)) {
+      memberMap.set(creatorName, { name: creatorName, active: true })
+    }
+    const members = Array.from(memberMap.values())
+
+    const proposalsMap = new Map()
+    ;(detailData.proposals || []).forEach((p) => {
+      if (!proposalsMap.has(p.proposal_id)) {
+        proposalsMap.set(p.proposal_id, p)
+      }
+    })
+    const proposals = Array.from(proposalsMap.values())
+    const treasury = detailData.treasury || []
+
+    const treasuryTotals = treasury.reduce((acc, t) => {
+      const key = (t.asset || '').toUpperCase()
+      if (!acc[key]) acc[key] = 0
+      const amt = Number(t.amount) || 0
+      acc[key] += t.direction === 'out' ? -amt : amt
+      return acc
+    }, {})
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '260px' }}>
+        <div>
+          <div style={{ fontWeight: 700 }}>{base.name || `DAO #${projectId}`}</div>
+          <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
+          <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
+          
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '0.9rem' }}>
+          <div>Voting: {base.voting_system === '1' ? 'Stake-weighted' : 'Democratic'}</div>
+          <div>Minimum Stake / Fee: {base.stake_min_amount ?? '?'} {(base.funds_asset || 'HIVE').toUpperCase()}</div>
+          <div>Proposal Cost: {base.proposal_cost ?? '?'} {(base.funds_asset || 'HIVE').toUpperCase()}</div>
+          
+          <div>Threshold: {base.threshold_percent ?? '?'}%</div>
+          <div>Quorum: {base.quorum_percent ?? '?'}%</div>
+          
+        </div>
+
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: '4px' }}>Members</div>
+          {members.length === 0 ? (
+            <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>No members listed.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.9rem' }}>
+              {members.map((m) => (
+                <span
+                  key={m.name}
+                  style={{
+                    padding: '4px 8px',
+                    border: '1px solid var(--color-primary-darkest)',
+                    borderRadius: '6px',
+                    opacity: m.active ? 1 : 0.6,
+                  }}
+                >
+                  {m.name} {m.active ? '' : '(former)'}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: '4px' }}>Treasury</div>
+          {Object.keys(treasuryTotals).length === 0 ? (
+            <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>No movements yet.</div>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {Object.entries(treasuryTotals).map(([asset, amt]) => (
+                <span
+                  key={asset}
+                  style={{
+                    padding: '4px 8px',
+                    border: '1px solid var(--color-primary-darkest)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  {Number(amt).toFixed(3)} {asset}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{ fontWeight: 700 }}>
+              Proposals ({base.proposals_members_only === false ? 'Public' : 'Members only'})
+            </span>
+            {detailCreate && (
+              <button
+                onClick={() => detailCreate(projectId)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'transparent',
+                  color: 'var(--color-primary)',
+                  // border: '1px solid var(--color-primary-darkest)',
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                <FontAwesomeIcon icon={faPlusCircle} />
+                {/* <span>Create proposal</span> */}
+              </button>
+            )}
+          </div>
+          {proposals.length === 0 ? (
+            <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>No proposals yet.</div>
+          ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {proposals.map((p) => (
+              <div
+                key={p.proposal_id}
+                style={{
+                  border: '1px solid var(--color-primary-darkest)',
+                  borderRadius: '6px',
+                  padding: '6px 8px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                  <span>{p.name || `Proposal #${p.proposal_id}`}</span>
+                  <span style={{ color: 'var(--color-primary)' }}>
+                    {p.result?.toUpperCase() || p.state || 'pending'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>
+                  ID {p.proposal_id} · Ready at {p.ready_at ?? 'n/a'} · Creator {p.created_by || 'n/a'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+const DAO_DETAIL_QUERY = gql`
+  query DaoDetail($projectId: numeric!) {
+    project: okinoko_dao_project_overview(where: { project_id: { _eq: $projectId } }) {
+      project_id
+      name
+      description
+      created_by
+      funds_asset
+      proposal_cost
+      stake_min_amount
+      proposals_members_only
+      voting_system
+      threshold_percent
+      quorum_percent
+      proposal_duration_hours
+      execution_delay_hours
+      leave_cooldown_hours
+      member
+      active
+    }
+    proposals: okinoko_dao_proposal_overview(
+      where: { project_id: { _eq: $projectId } }
+      order_by: { proposal_id: desc }
+    ) {
+      proposal_id
+      name
+      state
+      result
+      ready_at
+      created_by
+      member
+      member_active
+    }
+    treasury: okinoko_dao_treasury_movements(where: { project_id: { _eq: $projectId } }) {
+      direction
+      amount
+      asset
+    }
   }
 `
 
-export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProposal }) {
+export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProposal, setParams }) {
   const [daosCollapsed, setDaosCollapsed] = useState(false)
   const [proposalsCollapsed, setProposalsCollapsed] = useState(false)
   const [joiningDaoId, setJoiningDaoId] = useState(null)
   const popup = useContext(PopupContext)
+  const client = useClient()
 
   const daoContract = useMemo(
     () => contractsCfg.contracts.find((c) => c.vscId === DAO_VSC_ID),
@@ -246,7 +464,7 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
                   disabled={joinPending}
                 >
                   <FontAwesomeIcon icon={faUserPlus} style={{ marginRight: '6px' }} />
-                  <span style={{ fontWeight: 700 }}>Join another DAO</span>
+                  <span style={{ fontWeight: 700 }}>Join DAO</span>
                 </ListButton>
 
                 <ListButton
@@ -265,7 +483,8 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
                     width: 'auto',
                   }}
                 >
-                  <span style={{ fontWeight: 700 }}>Create new DAO</span>
+                  <FontAwesomeIcon icon={faPlusCircle} style={{ marginRight: '6px' }} />
+                  <span style={{ fontWeight: 700 }}>Create DAO</span>
                 </ListButton>
               </div>
             )
@@ -274,6 +493,7 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
           return (
             <ListButton
               key={`dao-${dao.project_id}-${idx}`}
+              onClick={() => openDaoDetail(dao.project_id)}
               style={{
                 backgroundColor: 'rgba(0,0,0,0.35)',
                 color: 'var(--color-primary-lighter)',
@@ -296,6 +516,7 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
                     color: 'var(--color-primary)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
+                    paddingLeft: '10px',
                   }}
                 >
                   {relationLabel(dao)}
@@ -383,6 +604,7 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
                 <span
                   style={{
                     fontSize: '0.8rem',
+                    paddingLeft: '10px',
                     color: 'var(--color-primary)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
@@ -525,6 +747,25 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
       ),
     })
   }
+
+  const openDaoDetail = useCallback(
+    (projectId) => {
+      popup?.openPopup?.({
+        title: `DAO #${projectId}`,
+        body: () => (
+          <DaoDetail
+            projectId={projectId}
+            client={client}
+            onCreateProposal={(pid) => {
+              onCreateProposal?.(pid)
+              popup?.closePopup?.()
+            }}
+          />
+        ),
+      })
+    },
+    [client, popup, onCreateProposal]
+  )
 
   return (
     <div

@@ -455,6 +455,40 @@ export default function useExecuteHandler({ contract, fn, params }) {
 
   const allMandatoryFilled = areMandatoryFilled()
 
+  const describeMissing = useCallback(
+    (inputParams = params) => {
+      if (!fn) return []
+      const issues = []
+      const formatAmt = (amt) => {
+        const n = Number(amt)
+        return Number.isFinite(n) ? n.toFixed(3) : String(amt ?? '')
+      }
+      ;(fn.parameters || []).forEach((p) => {
+        if (!p.mandatory) return
+        const val = inputParams?.[p.name]
+        if (p.type === 'vscIntent') {
+          if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) {
+            issues.push(`Missing amount for "${p.name}"`)
+            return
+          }
+          const amount = parseFloat(String(val.amount).replace(',', '.'))
+          const available = (val.asset === 'HIVE' ? balances.hive : balances.hbd) || 0
+          if (amount > available) {
+            issues.push(
+              `Insufficient balance for "${p.name}": need ${formatAmt(amount)} ${val.asset || ''}, have ${formatAmt(available)}`
+            )
+          }
+          return
+        }
+        if (val === '' || val === undefined || val === null) {
+          issues.push(`Missing value for "${p.name}"`)
+        }
+      })
+      return issues
+    },
+    [fn, balances, params]
+  )
+
   /**
    * Executes the contract function
    */
@@ -474,7 +508,12 @@ export default function useExecuteHandler({ contract, fn, params }) {
       }
 
       if (!mandatoryOk) {
+        const details = describeMissing(effectiveParams)
         console.warn('[useExecuteHandler] ❌ send aborted — required params are missing or insufficient balance')
+        if (details.length) {
+          console.warn('Issues:', details.join('; '))
+          appendLog(`✘ Missing/invalid: ${details.join('; ')}`)
+        }
         console.warn('params:', effectiveParams)
         console.warn('fn.parameters:', fn.parameters)
         console.warn('balances:', balances)

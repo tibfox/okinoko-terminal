@@ -11,6 +11,7 @@ import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
 
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
+const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 const DAO_PROJECTS_QUERY = `
   query DaoProjects {
     projects: okinoko_dao_project_overview(order_by: { project_id: asc }) {
@@ -141,6 +142,9 @@ export default function ExecuteForm({
         name: p.name || `DAO #${p.project_id}`,
         proposal_cost: p.proposal_cost,
         asset: (p.funds_asset || 'HIVE').toUpperCase(),
+        isMember: !!p.member_hit,
+        isCreator: userVariants.includes(String(p.created_by || '').toLowerCase()),
+        isPublic: p.proposals_members_only === false,
       }))
     )
   }, [
@@ -279,6 +283,29 @@ export default function ExecuteForm({
     setParams,
   ])
 
+  // Pull prefilled project id from session storage as a fallback
+  useEffect(() => {
+    if (!isProposalCreate || !projectIdParam) return
+    const hasValue =
+      params[projectIdParam.name] !== undefined &&
+      params[projectIdParam.name] !== ''
+    if (hasValue) return
+    try {
+      const stored = sessionStorage.getItem(DAO_PROPOSAL_PREFILL_KEY)
+      if (stored) {
+        const num = Number(stored)
+        if (!Number.isNaN(num)) {
+          setParams((prev) => ({
+            ...prev,
+            [projectIdParam.name]: num,
+            [projectIdParam.payloadName || projectIdParam.name]: num,
+          }))
+        }
+        sessionStorage.removeItem(DAO_PROPOSAL_PREFILL_KEY)
+      }
+    } catch {}
+  }, [isProposalCreate, projectIdParam, params, setParams])
+
   const clampNumber = (val, min, max) => {
     let num = parseFloat(val)
     if (Number.isNaN(num)) return val
@@ -335,7 +362,18 @@ export default function ExecuteForm({
         (p.payloadName || '').toLowerCase() === 'projectid')
 
     if (isProjectIdField) {
-      const value = params[p.name] ?? ''
+      const rawVal = params[p.name] ?? params[p.payloadName] ?? ''
+      const value =
+        rawVal === null || rawVal === undefined || rawVal === ''
+          ? ''
+          : String(rawVal)
+      const optionLabel = (proj) => {
+        let badge = ''
+        if (proj.isMember) badge = 'Member'
+        else if (proj.isCreator) badge = 'Creator'
+        else if (proj.isPublic) badge = 'Public'
+        return `${proj.name} (#${proj.id})${badge ? ' — ' + badge : ''}`
+      }
       return (
         <select
           className="vsc-input"
@@ -344,6 +382,7 @@ export default function ExecuteForm({
             setParams((prev) => ({
               ...prev,
               [p.name]: Number(e.target.value),
+              [p.payloadName || p.name]: Number(e.target.value),
             }))
           }
           style={{
@@ -358,8 +397,8 @@ export default function ExecuteForm({
             {daoProjects.length ? 'Select a DAO' : 'No accessible DAOs found'}
           </option>
           {daoProjects.map((proj) => (
-            <option key={proj.id} value={proj.id}>
-              {proj.name} (#{proj.id})
+            <option key={proj.id} value={String(proj.id)}>
+              {optionLabel(proj)}
             </option>
           ))}
         </select>
