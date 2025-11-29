@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'preact/hooks'
+import { useContext, useEffect, useMemo, useState, useCallback } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
@@ -13,6 +13,7 @@ import { PopupContext } from '../../popup/context.js'
 
 const STORAGE_KEY = 'stepSelectActivePage'
 const IN_A_ROW_VSC_ID = 'vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh'
+const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 // const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 
 const getStoredPage = () => {
@@ -39,6 +40,7 @@ export default function StepSelect({
   }, [activePage])
 
   const normalizedUser = (user || '').replace(/^hive:/i, '').toLowerCase()
+  const hiveUser = normalizedUser ? `hive:${normalizedUser}` : ''
   // const canSeeInARow = ALLOWED_GAMER_HANDLES.includes(normalizedUser)
   const canSeeInARow = true //  enable for all users
 
@@ -65,6 +67,19 @@ export default function StepSelect({
     () => selectedContract?.functions?.find((f) => f.name === fnName),
     [selectedContract, fnName]
   )
+  const isDaoContract = selectedContract?.vscId === DAO_VSC_ID
+
+  const handleCreateDao = useCallback(() => {
+    setContractId(DAO_VSC_ID)
+    setFnName('project_create')
+    setStep(2)
+  }, [setContractId, setFnName, setStep])
+
+  const handleCreateProposal = useCallback(() => {
+    setContractId(DAO_VSC_ID)
+    setFnName('proposal_create')
+    setStep(2)
+  }, [setContractId, setFnName, setStep])
 
   const handleNext = () => {
     if (!selectedContract) return
@@ -203,6 +218,10 @@ export default function StepSelect({
             selectedFunction={selectedFunction}
             fnName={fnName}
             setFnName={setFnName}
+            user={hiveUser}
+            isDaoContract={isDaoContract}
+            onCreateDao={handleCreateDao}
+            onCreateProposal={handleCreateProposal}
           />
         </div>
       </div>

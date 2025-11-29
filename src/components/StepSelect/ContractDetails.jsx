@@ -4,8 +4,10 @@ import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import DescriptionBox from '../common/DescriptionBox.jsx'
 import FunctionList from './FunctionList.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
+import DaoUserLists from './DaoUserLists.jsx'
 
 const METADATA_COLLAPSE_COOKIE = 'contractMetadataCollapsed'
+const FUNCTIONS_COLLAPSE_COOKIE = 'functionsListCollapsed'
 
 export default function ContractDetails({
   isMobile,
@@ -13,6 +15,10 @@ export default function ContractDetails({
   selectedFunction,
   fnName,
   setFnName,
+  user,
+  isDaoContract,
+  onCreateDao,
+  onCreateProposal,
 }) {
   if (!selectedContract) {
     return <p>Select a contract to view details.</p>
@@ -20,6 +26,7 @@ export default function ContractDetails({
 
   const isGameContract = selectedContract?.functions?.[0]?.parse === 'game'
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false)
+  const [isFunctionsCollapsed, setIsFunctionsCollapsed] = useState(false)
 
   useEffect(() => {
     if (isMobile) return
@@ -27,6 +34,15 @@ export default function ContractDetails({
       const cookieValue = getCookie(METADATA_COLLAPSE_COOKIE)
       if (cookieValue === '1') setIsMetadataCollapsed(true)
       if (cookieValue === '0') setIsMetadataCollapsed(false)
+    } catch {}
+  }, [isMobile])
+
+  useEffect(() => {
+    if (isMobile) return
+    try {
+      const cookieValue = getCookie(FUNCTIONS_COLLAPSE_COOKIE)
+      if (cookieValue === '1') setIsFunctionsCollapsed(true)
+      if (cookieValue === '0') setIsFunctionsCollapsed(false)
     } catch {}
   }, [isMobile])
 
@@ -41,9 +57,25 @@ export default function ContractDetails({
     } catch {}
   }, [isMetadataCollapsed, isMobile])
 
+  useEffect(() => {
+    if (isMobile) return
+    try {
+      setCookie(
+        FUNCTIONS_COLLAPSE_COOKIE,
+        isFunctionsCollapsed ? '1' : '0',
+        365
+      )
+    } catch {}
+  }, [isFunctionsCollapsed, isMobile])
+
   const toggleMetadataVisibility = useCallback(() => {
     if (isMobile) return
     setIsMetadataCollapsed(prev => !prev)
+  }, [isMobile])
+
+  const toggleFunctionsVisibility = useCallback(() => {
+    if (isMobile) return
+    setIsFunctionsCollapsed(prev => !prev)
   }, [isMobile])
 
   const handleMetadataHeaderKeyDown = useCallback(
@@ -54,6 +86,16 @@ export default function ContractDetails({
       }
     },
     [toggleMetadataVisibility]
+  )
+
+  const handleFunctionsHeaderKeyDown = useCallback(
+    event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        toggleFunctionsVisibility()
+      }
+    },
+    [toggleFunctionsVisibility]
   )
 
   return (
@@ -153,26 +195,53 @@ export default function ContractDetails({
       {/* --- Functions Section --- */}
       {!isMobile && (
         <>
-          {isGameContract ? (
-            <h3 className="cyber-tile" style={{ maxWidth: '30%' }}>
-              Games
-            </h3>
-          ) : (
-            <h3 className="cyber-tile" style={{ maxWidth: '50%' }}>
-              Functions
-            </h3>
-          )}
+          <h3
+            className="cyber-tile"
+            style={{
+              maxWidth: isGameContract ? '30%' : '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+            }}
+            onClick={toggleFunctionsVisibility}
+            onKeyDown={handleFunctionsHeaderKeyDown}
+            role="button"
+            tabIndex={0}
+            aria-expanded={!isFunctionsCollapsed}
+          >
+            <span>{isGameContract ? 'Games' : 'Functions'}</span>
+            <span style={{ marginLeft: 'auto', paddingRight: '8px' }}>
+              <FontAwesomeIcon
+                icon={isFunctionsCollapsed ? faChevronDown : faChevronUp}
+                style={{ fontSize: '0.9rem' }}
+              />
+            </span>
+          </h3>
         </>
       )}
-      <FunctionList
-        selectedContract={selectedContract}
-        fnName={fnName}
-        setFnName={setFnName}
-      />
-      <DescriptionBox
-        text={selectedFunction?.description}
-        isMobile={isMobile}
-      />
+      {(isMobile || !isFunctionsCollapsed) && (
+        <>
+          <FunctionList
+            selectedContract={selectedContract}
+            fnName={fnName}
+            setFnName={setFnName}
+          />
+          <DescriptionBox
+            text={selectedFunction?.description}
+            isMobile={isMobile}
+          />
+        </>
+      )}
+
+      {isDaoContract && (
+        <DaoUserLists
+          user={user}
+          isMobile={isMobile}
+          onCreateDao={onCreateDao}
+          onCreateProposal={onCreateProposal}
+        />
+      )}
     </div>
   )
 }

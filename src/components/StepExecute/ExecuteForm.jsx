@@ -8,8 +8,23 @@ import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { CyberContainer } from '../common/CyberContainer.jsx'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import { PopupContext } from '../../popup/context.js'
+import { useQuery } from '@urql/preact'
 
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
+const DAO_PROJECTS_QUERY = `
+  query DaoProjects {
+    projects: okinoko_dao_project_overview(order_by: { project_id: asc }) {
+      project_id
+      name
+      proposal_cost
+      funds_asset
+      proposals_members_only
+      member
+      active
+      created_by
+    }
+  }
+`
 
 export default function ExecuteForm({
   user,
@@ -26,6 +41,11 @@ export default function ExecuteForm({
   const [hintOverlay, setHintOverlay] = useState(null)
   const { openPopup } = useContext(PopupContext)
   const { balances: accountBalances } = useAccountBalances()
+  const [daoProjects, setDaoProjects] = useState([])
+  const rawUser = user || ''
+  const hiveUser = rawUser?.startsWith('hive:') ? rawUser : rawUser ? `hive:${rawUser}` : ''
+  const lowerRaw = rawUser.toLowerCase()
+  const lowerHive = hiveUser.toLowerCase()
   const balances = useMemo(() => {
     if (!accountBalances) {
       return { hive: 0, hbd: 0 }
@@ -60,8 +80,204 @@ export default function ExecuteForm({
     setInsufficient(over)
   }, [fn, params, balances])
 
-  const isDaoProjectCreate =
-    contract?.vscId === DAO_VSC_ID && fn?.name === 'project_create'
+  const isDaoContract = contract?.vscId === DAO_VSC_ID
+  const isDaoProjectCreate = isDaoContract && fn?.name === 'project_create'
+  const isProposalCreate = isDaoContract && fn?.name === 'proposal_create'
+
+  // Fetch DAO projects for dropdowns (via Hasura/urql provider)
+  const [{ data: daoData, error: daoError }] = useQuery({
+    query: DAO_PROJECTS_QUERY,
+    pause: !isDaoContract,
+    requestPolicy: 'network-only',
+  })
+
+  useEffect(() => {
+    if (!isDaoContract) return
+    if (daoError) return
+    const userVariants = [rawUser, hiveUser, lowerRaw, lowerHive]
+      .filter(Boolean)
+      .map((u) => u.toLowerCase())
+
+    const byProject = new Map()
+    ;(daoData?.projects || []).forEach((row) => {
+      const pid = Number(row.project_id)
+      const existing = byProject.get(pid) || {
+        project_id: pid,
+        name: row.name,
+        proposal_cost: row.proposal_cost,
+        funds_asset: row.funds_asset,
+        proposals_members_only: row.proposals_members_only,
+        created_by: row.created_by,
+        member_hit: false,
+      }
+      const memberVal = String(row.member || '').toLowerCase()
+      const activeVal =
+        row.active === true ||
+        row.active === 'true' ||
+        row.active === 1 ||
+        row.active === '1' ||
+        row.active === null ||
+        row.active === undefined
+      const isMemberHit =
+        memberVal &&
+        userVariants.includes(memberVal) &&
+        activeVal
+      if (isMemberHit) existing.member_hit = true
+      if (!existing.name && row.name) existing.name = row.name
+      byProject.set(pid, existing)
+    })
+
+    const accessible = Array.from(byProject.values()).filter((p) => {
+      const created = String(p.created_by || '').toLowerCase()
+      const isCreator = userVariants.includes(created)
+      return (
+        p.member_hit || isCreator || p.proposals_members_only === false
+      )
+    })
+
+    setDaoProjects(
+      accessible.map((p) => ({
+        id: p.project_id,
+        name: p.name || `DAO #${p.project_id}`,
+        proposal_cost: p.proposal_cost,
+        asset: (p.funds_asset || 'HIVE').toUpperCase(),
+      }))
+    )
+  }, [
+    daoData,
+    daoError,
+    hiveUser,
+    isDaoContract,
+    lowerHive,
+    lowerRaw,
+    rawUser,
+  ])
+
+  const projectIdParam = useMemo(
+    () =>
+      fn?.parameters?.find((p) =>
+        (p.name || '').toLowerCase().includes('project id')
+      ),
+    [fn]
+  )
+
+  const proposalCostParam = useMemo(
+    () =>
+      fn?.name === 'proposal_create'
+        ? fn?.parameters?.find(
+            (p) =>
+              (p.name || '').toLowerCase().includes('proposal cost') ||
+              p.payloadName === 'vscIntent'
+          )
+        : null,
+    [fn]
+  )
+
+  const forcePollParam = useMemo(
+    () =>
+      isProposalCreate
+        ? fn?.parameters?.find(
+            (p) =>
+              (p.payloadName || '').toLowerCase() === 'forcepoll' ||
+              (p.name || '').toLowerCase().includes('force poll')
+          )
+        : null,
+    [fn, isProposalCreate]
+  )
+
+  const payoutsParam = useMemo(
+    () =>
+      isProposalCreate
+        ? fn?.parameters?.find(
+            (p) =>
+              (p.payloadName || '').toLowerCase() === 'payouts' ||
+              (p.name || '').toLowerCase().includes('payout')
+          )
+        : null,
+    [fn, isProposalCreate]
+  )
+
+  const metaParam = useMemo(
+    () =>
+      isProposalCreate
+        ? fn?.parameters?.find(
+            (p) =>
+              (p.payloadName || '').toLowerCase() === 'meta' ||
+              (p.name || '').toLowerCase().includes('meta')
+          )
+        : null,
+    [fn, isProposalCreate]
+  )
+
+  const forcePollActive = useMemo(() => {
+    if (!forcePollParam) return false
+    const val = params[forcePollParam.name]
+    return (
+      val === true ||
+      val === 'true' ||
+      val === 1 ||
+      val === '1' ||
+      val === 'TRUE'
+    )
+  }, [forcePollParam, params])
+
+  // Clear meta/payout fields when force poll is enabled
+  useEffect(() => {
+    if (!forcePollActive) return
+    if (!payoutsParam && !metaParam) return
+    setParams((prev) => {
+      let changed = false
+      const next = { ...prev }
+      if (payoutsParam && next[payoutsParam.name]) {
+        next[payoutsParam.name] = ''
+        changed = true
+      }
+      if (metaParam && next[metaParam.name]) {
+        next[metaParam.name] = ''
+        changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [forcePollActive, payoutsParam, metaParam, setParams])
+
+  // Auto-fill proposal cost when selecting project
+  useEffect(() => {
+    if (!isDaoContract || fn?.name !== 'proposal_create') return
+    if (!projectIdParam || !proposalCostParam) return
+    const selectedProject = params[projectIdParam.name]
+    if (!selectedProject) return
+    const proj = daoProjects.find(
+      (p) => Number(p.id) === Number(selectedProject)
+    )
+    if (!proj || proj.proposal_cost === undefined || proj.proposal_cost === null)
+      return
+    const desired = {
+      amount: Number(proj.proposal_cost || 0).toFixed(3),
+      asset: proj.asset,
+    }
+    const current = params[proposalCostParam.name]
+    if (current) {
+      const sameAmount =
+        current.amount !== undefined &&
+        current.amount !== '' &&
+        Number(current.amount) === Number(desired.amount)
+      const sameAsset =
+        (current.asset || '').toUpperCase() === desired.asset
+      if (sameAmount && sameAsset) return
+    }
+    setParams((prev) => ({
+      ...prev,
+      [proposalCostParam.name]: desired,
+    }))
+  }, [
+    daoProjects,
+    fn,
+    isDaoContract,
+    params,
+    projectIdParam,
+    proposalCostParam,
+    setParams,
+  ])
 
   const clampNumber = (val, min, max) => {
     let num = parseFloat(val)
@@ -112,7 +328,48 @@ export default function ExecuteForm({
       return renderDaoSwitch(p, 'Members', 'Public')
     }
 
+    // DAO project selector
+    const isProjectIdField =
+      isDaoContract &&
+      ((p.name || '').toLowerCase().includes('project id') ||
+        (p.payloadName || '').toLowerCase() === 'projectid')
+
+    if (isProjectIdField) {
+      const value = params[p.name] ?? ''
+      return (
+        <select
+          className="vsc-input"
+          value={value}
+          onChange={(e) =>
+            setParams((prev) => ({
+              ...prev,
+              [p.name]: Number(e.target.value),
+            }))
+          }
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            backgroundColor: 'black',
+            color: 'var(--color-primary-lighter)',
+            border: '1px solid var(--color-primary-darkest)',
+          }}
+        >
+          <option value="" disabled>
+            {daoProjects.length ? 'Select a DAO' : 'No accessible DAOs found'}
+          </option>
+          {daoProjects.map((proj) => (
+            <option key={proj.id} value={proj.id}>
+              {proj.name} (#{proj.id})
+            </option>
+          ))}
+        </select>
+      )
+    }
+
     if (p.type?.startsWith('meta-')) {
+      if (isProposalCreate && forcePollActive && metaParam?.name === p.name) {
+        return null
+      }
       return (
         <MetaInputField
           paramName={p.name}
@@ -298,6 +555,13 @@ export default function ExecuteForm({
   }
 
   const renderParamRow = (p) => {
+    if (
+      isProposalCreate &&
+      forcePollActive &&
+      (p === payoutsParam || p === metaParam)
+    ) {
+      return null
+    }
     const hint = (p.hintText || '').trim()
     const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
     return (
