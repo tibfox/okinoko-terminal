@@ -1,7 +1,13 @@
 import { useMemo, useState, useContext, useCallback } from 'preact/hooks'
 import { gql, useQuery, useClient } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronDown, faChevronUp, faCircleInfo, faPlusCircle, faUserPlus } from '@fortawesome/free-solid-svg-icons'
+import {
+  faChevronDown,
+  faChevronUp,
+  faCircleInfo,
+  faPlusCircle,
+  faUserPlus,
+} from '@fortawesome/free-solid-svg-icons'
 import ListButton from '../buttons/ListButton.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import contractsCfg from '../../data/contracts.json'
@@ -35,15 +41,7 @@ const DAO_USER_QUERY = gql`
       active
       last_action
     }
-    daoProposals: okinoko_dao_proposal_overview(
-      where: {
-        _or: [
-          { member: { _eq: $user }, member_active: { _eq: true } }
-          { created_by: { _eq: $user } }
-        ]
-      }
-      order_by: { proposal_id: desc }
-    ) {
+    daoProposals: okinoko_dao_proposal_overview(order_by: { proposal_id: desc }) {
       proposal_id
       project_id
       name
@@ -52,6 +50,9 @@ const DAO_USER_QUERY = gql`
       created_by
       member
       member_active
+      payouts
+      is_poll
+      outcome_meta
     }
   }`
 
@@ -274,7 +275,7 @@ const DAO_DETAIL_QUERY = gql`
 
 export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProposal, setParams }) {
   const [daosCollapsed, setDaosCollapsed] = useState(false)
-  const [proposalsCollapsed, setProposalsCollapsed] = useState(false)
+  const [collapsedDaos, setCollapsedDaos] = useState(new Set())
   const [joiningDaoId, setJoiningDaoId] = useState(null)
   const popup = useContext(PopupContext)
   const client = useClient()
@@ -303,6 +304,19 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
   const projects = data?.projects ?? []
   const memberships = data?.memberships ?? []
   const proposalsRaw = data?.daoProposals ?? []
+
+  const proposalsByDao = useMemo(() => {
+    const map = new Map()
+    proposalsRaw.forEach((p) => {
+      const pid = Number(p.project_id)
+      const arr = map.get(pid) || []
+      if (!arr.find((x) => x.proposal_id === p.proposal_id)) {
+        arr.push(p)
+      }
+      map.set(pid, arr)
+    })
+    return map
+  }, [proposalsRaw])
 
   const membershipMap = useMemo(() => {
     const map = new Map()
@@ -363,7 +377,8 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
       <h3
         className="cyber-tile"
         style={{
-          maxWidth: isMobile ? '100%' : '60%',
+          maxWidth: '100%',
+          minWidth: '100%',
           flex: '1 1 auto',
           display: 'flex',
           alignItems: 'center',
@@ -413,220 +428,234 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
     </div>
   )
 
-  const renderDaoList = () => {
-    if (!user) return renderEmptyState('Log in to see your DAOs.')
-    if (fetching) return renderEmptyState('Loading your DAOs…')
-    if (error) return renderEmptyState('Could not load DAOs right now.')
-    if (!daos.length) return renderEmptyState('No DAOs yet. Create one!')
+const renderDaoList = () => {
+  if (!user) return renderEmptyState('Log in to see your DAOs.')
+  if (fetching) return renderEmptyState('Loading your DAOs…')
+  if (error) return renderEmptyState('Could not load DAOs right now.')
+  if (!daos.length) return renderEmptyState('No DAOs yet. Create one!')
 
-    const items = [...daos]
-    const showJoinCta = user && joinableDaos.length > 0
-    if (showJoinCta) {
-      items.push('__join__')
-    }
+  const toggleDao = (id) =>
+    setCollapsedDaos((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px',
-        }}
-      >
-        {items.map((item, idx) => {
-          if (item === '__join__') {
-            return (
-              <div
-                key="dao-cta-group"
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'stretch',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <ListButton
-                  onClick={openJoinPopup}
-                  style={{
-                    backgroundColor: 'rgba(0,0,0,0.35)',
-                    color: 'var(--color-primary-lighter)',
-                    textAlign: 'left',
-                    padding: '0.65em 1em',
-                    cursor: joinPending ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    gap: '10px',
-                    alignItems: 'center',
-                    minWidth: '220px',
-                    width: 'auto',
-                    opacity: joinPending ? 0.6 : 1,
-                  }}
-                  disabled={joinPending}
-                >
-                  <FontAwesomeIcon icon={faUserPlus} style={{ marginRight: '6px' }} />
-                  <span style={{ fontWeight: 700 }}>Join DAO</span>
-                </ListButton>
+  const payoutSummary = (p, daoAsset) => {
+    const payoutsStr = (p.payouts || '').trim()
+    if (p.is_poll) return 'Poll'
+    if (p.outcome_meta) return 'Meta'
+    if (!payoutsStr) return 'No payouts'
+    const asset = (daoAsset || 'HIVE').toUpperCase()
+    const rows = []
+    payoutsStr
+      .split(';')
+      .map((e) => e.trim())
+      .filter(Boolean)
+      .forEach((entry) => {
+        const lastSep = entry.lastIndexOf(':')
+        if (lastSep === -1) return
+        const userPart = entry.slice(0, lastSep)
+        const amtStr = entry.slice(lastSep + 1)
+        const amt = parseFloat(amtStr)
+        if (Number.isNaN(amt)) return
+        rows.push(`${userPart}: ${amt.toFixed(3)} ${asset}`)
+      })
+    if (!rows.length) return 'No payouts'
+    return rows.join(' • ')
+  }
 
-                <ListButton
-                  onClick={onCreateDao}
-                  style={{
-                    backgroundColor: 'rgba(0,0,0,0.35)',
-                    color: 'var(--color-primary-lighter)',
-                    textAlign: 'left',
-                    padding: '0.65em 1em',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    gap: '10px',
-                    alignItems: 'center',
-                    minWidth: '220px',
-                    width: 'auto',
-                  }}
-                >
-                  <FontAwesomeIcon icon={faPlusCircle} style={{ marginRight: '6px' }} />
-                  <span style={{ fontWeight: 700 }}>Create DAO</span>
-                </ListButton>
-              </div>
-            )
-          }
-          const dao = item
-          return (
-            <ListButton
-              key={`dao-${dao.project_id}-${idx}`}
-              onClick={() => openDaoDetail(dao.project_id)}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {daos.map((dao) => {
+        const collapsed = collapsedDaos.has(dao.project_id)
+        const daoProposals = proposalsByDao.get(Number(dao.project_id)) || []
+        return (
+          <div
+            key={`dao-block-${dao.project_id}`}
+            style={{
+              border: '1px solid var(--color-primary-darkest)',
+              borderRadius: '8px',
+              padding: '8px',
+              background: 'rgba(0,0,0,0.3)',
+            }}
+          >
+            <div
               style={{
-                backgroundColor: 'rgba(0,0,0,0.35)',
-                color: 'var(--color-primary-lighter)',
-                textAlign: 'left',
-                padding: '0.65em 1em',
-                cursor: 'default',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-                alignItems: 'flex-start',
-                minWidth: '220px',
-                width: 'auto',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                gap: '10px',
               }}
+              onClick={() => toggleDao(dao.project_id)}
             >
-              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700 }}>{dao.name || `DAO #${dao.project_id}`}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FontAwesomeIcon
+                  icon={collapsed ? faChevronDown : faChevronUp}
+                  style={{ fontSize: '0.9rem' }}
+                />
+                <span style={{ fontWeight: 700 }}>
+                  {dao.name || `DAO #${dao.project_id}`}
+                </span>
                 <span
                   style={{
                     fontSize: '0.8rem',
                     color: 'var(--color-primary)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    paddingLeft: '10px',
                   }}
                 >
                   {relationLabel(dao)}
                 </span>
               </div>
-              <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>
-                Project ID: {dao.project_id}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCreateProposal?.(dao.project_id)
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--color-primary-darkest)',
+                    color: 'var(--color-primary)',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                  title="Create proposal"
+                >
+                  <FontAwesomeIcon icon={faPlusCircle} />
+                </button>
+                {/* <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openJoinPopup()
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--color-primary-darkest)',
+                    color: 'var(--color-primary)',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                  title="Join DAO"
+                >
+                  <FontAwesomeIcon icon={faUserPlus} />
+                </button> */}
               </div>
-              {dao.description && (
-                <div style={{ fontSize: '0.85rem', opacity: 0.8, lineHeight: 1.3 }}>
-                  {dao.description}
-                </div>
-              )}
-            </ListButton>
-          )
-        })}
-      </div>
-    )
-  }
-
-  const renderProposalList = () => {
-    if (!user) return renderEmptyState('Log in to see proposals tied to you.')
-    if (fetching) return renderEmptyState('Loading proposals…')
-    if (error) return renderEmptyState('Could not load proposals right now.')
-
-    const items =
-      proposals.length > 0 ? [...proposals, '__create__'] : ['__create__']
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px',
-        }}
-      >
-        {items.map((item, idx) => {
-          if (item === '__create__') {
-            return (
-              <ListButton
-                key="proposal-create"
-                onClick={onCreateProposal}
+            </div>
+            {!collapsed && (
+              <div
                 style={{
-                  backgroundColor: 'rgba(0,0,0,0.35)',
-                  color: 'var(--color-primary-lighter)',
-                  textAlign: 'left',
-                  padding: '0.65em 1em',
-                  cursor: 'pointer',
+                  marginTop: '8px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '4px',
-                  alignItems: 'flex-start',
-                  minWidth: '220px',
-                  width: 'auto',
+                  gap: '6px',
                 }}
               >
-                <div style={{ fontWeight: 700 }}>Create proposal</div>
-                <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>
-                  Jump to create a new proposal
-                </div>
-              </ListButton>
-            )
-          }
-          const p = item
-          return (
-            <ListButton
-              key={`proposal-${p.proposal_id}-${idx}`}
-              style={{
-                backgroundColor: 'rgba(0,0,0,0.35)',
-                color: 'var(--color-primary-lighter)',
-                textAlign: 'left',
-                padding: '0.65em 1em',
-                cursor: 'default',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-                alignItems: 'flex-start',
-                minWidth: '220px',
-                width: 'auto',
-              }}
-            >
-              <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700 }}>
-                  {p.name || `Proposal #${p.proposal_id}`}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.8rem',
-                    paddingLeft: '10px',
-                    color: 'var(--color-primary)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  {p.result?.toUpperCase() || p.state || 'pending'}
-                </span>
-              </div>
-              <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>
-                DAO #{p.project_id} · ID {p.proposal_id}
-              </div>
-              {p.member === user && (
-                <div style={{ fontSize: '0.8rem', opacity: 0.75 }}>
-                  You are a member of this DAO
+                {daoProposals.length === 0 ? (
+                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                    No proposals yet.
+                  </div>
+                ) : (
+                  daoProposals.map((p, idx) => (
+                      <ListButton
+                        key={`proposal-${dao.project_id}-${p.proposal_id}-${idx}`}
+                        style={{
+                          backgroundColor: 'rgba(0,0,0,0.35)',
+                          color: 'var(--color-primary-lighter)',
+                          textAlign: 'left',
+                          padding: '0.65em 1em',
+                          cursor: 'default',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          alignItems: 'flex-start',
+                          minWidth: '220px',
+                          width: 'auto',
+                          minHeight: 'auto',
+                          whiteSpace: 'normal',
+                          height: 'auto',
+                          overflow: 'visible',
+                          textOverflow: 'unset',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                      <div
+                        style={{
+                          display: 'flex',
+                          width: '100%',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700 }}>
+                          {p.name || `Proposal #${p.proposal_id}`}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.8rem',
+                            color: 'var(--color-primary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          {p.result?.toUpperCase() || p.state || 'pending'}
+                        </span>
+                      </div>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.85, whiteSpace: 'normal' }}>
+                          {(() => {
+                            const summary = payoutSummary(p, dao.funds_asset)
+                            if (summary === 'Poll') {
+                              return <span style={{ color: 'var(--color-primary-lighter)' }}>Poll</span>
+                            }
+                            if (summary === 'Meta') {
+                              const entries = (p.outcome_meta || '')
+                                .split(';')
+                                .map((e) => e.trim())
+                                .filter(Boolean)
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <span style={{ color: 'var(--color-primary)' }}>Meta</span>
+                                  {entries.length === 0 ? (
+                                    <span style={{ color: 'var(--color-primary-lighter)' }}>No meta entries</span>
+                                  ) : (
+                                    entries.map((entry, i) => (
+                                      <span
+                                        key={`meta-${p.proposal_id}-${i}`}
+                                        style={{ color: 'var(--color-primary-lighter)' }}
+                                      >
+                                        {entry}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              )
+                            }
+                            return (
+                              <span style={{ color: 'var(--color-primary-lighter)' }}>
+                                Payouts: {summary}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                      </ListButton>
+                    ))
+                  )}
                 </div>
               )}
-            </ListButton>
-          )
-        })}
-      </div>
-    )
-  }
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
   const formatNumber = (val) => {
     const num = Number(val)
@@ -775,11 +804,44 @@ export default function DaoUserLists({ user, isMobile, onCreateDao, onCreateProp
         gap: '10px',
       }}
     >
-      {renderHeader('DAOs', daosCollapsed, setDaosCollapsed, daos.length)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {renderHeader('Your DAOs', daosCollapsed, setDaosCollapsed, daos.length)}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => openJoinPopup()}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-primary-darkest)',
+              color: 'var(--color-primary)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title="Join DAO"
+          >
+            <FontAwesomeIcon icon={faUserPlus} />
+          </button>
+          <button
+            onClick={() => onCreateDao?.()}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-primary-darkest)',
+              color: 'var(--color-primary)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title="Create DAO"
+          >
+            <FontAwesomeIcon icon={faPlusCircle} />
+          </button>
+        </div>
+      </div>
       {!daosCollapsed && renderDaoList()}
-
-      {renderHeader('Proposals', proposalsCollapsed, setProposalsCollapsed, proposals.length)}
-      {!proposalsCollapsed && renderProposalList()}
     </div>
   )
 }
