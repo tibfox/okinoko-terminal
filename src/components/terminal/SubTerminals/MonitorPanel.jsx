@@ -74,7 +74,8 @@ const TX_PAGE_SIZE = 20
 const WITNESS_PAGE_SIZE = 20
 const BLOCK_PAGE_SIZE = 20
 const BLOCK_FETCH_COUNT = 200
-const BLOCKS_API_BASE_URL = 'https://vscapi.okinoko.io/backend/be-api/v1'
+const BLOCKS_API_BASE_URL = import.meta.env.VITE_BLOCKS_BACKEND
+
 
 const formatWeight = (value) => {
   if (!Number.isFinite(value)) {

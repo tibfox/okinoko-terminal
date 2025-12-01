@@ -13,6 +13,14 @@ import MobileTabs from '../common/MobileTabs.jsx'
 import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 
+const sortContracts = (list = []) =>
+  [...list].sort((a, b) => {
+    const aIndex = a.sortIndex ?? Number.MAX_SAFE_INTEGER
+    const bIndex = b.sortIndex ?? Number.MAX_SAFE_INTEGER
+    if (aIndex !== bIndex) return aIndex - bIndex
+    return (a.name || '').localeCompare(b.name || '')
+  })
+
 
 export default function StepExecute({
   contractId,
@@ -37,9 +45,14 @@ export default function StepExecute({
     }, 800) // wait briefly to ensure user/session ready
   }, [])
 
+  const sortedContracts = useMemo(
+    () => sortContracts(contractsCfg.contracts || []),
+    []
+  )
+
   const contract = useMemo(
-    () => contractsCfg.contracts.find((c) => c.vscId === contractId),
-    [contractId]
+    () => sortedContracts.find((c) => c.vscId === contractId),
+    [contractId, sortedContracts]
   )
 
   const fn = useMemo(

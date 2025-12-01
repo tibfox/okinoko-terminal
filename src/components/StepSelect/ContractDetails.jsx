@@ -14,12 +14,14 @@ export default function ContractDetails({
   selectedContract,
   selectedFunction,
   fnName,
-  setFnName,
   user,
   isDaoContract,
   onCreateDao,
   onCreateProposal,
   setParams,
+  setFnName,
+  setStep,
+  setContractId,
 }) {
   if (!selectedContract) {
     return <p>Select a contract to view details.</p>
@@ -194,7 +196,7 @@ export default function ContractDetails({
       )}
 
       {/* --- Functions Section --- */}
-      {!isMobile && (
+      {!isDaoContract && !isMobile && (
         <>
           <h3
             className="cyber-tile"
@@ -221,7 +223,7 @@ export default function ContractDetails({
           </h3>
         </>
       )}
-      {(isMobile || !isFunctionsCollapsed) && (
+      {!isDaoContract && (isMobile || !isFunctionsCollapsed) && (
         <>
           <FunctionList
             selectedContract={selectedContract}
@@ -242,6 +244,9 @@ export default function ContractDetails({
           onCreateDao={onCreateDao}
           onCreateProposal={onCreateProposal}
           setParams={setParams}
+          setFnName={setFnName}
+          setStep={setStep}
+          setContractId={setContractId}
         />
       )}
     </div>

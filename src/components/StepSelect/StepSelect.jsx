@@ -17,6 +17,14 @@ const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 // const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 
+const sortContracts = (list = []) =>
+  [...list].sort((a, b) => {
+    const aIndex = a.sortIndex ?? Number.MAX_SAFE_INTEGER
+    const bIndex = b.sortIndex ?? Number.MAX_SAFE_INTEGER
+    if (aIndex !== bIndex) return aIndex - bIndex
+    return (a.name || '').localeCompare(b.name || '')
+  })
+
 const getStoredPage = () => {
   if (typeof window === 'undefined') return 'list'
   return sessionStorage.getItem(STORAGE_KEY) || 'list'
@@ -30,7 +38,7 @@ export default function StepSelect({
   setParams,
   setStep,
 }) {
-  const contracts = contractsCfg.contracts || []
+  const contracts = useMemo(() => sortContracts(contractsCfg.contracts || []), [])
   const { user } = useAioha()
   const isMobile = useDeviceBreakpoint()
   const [activePage, setActivePage] = useState(getStoredPage)
@@ -105,19 +113,21 @@ export default function StepSelect({
     setStep(nextStep)
   }
 
-  const mobileTabs = useMemo(
-    () => [
+  const mobileTabs = useMemo(() => {
+    const detailsLabel = isDaoContract
+      ? 'DAO'
+      : selectedContract?.functions?.[0]?.parse === 'game'
+        ? 'Games'
+        : 'Functions'
+
+    return [
       { id: 'list', label: 'Contracts' },
       {
         id: 'details',
-        label:
-          selectedContract?.functions?.[0]?.parse === 'game'
-            ? 'Games'
-            : 'Functions',
+        label: detailsLabel,
       },
-    ],
-    [selectedContract]
-  )
+    ]
+  }, [isDaoContract, selectedContract])
 
   return (
     <TerminalContainer title="Select Contract Function"
@@ -229,12 +239,15 @@ export default function StepSelect({
             selectedContract={selectedContract}
             selectedFunction={selectedFunction}
             fnName={fnName}
-            setFnName={setFnName}
-            user={hiveUser}
-            isDaoContract={isDaoContract}
-            onCreateDao={handleCreateDao}
-            onCreateProposal={handleCreateProposal}
-          />
+          setFnName={setFnName}
+          setStep={setStep}
+          setContractId={setContractId}
+          user={hiveUser}
+          isDaoContract={isDaoContract}
+          onCreateDao={handleCreateDao}
+          onCreateProposal={handleCreateProposal}
+          setContractId={setContractId}
+        />
         </div>
       </div>
 

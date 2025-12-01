@@ -1,6 +1,11 @@
-import { useState, useEffect, useMemo, useContext } from 'preact/hooks'
+import { useState, useEffect, useMemo, useContext, useRef } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCircleInfo } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faCircleInfo,
+  faPlusCircle,
+  faTimes,
+} from '@fortawesome/free-solid-svg-icons'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ImageUploadField from '../common/ImageUploadField.jsx'
 import MetaInputField from '../common/MetaInputField.jsx'
@@ -9,6 +14,7 @@ import { CyberContainer } from '../common/CyberContainer.jsx'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
+import NeonListDropdown from '../common/NeonListDropdown.jsx'
 
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
@@ -17,12 +23,19 @@ const DAO_PROJECTS_QUERY = `
     projects: okinoko_dao_project_overview(order_by: { project_id: asc }) {
       project_id
       name
+      description
       proposal_cost
       funds_asset
       proposals_members_only
       member
       active
       created_by
+    }
+    treasury: okinoko_dao_treasury_movements {
+      project_id
+      amount
+      asset
+      direction
     }
   }
 `
@@ -43,10 +56,26 @@ export default function ExecuteForm({
   const { openPopup } = useContext(PopupContext)
   const { balances: accountBalances } = useAccountBalances()
   const [daoProjects, setDaoProjects] = useState([])
+  const [showNewOptionInput, setShowNewOptionInput] = useState(false)
+  const [newOptionText, setNewOptionText] = useState('')
+  const [editingOptionIndex, setEditingOptionIndex] = useState(null)
+  const [editingText, setEditingText] = useState('')
+  const [payoutReceiver, setPayoutReceiver] = useState('')
+  const [payoutAmount, setPayoutAmount] = useState('')
+  const [editingPayoutIndex, setEditingPayoutIndex] = useState(null)
+  const [editingReceiver, setEditingReceiver] = useState('')
+  const [editingAmount, setEditingAmount] = useState('')
+  const [metaKey, setMetaKey] = useState('')
+  const [metaValue, setMetaValue] = useState('')
+  const [editingMetaIndex, setEditingMetaIndex] = useState(null)
+  const [editingMetaKey, setEditingMetaKey] = useState('')
+  const [editingMetaValue, setEditingMetaValue] = useState('')
   const rawUser = user || ''
   const hiveUser = rawUser?.startsWith('hive:') ? rawUser : rawUser ? `hive:${rawUser}` : ''
   const lowerRaw = rawUser.toLowerCase()
   const lowerHive = hiveUser.toLowerCase()
+  const newOptionInputRef = useRef(null)
+  const editingInputRef = useRef(null)
   const balances = useMemo(() => {
     if (!accountBalances) {
       return { hive: 0, hbd: 0 }
@@ -95,6 +124,19 @@ export default function ExecuteForm({
   useEffect(() => {
     if (!isDaoContract) return
     if (daoError) return
+    const treasuryRows = daoData?.treasury || []
+    const treasuryMap = new Map()
+    treasuryRows.forEach((row) => {
+      const pid = Number(row.project_id)
+      const asset = (row.asset || 'HIVE').toUpperCase()
+      const amt = Number(row.amount) || 0
+      const signed = row.direction === 'out' ? -amt : amt
+      const existing = treasuryMap.get(pid) || {}
+      treasuryMap.set(pid, {
+        ...existing,
+        [asset]: (existing[asset] || 0) + signed,
+      })
+    })
     const userVariants = [rawUser, hiveUser, lowerRaw, lowerHive]
       .filter(Boolean)
       .map((u) => u.toLowerCase())
@@ -110,6 +152,8 @@ export default function ExecuteForm({
         proposals_members_only: row.proposals_members_only,
         created_by: row.created_by,
         member_hit: false,
+        member_count: 0,
+        description: row.description,
       }
       const memberVal = String(row.member || '').toLowerCase()
       const activeVal =
@@ -124,6 +168,7 @@ export default function ExecuteForm({
         userVariants.includes(memberVal) &&
         activeVal
       if (isMemberHit) existing.member_hit = true
+      if (memberVal && activeVal) existing.member_count += 1
       if (!existing.name && row.name) existing.name = row.name
       byProject.set(pid, existing)
     })
@@ -145,6 +190,10 @@ export default function ExecuteForm({
         isMember: !!p.member_hit,
         isCreator: userVariants.includes(String(p.created_by || '').toLowerCase()),
         isPublic: p.proposals_members_only === false,
+        memberCount: p.member_count || 0,
+        description: p.description,
+        owner: p.created_by,
+        treasuryTotals: treasuryMap.get(p.project_id) || {},
       }))
     )
   }, [
@@ -189,6 +238,18 @@ export default function ExecuteForm({
     [fn, isProposalCreate]
   )
 
+  const optionsParam = useMemo(
+    () =>
+      isProposalCreate
+        ? fn?.parameters?.find(
+            (p) =>
+              (p.payloadName || '').toLowerCase() === 'options' ||
+              (p.name || '').toLowerCase().includes('option')
+          )
+        : null,
+    [fn, isProposalCreate]
+  )
+
   const payoutsParam = useMemo(
     () =>
       isProposalCreate
@@ -213,6 +274,17 @@ export default function ExecuteForm({
     [fn, isProposalCreate]
   )
 
+  const metaOptions = useMemo(
+    () =>
+      (metaParam?.metaOptions || []).map((m) => ({
+        ...m,
+        key: m.key || '',
+        hint: m.hint || '',
+        staticValue: m.staticValue,
+      })),
+    [metaParam]
+  )
+
   const forcePollActive = useMemo(() => {
     if (!forcePollParam) return false
     const val = params[forcePollParam.name]
@@ -224,6 +296,25 @@ export default function ExecuteForm({
       val === 'TRUE'
     )
   }, [forcePollParam, params])
+
+  useEffect(() => {
+    if (!showNewOptionInput) return
+    newOptionInputRef.current?.focus()
+  }, [showNewOptionInput])
+
+  useEffect(() => {
+    if (editingOptionIndex === null) return
+    editingInputRef.current?.focus()
+  }, [editingOptionIndex])
+
+  const selectedDaoProject = useMemo(() => {
+    if (!projectIdParam) return null
+    const pid =
+      params[projectIdParam.name] ??
+      params[projectIdParam.payloadName || projectIdParam.name]
+    if (pid === undefined || pid === null || pid === '') return null
+    return daoProjects.find((p) => Number(p.id) === Number(pid)) || null
+  }, [daoProjects, params, projectIdParam])
 
   // Clear meta/payout fields when force poll is enabled
   useEffect(() => {
@@ -286,25 +377,58 @@ export default function ExecuteForm({
   // Pull prefilled project id from session storage as a fallback
   useEffect(() => {
     if (!isProposalCreate || !projectIdParam) return
-    const hasValue =
-      params[projectIdParam.name] !== undefined &&
-      params[projectIdParam.name] !== ''
-    if (hasValue) return
     try {
       const stored = sessionStorage.getItem(DAO_PROPOSAL_PREFILL_KEY)
       if (stored) {
         const num = Number(stored)
         if (!Number.isNaN(num)) {
-          setParams((prev) => ({
-            ...prev,
-            [projectIdParam.name]: num,
-            [projectIdParam.payloadName || projectIdParam.name]: num,
-          }))
+          setParams((prev) => {
+            const current = prev[projectIdParam.name]
+            if (Number(current) === num) return prev
+            return {
+              ...prev,
+              [projectIdParam.name]: num,
+              [projectIdParam.payloadName || projectIdParam.name]: num,
+            }
+          })
         }
         sessionStorage.removeItem(DAO_PROPOSAL_PREFILL_KEY)
       }
     } catch {}
   }, [isProposalCreate, projectIdParam, params, setParams])
+
+  useEffect(() => {
+    if (!optionsParam) return
+    if (forcePollActive) return
+    if (
+      params[optionsParam.name] ||
+      params[optionsParam.payloadName || optionsParam.name]
+    ) {
+      setParams((prev) => ({
+        ...prev,
+        [optionsParam.name]: '',
+        [optionsParam.payloadName || optionsParam.name]: '',
+      }))
+    }
+    setShowNewOptionInput(false)
+    setNewOptionText('')
+    setEditingOptionIndex(null)
+    setEditingText('')
+  }, [forcePollActive, optionsParam, params, setParams])
+
+  useEffect(() => {
+    if (!forcePollActive) return
+    setPayoutReceiver('')
+    setPayoutAmount('')
+    setEditingPayoutIndex(null)
+    setEditingReceiver('')
+    setEditingAmount('')
+    setMetaKey('')
+    setMetaValue('')
+    setEditingMetaIndex(null)
+    setEditingMetaKey('')
+    setEditingMetaValue('')
+  }, [forcePollActive])
 
   const clampNumber = (val, min, max) => {
     let num = parseFloat(val)
@@ -345,7 +469,26 @@ export default function ExecuteForm({
   }
 
   const renderParamInput = (p) => {
-    const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
+    const formatThreeDecimals = (val) => {
+      const num = parseFloat(String(val).replace(',', '.'))
+      if (!Number.isFinite(num)) return ''
+      return num.toFixed(3)
+    }
+    const isOptionsField =
+      isProposalCreate &&
+      optionsParam &&
+      p === optionsParam
+    const isPollField = isProposalCreate && forcePollParam && p === forcePollParam
+    const isPayoutField = isProposalCreate && payoutsParam && p === payoutsParam
+    const isMetaField = isProposalCreate && metaParam && p === metaParam
+    const isCoreProposalField = isOptionsField || isPollField || isPayoutField || isMetaField
+    const customLabel =
+      (isPollField && 'Poll') ||
+      (isOptionsField && 'Options') ||
+      (isPayoutField && 'Payouts') ||
+      (isMetaField && 'Meta') ||
+      p.name
+    const labelText = `${customLabel}${(p.mandatory || isCoreProposalField) ? ' *' : ''}`
 
     if (isDaoProjectCreate && p.payloadName === 'votingSystem') {
       return renderDaoSwitch(p, 'Democratic', 'Stake-based')
@@ -374,34 +517,734 @@ export default function ExecuteForm({
         else if (proj.isPublic) badge = 'Public'
         return `${proj.name} (#${proj.id})${badge ? ' — ' + badge : ''}`
       }
+      const optionSubtitle = (proj) => {
+        const fmtCost = (val) => {
+          const num = Number(val)
+          return Number.isFinite(num) ? num.toFixed(3) : '?'
+        }
+        const fmtTreasury = () => {
+          const totals = proj.treasuryTotals || {}
+          const entries = Object.entries(totals).filter(([, v]) => Number.isFinite(v))
+          if (!entries.length) return null
+          return (
+            'Treasury: ' +
+            entries
+              .map(([asset, amt]) => `${amt.toFixed(3)} ${asset}`)
+              .join(' • ')
+          )
+        }
+        const parts = []
+        if (proj.description) parts.push(proj.description)
+        if (proj.owner) parts.push(`Owner: ${proj.owner}`)
+        parts.push(`Members: ${proj.memberCount ?? 0}`)
+        const treasuryStr = fmtTreasury()
+        if (treasuryStr) parts.push(treasuryStr)
+        const asset = proj.asset || 'HIVE'
+        if (proj.proposal_cost !== undefined && proj.proposal_cost !== null) {
+          parts.push(`Proposal cost: ${fmtCost(proj.proposal_cost)} ${asset}`)
+        }
+        return parts.join(' • ')
+      }
       return (
-        <select
-          className="vsc-input"
+        <NeonListDropdown
           value={value}
-          onChange={(e) =>
+          onChange={(val) =>
             setParams((prev) => ({
               ...prev,
-              [p.name]: Number(e.target.value),
-              [p.payloadName || p.name]: Number(e.target.value),
+              [p.name]: Number(val),
+              [p.payloadName || p.name]: Number(val),
             }))
           }
+          placeholder={daoProjects.length ? 'Select a DAO' : 'No accessible DAOs found'}
+          options={daoProjects.map((proj) => ({
+            value: String(proj.id),
+            label: optionLabel(proj),
+            subtitle: optionSubtitle(proj),
+          }))}
+          showCheck
+        />
+      )
+    }
+
+    if (isOptionsField) {
+      const optionsList = String(
+        params[p.name] ??
+          params[p.payloadName || p.name] ??
+          ''
+      )
+        .split(';')
+        .map((o) => o.trim())
+        .filter(Boolean)
+
+      const updateOptions = (nextList) => {
+        const serialized = nextList.join(';')
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      const confirmNewOption = () => {
+        const trimmed = newOptionText.trim()
+        if (!trimmed) return
+        updateOptions([...optionsList, trimmed])
+        setNewOptionText('')
+        setShowNewOptionInput(false)
+      }
+
+      const confirmEditOption = () => {
+        if (editingOptionIndex === null) return
+        const trimmed = editingText.trim()
+        const next = [...optionsList]
+        next[editingOptionIndex] = trimmed || optionsList[editingOptionIndex]
+        updateOptions(next.filter(Boolean))
+        setEditingOptionIndex(null)
+        setEditingText('')
+      }
+
+      const removeOption = (idx) => {
+        const next = optionsList.filter((_, i) => i !== idx)
+        updateOptions(next)
+        if (editingOptionIndex === idx) {
+          setEditingOptionIndex(null)
+          setEditingText('')
+        }
+      }
+
+      if (!forcePollActive) return null
+
+      return (
+        <div
           style={{
-            width: '100%',
-            padding: '10px 12px',
-            backgroundColor: 'black',
-            color: 'var(--color-primary-lighter)',
-            border: '1px solid var(--color-primary-darkest)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            alignItems: 'flex-start',
           }}
         >
-          <option value="" disabled>
-            {daoProjects.length ? 'Select a DAO' : 'No accessible DAOs found'}
-          </option>
-          {daoProjects.map((proj) => (
-            <option key={proj.id} value={String(proj.id)}>
-              {optionLabel(proj)}
-            </option>
-          ))}
-        </select>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}
+          >
+            {optionsList.length === 0 ? (
+              <span
+                style={{
+                  color: 'var(--color-primary-lighter)',
+                  opacity: 0.8,
+                  fontSize: '0.9rem',
+                }}
+              >
+                No options yet.
+              </span>
+            ) : (
+              optionsList.map((opt, idx) =>
+                editingOptionIndex === idx ? (
+                  <div
+                    key={`opt-edit-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(0,0,0,0.4)',
+                      border: '1px solid var(--color-primary-darkest)',
+                      borderRadius: '6px',
+                      padding: '6px 8px',
+                    }}
+                  >
+                    <input
+                      ref={(el) => {
+                        if (idx === editingOptionIndex) editingInputRef.current = el
+                      }}
+                      type="text"
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          confirmEditOption()
+                        }
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: '1px solid var(--color-primary-darkest)',
+                        color: 'var(--color-primary-lighter)',
+                        padding: '4px 6px',
+                        minWidth: '140px',
+                      }}
+                    />
+                    <button
+                      onClick={confirmEditOption}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary)',
+                        cursor: 'pointer',
+                      }}
+                      title="Confirm option"
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                    <button
+                      onClick={() => removeOption(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete option"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    key={`opt-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(0,0,0,0.35)',
+                      border: '1px solid var(--color-primary-darkest)',
+                      borderRadius: '6px',
+                      padding: '6px 8px',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      setEditingOptionIndex(idx)
+                      setEditingText(opt)
+                    }}
+                    title="Click to edit"
+                  >
+                    <span>{opt}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeOption(idx)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete option"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                )
+              )
+            )}
+          </div>
+
+          {showNewOptionInput ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid var(--color-primary-darkest)',
+                borderRadius: '6px',
+                padding: '6px 8px',
+              }}
+            >
+              <input
+                ref={newOptionInputRef}
+                type="text"
+                value={newOptionText}
+                onChange={(e) => setNewOptionText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    confirmNewOption()
+                  }
+                }}
+                placeholder="New option"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid var(--color-primary-darkest)',
+                  color: 'var(--color-primary-lighter)',
+                  padding: '4px 6px',
+                  minWidth: '140px',
+                }}
+              />
+              <button
+                onClick={confirmNewOption}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--color-primary)',
+                  cursor: 'pointer',
+                }}
+                title="Add option"
+              >
+                <FontAwesomeIcon icon={faCheck} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewOptionInput(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color: 'var(--color-primary)',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                borderRadius: '6px',
+              }}
+            >
+              <FontAwesomeIcon icon={faPlusCircle} />
+              <span>Add option</span>
+            </button>
+          )}
+        </div>
+      )
+    }
+
+    if (isMetaField) {
+      const metaStr = String(
+        params[p.name] ??
+          params[p.payloadName || p.name] ??
+          ''
+      )
+      const metaList = metaStr
+        .split(';')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+        .map((entry) => {
+          const sep = entry.indexOf('=')
+          if (sep === -1) return null
+          const rawKey = entry.slice(0, sep)
+          const displayKey = rawKey.startsWith('update_') ? rawKey.slice(7) : rawKey
+          return {
+            key: displayKey,
+            value: entry.slice(sep + 1),
+          }
+        })
+        .filter(Boolean)
+
+      const applyMetaPayloadKey = (key) =>
+        key.startsWith('update_') ? key : `update_${key}`
+
+      const updateMeta = (nextList) => {
+        const serialized = nextList
+          .filter((e) => e.key && e.value)
+          .map((e) => `${applyMetaPayloadKey(e.key)}=${e.value}`)
+          .join(';')
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      const availableOptionsForAdd = metaOptions.filter(
+        (opt) => !metaList.some((entry) => entry.key === opt.key)
+      )
+
+      const availableOptionsForEdit = metaOptions.filter((opt) => {
+        if (editingMetaIndex === null) return !metaList.some((entry) => entry.key === opt.key)
+        const currentKey = metaList[editingMetaIndex]?.key
+        if (currentKey === opt.key) return true
+        return !metaList.some((entry) => entry.key === opt.key)
+      })
+
+      const metaTypeForKey = (key) =>
+        (metaOptions.find((m) => m.key === key)?.type || 'string').toLowerCase()
+
+      const metaHintForKey = (key) =>
+        metaOptions.find((m) => m.key === key)?.hint || ''
+
+      const metaStaticValueForKey = (key) =>
+        metaOptions.find((m) => m.key === key)?.staticValue
+
+      const normalizeAccount = (val) => {
+        let next = String(val || '').replace(/@/g, '')
+        if (!next.startsWith('hive:') && next.trim() !== '') {
+          next = 'hive:' + next.replace(/^hive:/, '').replace(/^:+/, '')
+        }
+        return next
+      }
+
+      const renderMetaValueInput = (currentKey, currentValue, setValue) => {
+        const type = metaTypeForKey(currentKey)
+        const staticVal = metaStaticValueForKey(currentKey)
+        if (staticVal !== undefined) {
+          return (
+            <span
+              style={{
+                ...baseInputStyle,
+                minWidth: '140px',
+                border: '1px dashed var(--color-primary-darkest)',
+              }}
+            >
+              {staticVal}
+            </span>
+          )
+        }
+
+        if (type === 'bool') {
+          const checked = String(currentValue).toLowerCase() === 'true'
+          return (
+            <NeonSwitch
+              name=""
+              checked={checked}
+              onChange={(val) => setValue(val ? 'true' : 'false')}
+            />
+          )
+        }
+
+        if (type === 'account') {
+          return (
+            <input
+              type="text"
+              value={normalizeAccount(currentValue)}
+              onChange={(e) => setValue(normalizeAccount(e.target.value))}
+              onBlur={(e) => setValue(normalizeAccount(e.target.value))}
+              placeholder="hive:user"
+              style={{ ...baseInputStyle, minWidth: '140px' }}
+            />
+          )
+        }
+
+        if (type === 'int') {
+          const handleChange = (e) => {
+            const val = e.target.value
+            if (/^-?\d*$/.test(val)) setValue(val)
+          }
+          const handleBlur = (e) => {
+            const val = e.target.value
+            const num = parseInt(val, 10)
+            if (Number.isFinite(num)) setValue(String(num))
+          }
+          return (
+            <input
+              type="number"
+              step="1"
+              value={currentValue}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="0"
+              style={{ ...baseInputStyle, minWidth: '140px' }}
+            />
+          )
+        }
+
+        if (type === 'float') {
+          const handleChange = (e) => {
+            const val = e.target.value.replace(',', '.')
+            if (/^-?\d*(\.\d*)?$/.test(val)) setValue(val)
+          }
+          const handleBlur = (e) => {
+            const val = e.target.value.replace(',', '.')
+            const num = parseFloat(val)
+            if (Number.isFinite(num)) setValue(String(num))
+          }
+          return (
+            <input
+              type="text"
+              inputMode="decimal"
+              value={currentValue}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="0.0"
+              style={{ ...baseInputStyle, minWidth: '140px' }}
+            />
+          )
+        }
+
+        return (
+          <input
+            type="text"
+            value={currentValue}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="value"
+            style={{ ...baseInputStyle, minWidth: '140px' }}
+          />
+        )
+      }
+
+      const validateValue = (key, val) => {
+        const type = metaTypeForKey(key)
+        if (metaStaticValueForKey(key) !== undefined) return true
+        if (type === 'bool') {
+          const v = String(val).toLowerCase()
+          return v === 'true' || v === 'false'
+        }
+        if (type === 'account') return normalizeAccount(val).trim().length > 0
+        if (type === 'int') return /^-?\d+$/.test(String(val))
+        if (type === 'float') return /^-?\d+(?:\.\d+)?$/.test(String(val))
+        return String(val).trim().length > 0
+      }
+
+      const normalizeValue = (key, val) => {
+        const type = metaTypeForKey(key)
+        const staticVal = metaStaticValueForKey(key)
+        if (staticVal !== undefined && staticVal !== null) return String(staticVal)
+        if (type === 'account') return normalizeAccount(val).trim()
+        if (type === 'bool') return String(val).toLowerCase() === 'true' ? 'true' : 'false'
+        if (type === 'int') return String(parseInt(val, 10))
+        if (type === 'float') {
+          const num = parseFloat(val)
+          return Number.isFinite(num) ? String(num) : ''
+        }
+        return String(val).trim()
+      }
+
+      const confirmNewMeta = () => {
+        const key = (metaKey || '').trim()
+        const rawVal = (metaValue || '').trim() || metaStaticValueForKey(key) || ''
+        const val = metaTypeForKey(key) === 'account' ? normalizeAccount(rawVal) : rawVal
+        if (!key || !validateValue(key, val)) return
+        updateMeta([...metaList, { key, value: normalizeValue(key, val) }])
+        setMetaKey('')
+        if (!metaStaticValueForKey(key)) setMetaValue('')
+      }
+
+      const confirmEditMeta = () => {
+        if (editingMetaIndex === null) return
+        const key = (editingMetaKey || '').trim()
+        const rawVal =
+          (editingMetaValue || '').trim() || metaStaticValueForKey(key) || ''
+        const val = metaTypeForKey(key) === 'account' ? normalizeAccount(rawVal) : rawVal
+        if (!key || !validateValue(key, val)) return
+        const next = [...metaList]
+        next[editingMetaIndex] = { key, value: normalizeValue(key, val) }
+        updateMeta(next)
+        setEditingMetaIndex(null)
+        if (!metaStaticValueForKey(key)) setEditingMetaValue('')
+      }
+
+      const removeMeta = (idx) => {
+        const next = metaList.filter((_, i) => i !== idx)
+        updateMeta(next)
+        if (editingMetaIndex === idx) {
+          setEditingMetaIndex(null)
+          setEditingMetaKey('')
+          setEditingMetaValue('')
+        }
+      }
+
+      const baseInputStyle = {
+        background: 'transparent',
+        border: '1px solid var(--color-primary-darkest)',
+        borderRadius: '6px',
+        color: 'var(--color-primary-lighter)',
+        padding: '6px 8px',
+      }
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            {metaList.length === 0 ? (
+              <span
+                style={{
+                  color: 'var(--color-primary-lighter)',
+                  opacity: 0.8,
+                  fontSize: '0.9rem',
+                }}
+              >
+                No meta entries yet.
+              </span>
+            ) : (
+              metaList.map((entry, idx) =>
+                editingMetaIndex === idx ? (
+                  <div
+                    key={`meta-edit-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    {availableOptionsForEdit.length ? (
+                      <NeonListDropdown
+                        value={editingMetaKey}
+                        onChange={(val) => setEditingMetaKey(val)}
+                        placeholder="Select meta key"
+                        options={availableOptionsForEdit.map((opt) => ({
+                          value: opt.key,
+                          label: `${opt.key} (${opt.type})`,
+                          subtitle: metaHintForKey(opt.key),
+                        }))}
+                        style={{ minWidth: '160px' }}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={editingMetaKey}
+                        onChange={(e) => setEditingMetaKey(e.target.value)}
+                        placeholder="key"
+                        style={{ ...baseInputStyle, minWidth: '140px' }}
+                      />
+                    )}
+                    {renderMetaValueInput(
+                      editingMetaKey,
+                      editingMetaValue,
+                      setEditingMetaValue
+                    )}
+                    <button
+                      onClick={confirmEditMeta}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color:
+                          editingMetaKey &&
+                          (metaStaticValueForKey(editingMetaKey) !== undefined || editingMetaValue)
+                            ? 'var(--color-primary)'
+                            : 'gray',
+                        cursor: 'pointer',
+                      }}
+                      title="Confirm meta"
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                    <button
+                      onClick={() => removeMeta(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete meta"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    key={`meta-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 8px',
+                      border: '1px solid var(--color-primary-darkest)',
+                      borderRadius: '6px',
+                      background: 'rgba(0,0,0,0.35)',
+                      cursor: 'pointer',
+                      flexWrap: 'wrap',
+                    }}
+                    onClick={() => {
+                      setEditingMetaIndex(idx)
+                      setEditingMetaKey(entry.key)
+                      setEditingMetaValue(entry.value)
+                    }}
+                    title="Click to edit"
+                  >
+                    <span style={{ color: 'var(--color-primary-lighter)' }}>{entry.key}</span>
+                    <span style={{ color: 'var(--color-primary)' }}>= {entry.value}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeMeta(idx)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete meta"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                )
+              )
+            )}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {availableOptionsForAdd.length ? (
+              <NeonListDropdown
+                value={metaKey}
+                onChange={(val) => setMetaKey(val)}
+                placeholder="Select meta key"
+                options={availableOptionsForAdd.map((opt) => ({
+                  value: opt.key,
+                  label: `${opt.key} (${opt.type})`,
+                  subtitle: metaHintForKey(opt.key),
+                }))}
+                style={{ minWidth: '160px' }}
+                title={metaHintForKey(metaKey)}
+              />
+            ) : metaOptions.length ? (
+              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.8, fontSize: '0.9rem' }}>
+                All meta options are already added.
+              </span>
+            ) : (
+              <input
+                type="text"
+                placeholder="key"
+                value={metaKey}
+                onChange={(e) => setMetaKey(e.target.value)}
+                style={{ ...baseInputStyle, minWidth: '140px' }}
+              />
+            )}
+            {metaKey ? renderMetaValueInput(metaKey, metaValue, setMetaValue) : null}
+            {metaHintForKey(metaKey) && (
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.85rem', opacity: 0.8, width: '100%' }}>
+                {metaHintForKey(metaKey)}
+              </span>
+            )}
+            <button
+              onClick={confirmNewMeta}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color:
+                  metaKey &&
+                  (metaStaticValueForKey(metaKey) !== undefined || metaValue)
+                    ? 'var(--color-primary)'
+                    : 'gray',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                borderRadius: '6px',
+              }}
+              title="Add meta"
+            >
+              <FontAwesomeIcon icon={faPlusCircle} />
+              <span>Add meta</span>
+            </button>
+          </div>
+        </div>
       )
     }
 
@@ -440,6 +1283,297 @@ export default function ExecuteForm({
             setParams((prev) => ({ ...prev, [p.name]: val }))
           }
         />
+      )
+    }
+
+    if (isPayoutField) {
+      const payoutStr = String(
+        params[p.name] ??
+          params[p.payloadName || p.name] ??
+          ''
+      )
+      const payoutList = payoutStr
+        .split(';')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+        .map((entry) => {
+          const sep = entry.lastIndexOf(':')
+          if (sep === -1) return null
+          return {
+            receiver: entry.slice(0, sep),
+            amount: entry.slice(sep + 1),
+          }
+        })
+        .filter(Boolean)
+
+      const updatePayouts = (nextList) => {
+        const serialized = nextList
+          .filter((e) => e.receiver && e.amount)
+          .map((e) => `${e.receiver}:${e.amount}`)
+          .join(';')
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      const normalizeReceiver = (val) => {
+        let next = val.replace(/@/g, '')
+        if (!next.startsWith('hive:') && next.trim() !== '') {
+          next = 'hive:' + next.replace(/^hive:/, '').replace(/^:+/, '')
+        }
+        return next
+      }
+
+      const isValidAmount = (val) => /^\d+(?:\.\d{3})$/.test(val)
+
+      const confirmNewPayout = () => {
+        const receiver = normalizeReceiver(payoutReceiver).trim()
+        const amount = payoutAmount.trim()
+        if (!receiver || !isValidAmount(amount)) return
+        updatePayouts([...payoutList, { receiver, amount }])
+        setPayoutReceiver('')
+        setPayoutAmount('')
+      }
+
+      const confirmEditPayout = () => {
+        if (editingPayoutIndex === null) return
+        const receiver = normalizeReceiver(editingReceiver).trim()
+        const amount = editingAmount.trim()
+        if (!receiver || !isValidAmount(amount)) return
+        const next = [...payoutList]
+        next[editingPayoutIndex] = { receiver, amount }
+        updatePayouts(next)
+        setEditingPayoutIndex(null)
+        setEditingReceiver('')
+        setEditingAmount('')
+      }
+
+      const removePayout = (idx) => {
+        const next = payoutList.filter((_, i) => i !== idx)
+        updatePayouts(next)
+        if (editingPayoutIndex === idx) {
+          setEditingPayoutIndex(null)
+          setEditingReceiver('')
+          setEditingAmount('')
+        }
+      }
+
+      const assetLabel =
+        (selectedDaoProject?.asset || 'HIVE').toUpperCase()
+
+      const amountInputStyle = {
+        background: 'transparent',
+        border: '1px solid var(--color-primary-darkest)',
+        borderRadius: '6px',
+        color: 'var(--color-primary-lighter)',
+        padding: '6px 8px',
+        minWidth: '100px',
+      }
+
+      const addressInputStyle = {
+        background: 'transparent',
+        border: '1px solid var(--color-primary-darkest)',
+        borderRadius: '6px',
+        color: 'var(--color-primary-lighter)',
+        padding: '6px 8px',
+        minWidth: '200px',
+      }
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            {payoutList.length === 0 ? (
+              <span
+                style={{
+                  color: 'var(--color-primary-lighter)',
+                  opacity: 0.8,
+                  fontSize: '0.9rem',
+                }}
+              >
+                No payouts yet.
+              </span>
+            ) : (
+              payoutList.map((entry, idx) =>
+                editingPayoutIndex === idx ? (
+                  <div
+                    key={`payout-edit-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={editingReceiver}
+                      onChange={(e) =>
+                        setEditingReceiver(normalizeReceiver(e.target.value))
+                      }
+                      placeholder="hive:user"
+                      style={addressInputStyle}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.000"
+                        value={editingAmount}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(',', '.')
+                          if (/^\d*(\.\d{0,3})?$/.test(val)) {
+                            setEditingAmount(val)
+                          }
+                        }}
+                        onBlur={(e) => setEditingAmount(formatThreeDecimals(e.target.value))}
+                        style={amountInputStyle}
+                      />
+                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+                        {assetLabel}
+                      </span>
+                    </div>
+                    <button
+                      onClick={confirmEditPayout}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: isValidAmount(editingAmount) && editingReceiver ? 'var(--color-primary)' : 'gray',
+                        cursor: 'pointer',
+                      }}
+                      title="Confirm payout"
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                    <button
+                      onClick={() => removePayout(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete payout"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    key={`payout-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 8px',
+                      border: '1px solid var(--color-primary-darkest)',
+                      borderRadius: '6px',
+                      background: 'rgba(0,0,0,0.35)',
+                      cursor: 'pointer',
+                      flexWrap: 'wrap',
+                    }}
+                    onClick={() => {
+                      setEditingPayoutIndex(idx)
+                      setEditingReceiver(entry.receiver)
+                      setEditingAmount(entry.amount)
+                    }}
+                    title="Click to edit"
+                  >
+                    <span style={{ color: 'var(--color-primary-lighter)' }}>
+                      {entry.receiver}
+                    </span>
+                    <span style={{ color: 'var(--color-primary)' }}>
+                      {entry.amount} {assetLabel}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removePayout(idx)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete payout"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                )
+              )
+            )}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <input
+              type="text"
+              placeholder="hive:user"
+              value={payoutReceiver}
+              onChange={(e) => setPayoutReceiver(normalizeReceiver(e.target.value))}
+              style={addressInputStyle}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.000"
+                value={payoutAmount}
+                onChange={(e) => {
+                  const val = e.target.value.replace(',', '.')
+                  if (/^\d*(\.\d{0,3})?$/.test(val)) {
+                    setPayoutAmount(val)
+                  }
+                }}
+                onBlur={(e) => setPayoutAmount(formatThreeDecimals(e.target.value))}
+                style={amountInputStyle}
+              />
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+                {assetLabel}
+              </span>
+            </div>
+            <button
+              onClick={confirmNewPayout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color: isValidAmount(payoutAmount) && payoutReceiver ? 'var(--color-primary)' : 'gray',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                borderRadius: '6px',
+              }}
+              title="Add payout"
+            >
+              <FontAwesomeIcon icon={faPlusCircle} />
+              <span>Add payout</span>
+            </button>
+          </div>
+        </div>
       )
     }
 
@@ -594,6 +1728,11 @@ export default function ExecuteForm({
   }
 
   const renderParamRow = (p) => {
+    const isOptionsField =
+      isProposalCreate &&
+      optionsParam &&
+      p === optionsParam
+
     if (
       isProposalCreate &&
       forcePollActive &&
@@ -601,6 +1740,7 @@ export default function ExecuteForm({
     ) {
       return null
     }
+    if (isOptionsField && !forcePollActive) return null
     const hint = (p.hintText || '').trim()
     const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
     return (
@@ -654,13 +1794,24 @@ export default function ExecuteForm({
     )
   }
 
-  const parameters = fn?.parameters ?? []
+  const parameters = useMemo(() => {
+    const list = fn?.parameters ?? []
+    return [...list].sort((a, b) => {
+      const aIndex = a?.sortIndex ?? Number.MAX_SAFE_INTEGER
+      const bIndex = b?.sortIndex ?? Number.MAX_SAFE_INTEGER
+      if (aIndex !== bIndex) return aIndex - bIndex
+      return (a?.name || '').localeCompare(b?.name || '')
+    })
+  }, [fn])
   const supportsOptionalGrouping = fn?.parse !== 'game'
+  const isProposalCoreParam = (p) =>
+    isProposalCreate &&
+    (p === forcePollParam || p === optionsParam || p === payoutsParam || p === metaParam)
   const mandatoryParams = supportsOptionalGrouping
-    ? parameters.filter((p) => p.mandatory)
+    ? parameters.filter((p) => p.mandatory || isProposalCoreParam(p))
     : parameters
   const optionalParams = supportsOptionalGrouping
-    ? parameters.filter((p) => !p.mandatory)
+    ? parameters.filter((p) => !p.mandatory && !isProposalCoreParam(p))
     : []
 
   return (

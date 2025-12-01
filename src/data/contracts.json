@@ -3,6 +3,7 @@
     {
       "name": "Ōkinoko Escrow",
       "id": 1,
+      "sortIndex": 1,
       "vscId": "vsc1BgfucQVHwYBHuK2yMEv4AhYua9rtQ45Uoe",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-10-18T22:02:33",
@@ -22,28 +23,32 @@
               "payloadName": "name",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "Receiver of the Amount",
               "payloadName": "to",
               "type": "address",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             },
             {
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 3
             },
             {
               "name": "Arbitrator (in case of Disputes)",
               "payloadName": "arb",
               "type": "address",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 4
             }
           ],
           "hintText": "",
@@ -63,7 +68,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "Release Funds to the Receiver?",
@@ -73,7 +79,8 @@
               "boolTrue": "r",
               "asString": true,
               "mandatory": false,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -91,7 +98,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -102,6 +110,7 @@
     {
       "name": "Ōkinoko In-A-Row (beta)",
       "id": 2,
+      "sortIndex": 2,
       "vscId": "vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-11-06T14:53:27",
@@ -156,8 +165,9 @@
       ]
     },
     {
-      "name": "Ōkinoko DAO",
+      "name": "Ōkinoko DAO (beta)",
       "id": 2,
+      "sortIndex": 3,
       "vscId": "vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-11-28T22:20:57",
@@ -177,14 +187,16 @@
               "payloadName": "name",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "Description",
               "payloadName": "description",
               "type": "string",
               "mandatory": true,
-              "hintText": "Add a description but always remember the more characters you use, the higher the gas cost."
+              "hintText": "Add a description but always remember the more characters you use, the higher the gas cost.",
+              "sortIndex": 2
             },
             {
               "name": "Voting System",
@@ -193,7 +205,8 @@
               "mandatory": true,
               "hintText": "Choose between democratic (1 vote per member) or stake-weighted voting.",
               "boolFalse": "0",
-              "boolTrue": "1"
+              "boolTrue": "1",
+              "sortIndex": 3
             },
             {
               "name": "Threshold Percent",
@@ -202,7 +215,8 @@
               "mandatory": false,
               "hintText": "This is the percentage where a proposal is considered passed. Defaults to 50.01%",
               "min": 0.1,
-              "max": 100
+              "max": 100,
+              "sortIndex": 4
             },
             {
               "name": "Quorum Percent",
@@ -211,70 +225,80 @@
               "mandatory": false,
               "hintText": "This is the minimum percentage of total stake/members that need to vote for a proposal to be valid. Defaults to 50.01%",
               "min": 0.1,
-              "max": 100
+              "max": 100,
+              "sortIndex": 5
             },
             {
               "name": "Proposal Duration (hours)",
               "payloadName": "proposalDuration",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the duration for which a proposal is open for voting. Defaults to 24 hours."
+              "hintText": "This is the duration for which a proposal is open for voting. Defaults to 24 hours.",
+              "sortIndex": 6
             },
             {
               "name": "Execution Delay (hours)",
               "payloadName": "executionDelay",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the delay before a proposal is executed after it is approved."
+              "hintText": "This is the delay before a proposal is executed after it is approved.",
+              "sortIndex": 7
             },
             {
               "name": "Leave Cooldown (hours)",
               "payloadName": "leaveCooldown",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the cooldown period after leaving the DAO before rejoining."
+              "hintText": "This is the cooldown period after leaving the DAO before rejoining.",
+              "sortIndex": 8
             },
             {
               "name": "Proposal Cost",
               "payloadName": "proposalCost",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the cost associated with submitting a proposal. This cost is added to the project the treasury."
+              "hintText": "This is the cost associated with submitting a proposal. This cost is added to the project the treasury.",
+              "sortIndex": 9
             },
             {
               "name": "Minimum Stake Amount",
               "payloadName": "stakeMin",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the minimum amount of stake required to participate in the DAO. For democratic DAOs, this is the exact member fee."
+              "hintText": "This is the minimum amount of stake required to participate in the DAO. For democratic DAOs, this is the exact member fee.",
+              "sortIndex": 10
             },
             {
               "name": "Membership NFT Contract",
               "payloadName": "membershipContract",
               "type": "string",
               "mandatory": false,
-              "hintText": "In future you will be able to set a membership NFT contract to gate access to the DAO."
+              "hintText": "In future you will be able to set a membership NFT contract to gate access to the DAO.",
+              "sortIndex": 11
             },
             {
               "name": "Membership NFT Function",
               "payloadName": "membershipFunction",
               "type": "string",
               "mandatory": false,
-              "hintText": "This is the function that will be called on the membership NFT contract."
+              "hintText": "This is the function that will be called on the membership NFT contract.",
+              "sortIndex": 12
             },
             {
               "name": "Membership NFT Token ID",
               "payloadName": "membershipNftId",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the ID of the membership NFT. The NFT needs to be an editioned NFT."
+              "hintText": "This is the ID of the membership NFT. The NFT needs to be an editioned NFT.",
+              "sortIndex": 13
             },
             {
               "name": "Project Metadata",
               "payloadName": "metadata",
               "type": "string",
               "mandatory": false,
-              "hintText": "This is the metadata associated with the project. It will not get used/checked by the contract but can be useful for frontends."
+              "hintText": "This is the metadata associated with the project. It will not get used/checked by the contract but can be useful for frontends.",
+              "sortIndex": 14
             },
             {
               "name": "Proposal Creator Restriction (members/public)",
@@ -283,21 +307,24 @@
               "mandatory": false,
               "hintText": "Restrict proposal creation to members only or allow the public.",
               "boolFalse": "members",
-              "boolTrue": "public"
+              "boolTrue": "public",
+              "sortIndex": 15
             },
             {
               "name": "Membership Payload Format ({nft}|{caller})",
               "payloadName": "membershipPayloadFormat",
               "type": "string",
               "mandatory": false,
-              "hintText": "This is the format for the membership NFT payload."
+              "hintText": "This is the format for the membership NFT payload.",
+              "sortIndex": 16
             },
             {
               "name": "Initial deposit (stake + treasury)",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true,
-              "hintText": "This is the initial deposit required to create the project. Excess funds after stake will go to the treasury."
+              "hintText": "This is the initial deposit required to create the project. Excess funds after stake will go to the treasury.",
+              "sortIndex": 17
             }
           ],
           "hintText": "",
@@ -315,14 +342,16 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the project you want to join."
+              "hintText": "This is the ID of the project you want to join.",
+              "sortIndex": 1
             },
             {
               "name": "transfer.allow intent (membership stake)",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true,
-              "hintText": "This is the membership fee. For democratic DAOs this needs to equal the minimum stake amount."
+              "hintText": "This is the membership fee. For democratic DAOs this needs to equal the minimum stake amount.",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -340,7 +369,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the project you want to leave."
+              "hintText": "This is the ID of the project you want to leave.",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -360,7 +390,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the project you want to add funds to."
+              "hintText": "This is the ID of the project you want to add funds to.",
+              "sortIndex": 1
             },
             {
               "name": "Add To Stake? (true/false)",
@@ -370,14 +401,16 @@
               "boolFalse": "false",
               "asString": true,
               "mandatory": true,
-              "hintText": "Indicates whether the funds should be added to the personal stake or the treasury."
+              "hintText": "Indicates whether the funds should be added to the personal stake or the treasury.",
+              "sortIndex": 2
             },
             {
               "name": "Deposit amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true,
-              "hintText": "This is the amount and asset you want to deposit. The asset must match the project's asset."
+              "hintText": "This is the amount and asset you want to deposit. The asset must match the project's asset.",
+              "sortIndex": 3
             }
           ],
           "hintText": "",
@@ -397,14 +430,16 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the project you want to transfer ownership of."
+              "hintText": "This is the ID of the project you want to transfer ownership of.",
+              "sortIndex": 1
             },
             {
               "name": "New Owner Address",
               "payloadName": "newOwner",
               "type": "address",
               "mandatory": true,
-              "hintText": "This is the address of the new owner."
+              "hintText": "This is the address of the new owner.",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -424,7 +459,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the project you want to pause or unpause."
+              "hintText": "This is the ID of the project you want to pause or unpause.",
+              "sortIndex": 1
             },
             {
               "name": "Pause Flag (true/false, default true)",
@@ -434,7 +470,8 @@
               "boolFalse": "false",
               "asString": true,
               "mandatory": false,
-              "hintText": "Indicates whether the project should be paused or unpaused."
+              "hintText": "Indicates whether the project should be paused or unpaused.",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -454,73 +491,98 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the project you want to create a proposal for."
+              "hintText": "This is the ID of the project you want to create a proposal for.",
+              "sortIndex": 1
             },
             {
               "name": "Proposal Title",
               "payloadName": "title",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             },
             {
               "name": "Proposal Description",
               "payloadName": "description",
               "type": "string",
               "mandatory": true,
-              "hintText": "This is the description of the proposal. Remember that longer descriptions increase gas costs."
+              "hintText": "This is the description of the proposal. Remember that longer descriptions increase gas costs.",
+              "sortIndex": 3
             },
             {
               "name": "Custom Duration (hours)",
               "payloadName": "duration",
               "type": "number",
               "mandatory": false,
-              "hintText": "This is the custom duration for the proposal in hours. If not set, the project's default duration will be used."
+              "hintText": "This is the custom duration for the proposal in hours. If not set, the project's default duration will be used.",
+              "sortIndex": 6
             },
             {
               "name": "Options (semicolon separated)",
               "payloadName": "options",
               "type": "string",
               "mandatory": false,
-              "hintText": "These are the options for the proposal, separated by semicolons. If not provided, defaults to No;Yes."
+              "hintText": "These are the options for the proposal, separated by semicolons. If not provided, defaults to No;Yes.",
+              "sortIndex": 5
             },
             {
-              "name": "Force Poll Mode?",
+              "name": "Poll Mode",
               "payloadName": "forcePoll",
               "type": "bool",
               "boolTrue": "true",
               "boolFalse": "false",
               "asString": true,
               "mandatory": false,
-              "hintText": "Indicates whether the proposal should be forced into poll mode. In poll mode, proposals cannot execute actions / transfers."
+              "hintText": "Indicates whether the proposal should be a simple poll. In poll mode, proposals cannot execute actions / transfers.",
+              "sortIndex": 4
             },
             {
               "name": "Payout Instructions (addr:amount;...)",
               "payloadName": "payouts",
               "type": "string",
               "mandatory": false,
-              "hintText": "These are the payout instructions for the proposal, specifying the address and amount for each payout. Separate multiple instructions with semicolons."
+              "hintText": "These are the payout instructions for the proposal, specifying the address and amount for each payout. Separate multiple instructions with semicolons.",
+              "sortIndex": 7
             },
             {
               "name": "Meta Actions (key=value;...)",
               "payloadName": "meta",
               "type": "string",
               "mandatory": false,
-              "hintText": "These are the meta actions for the proposal, specified as key-value pairs. Separate multiple actions with semicolons. TODO: Define supported meta actions."
+              "hintText": "These are the meta actions for the proposal, specified as key-value pairs. Separate multiple actions with semicolons.",
+              "metaOptions": [
+                { "key": "pause", "type": "none", "hint": "Toggle project pause state (true pauses, false unpauses)", "staticValue": "1" },
+                { "key": "owner", "type": "account", "hint": "Address of the project owner" },
+                { "key": "threshold", "type": "float", "hint": "Required approval threshold percentage" },
+                { "key": "quorum", "type": "float", "hint": "Minimum quorum percentage" },
+                { "key": "proposalDuration", "type": "int", "hint": "Duration for proposals in hours" },
+                { "key": "executionDelay", "type": "int", "hint": "Delay before execution in hours" },
+                { "key": "leaveCooldown", "type": "int", "hint": "Cooldown before members can leave, in hours" },
+                { "key": "proposalCost", "type": "float", "hint": "Cost for new proposals" },
+                { "key": "proposalCreatorRestriction", "type": "bool", "hint": "Restrict proposal creation to only members" },
+                { "key": "membershipNFT", "type": "int", "hint": "membership NFTs" },
+                { "key": "membershipNFTContract", "type": "string", "hint": "contract we should lookup for the membershi NFTs" },
+                { "key": "membershipNFTContractFunction", "type": "string", "hint": "function we should call on the membership NFT contract" },
+                { "key": "membershipNFTPayload", "type": "string", "hint": "payload we should send to the membership NFT contract (must contain `{nft}` and `{caller}`) " }
+              ],
+              "sortIndex": 8
             },
             {
               "name": "Proposal Metadata",
               "payloadName": "metadata",
               "type": "string",
               "mandatory": false,
-              "hintText": "These are the metadata for the proposal. Will not be used/checked by the contract but can be useful for frontends."
+              "hintText": "These are the metadata for the proposal. Will not be used/checked by the contract but can be useful for frontends.",
+              "sortIndex": 9
             },
             {
               "name": "Proposal cost",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": false,
-              "hintText": "This is the cost of the proposal you will pay in order to create the proposal."
+              "hintText": "This is the cost of the proposal you will pay in order to create the proposal.",
+              "sortIndex": 10
             }
           ],
           "hintText": "",
@@ -540,14 +602,16 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the proposal you want to vote on."
+              "hintText": "This is the ID of the proposal you want to vote on.",
+              "sortIndex": 1
             },
             {
               "name": "Choices (comma/semicolon indexes)",
               "payloadName": "choices",
               "type": "string",
               "mandatory": true,
-              "hintText": "These are the choices you want to vote for, specified as comma or semicolon separated indexes."
+              "hintText": "These are the choices you want to vote for, specified as comma or semicolon separated indexes.",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -565,7 +629,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the proposal you want to tally."
+              "hintText": "This is the ID of the proposal you want to tally.",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -583,7 +648,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the proposal you want to execute."
+              "hintText": "This is the ID of the proposal you want to execute.",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -601,7 +667,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": "This is the ID of the proposal you want to cancel."
+              "hintText": "This is the ID of the proposal you want to cancel.",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -612,6 +679,7 @@
     {
       "name": "SDK Function Tests",
       "id": 3,
+      "sortIndex": 4,
       "vscId": "vsc1BdaaUWkeEoCkHrFDt9uVMq7LXKSxcSFoPK",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-10-31T15:12:33",
@@ -629,7 +697,8 @@
               "payloadName": "",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -648,14 +717,16 @@
               "payloadName": "key",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "value",
               "payloadName": "value",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -672,7 +743,8 @@
               "payloadName": "key",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -689,7 +761,8 @@
               "payloadName": "key",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -724,7 +797,8 @@
               "payloadName": "key",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -741,7 +815,8 @@
               "payloadName": "key",
               "type": "address",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -758,7 +833,8 @@
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -775,7 +851,8 @@
               "payloadName": "key",
               "type": "address",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -792,7 +869,8 @@
               "payloadName": "key",
               "type": "address",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
@@ -811,14 +889,16 @@
               "payloadName": "contract",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "key",
               "payloadName": "key",
               "type": "string",
               "mandatory": false,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -837,28 +917,32 @@
               "payloadName": "contract",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "method",
               "payloadName": "method",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             },
             {
               "name": "payload",
               "payloadName": "payload",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 3
             },
             {
               "name": "amount / asset",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": false,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 4
             }
           ],
           "hintText": "",
@@ -869,6 +953,7 @@
     {
       "name": "Shared State Test",
       "id": 1,
+      "sortIndex": 5,
       "vscId": "vsc1Bh87Heo6HaxuoeSPcxh2kW1Zt17D5ssCfs",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-11-10T19:58:45",
@@ -888,14 +973,16 @@
               "payloadName": "name",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             },
             {
               "name": "Type String",
               "payloadName": "typeStr",
               "type": "string",
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 2
             }
           ],
           "hintText": "",
@@ -913,7 +1000,8 @@
               "type": "number",
               "asString": false,
               "mandatory": true,
-              "hintText": ""
+              "hintText": "",
+              "sortIndex": 1
             }
           ],
           "hintText": "",
