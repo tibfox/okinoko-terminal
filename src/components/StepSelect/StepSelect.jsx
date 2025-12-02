@@ -239,15 +239,15 @@ export default function StepSelect({
             selectedContract={selectedContract}
             selectedFunction={selectedFunction}
             fnName={fnName}
-          setFnName={setFnName}
-          setStep={setStep}
-          setContractId={setContractId}
-          user={hiveUser}
-          isDaoContract={isDaoContract}
-          onCreateDao={handleCreateDao}
-          onCreateProposal={handleCreateProposal}
-          setContractId={setContractId}
-        />
+            setFnName={setFnName}
+            setParams={setParams}
+            setStep={setStep}
+            setContractId={setContractId}
+            user={hiveUser}
+            isDaoContract={isDaoContract}
+            onCreateDao={handleCreateDao}
+            onCreateProposal={handleCreateProposal}
+          />
         </div>
       </div>
 

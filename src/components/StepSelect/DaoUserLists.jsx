@@ -15,7 +15,7 @@ import NeonButton from '../buttons/NeonButton.jsx'
 import contractsCfg from '../../data/contracts.json'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import { PopupContext } from '../../popup/context.js'
-import { formatUTC } from '../../lib/friendlyDates.js'
+import ProposalDetailPopup from './ProposalDetailPopup.jsx'
 
 const sameUser = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase()
 
@@ -68,40 +68,46 @@ const DAO_USER_QUERY = gql`
     }
   }`
 
-const PROPOSAL_DETAIL_QUERY = gql`
-  query ProposalDetail($proposalId: numeric!) {
-    proposal: okinoko_dao_proposal_overview(where: { proposal_id: { _eq: $proposalId } }) {
-      proposal_id
-      project_id
-      name
-      description
-      metadata
-      options
-      payouts
-      outcome_meta
-      duration_hours
-      is_poll
-      created_by
-      state
-      state_block
-      ready_at
-      ready_block
-      result
-      result_block
-      member
-      member_active
-      last_action
-    }
-    created: okinoko_dao_proposal_created_events(
-      where: { proposal_id: { _eq: $proposalId } }
-      order_by: { indexer_ts: desc }
-      limit: 1
-    ) {
-      indexer_ts
-      indexer_block_height
-    }
+const ProposalAvatar = ({ creator }) => {
+  const [avatarError, setAvatarError] = useState(false)
+  const hiveUser = (creator || '').startsWith('hive:') ? (creator || '').replace(/^hive:/, '') : null
+  const avatarUrl = hiveUser ? `https://images.hive.blog/u/${hiveUser}/avatar` : null
+  const size = 140
+  if (avatarUrl && !avatarError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt="Creator avatar"
+        onError={() => setAvatarError(true)}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          border: '2px solid var(--color-primary)',
+          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
+        }}
+      />
+    )
   }
-`
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        border: '2px solid var(--color-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--color-primary)',
+        boxShadow: '0 0 10px rgba(0,0,0,0.6)',
+      }}
+    >
+      <FontAwesomeIcon icon={faUserAstronaut} size="3x" />
+    </div>
+  )
+}
 
   const DaoDetail = ({ projectId, client, onCreateProposal: detailCreate, onProposalClick }) => {
     const [{ data: detailData, fetching: detailFetching, error: detailError }] = useQuery({
@@ -281,146 +287,6 @@ const PROPOSAL_DETAIL_QUERY = gql`
 }
 
 
-const ProposalDetail = ({ proposal, isMember, onVote, onTally, onExecute }) => {
-  const proposalId = proposal?.proposal_id
-  const [{ data, fetching, error }] = useQuery({
-    query: PROPOSAL_DETAIL_QUERY,
-    variables: { proposalId },
-    pause: !proposalId,
-    requestPolicy: 'network-only',
-  })
-
-  const detail = data?.proposal?.[0] || proposal || {}
-  const createdEvent = data?.created?.[0]
-  const createdAt = createdEvent?.indexer_ts ? new Date(createdEvent.indexer_ts) : null
-  const durationHours = Number(detail?.duration_hours)
-  const deadline =
-    createdAt && Number.isFinite(durationHours)
-      ? new Date(createdAt.getTime() + durationHours * 60 * 60 * 1000)
-      : null
-  const tallyLocked = deadline ? Date.now() < deadline.getTime() : false
-  const hasResult = detail?.result !== null && detail?.result !== undefined && detail?.result !== ''
-  const canExecute = detail?.is_poll === false
-
-  const options = (detail?.options || '')
-    .split(';')
-    .map((o) => o.trim())
-    .filter(Boolean)
-  const payouts = (detail?.payouts || '')
-    .split(';')
-    .map((p) => p.trim())
-    .filter(Boolean)
-  const metaEntries = (detail?.outcome_meta || '')
-    .split(';')
-    .map((p) => p.trim())
-    .filter(Boolean)
-
-  if (fetching) {
-    return <div>Loading proposal…</div>
-  }
-
-  if (error || !detail?.proposal_id) {
-    return <div style={{ color: 'var(--color-primary-lighter)' }}>Could not load proposal details.</div>
-  }
-
-  const formatDateUtc = (value) => {
-    if (value == null) return null
-    const date =
-      value instanceof Date
-        ? value
-        : Number.isFinite(value)
-          ? new Date(value)
-          : new Date(value)
-    if (Number.isNaN(date.getTime())) return null
-    return formatUTC(date.toISOString())
-  }
-
-  const formatReadyAt = (value) => {
-    const num = Number(value)
-    if (!Number.isFinite(num)) return null
-    // ready_at comes in seconds from the view
-    return formatDateUtc(num * 1000)
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '260px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'center' }}>
-        <div style={{ fontWeight: 700 }}>{detail.name || `Proposal #${detail.proposal_id}`}</div>
-        <div style={{ color: 'var(--color-primary)', fontSize: '0.85rem' }}>
-          {detail.result?.toUpperCase() || detail.state || 'pending'}
-        </div>
-      </div>
-      <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-        <div>Proposal ID: {detail.proposal_id}</div>
-        <div>Project ID: {detail.project_id}</div>
-        <div>Creator: {detail.created_by || 'n/a'}</div>
-        <div>
-          Duration: {Number.isFinite(durationHours) ? `${durationHours}h` : 'n/a'}
-          {deadline ? ` (ends ${formatDateUtc(deadline)})` : ''}
-        </div>
-        {formatReadyAt(detail.ready_at) && <div>Ready at: {formatReadyAt(detail.ready_at)}</div>}
-        {createdAt && <div>Created: {formatDateUtc(createdAt)}</div>}
-        {detail.metadata && <div>Metadata: {detail.metadata}</div>}
-      </div>
-      {detail.description && (
-        <div style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{detail.description}</div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '0.9rem' }}>
-        <div>Poll: {detail.is_poll ? 'Yes' : 'No'}</div>
-        <div>State block: {detail.state_block ?? 'n/a'}</div>
-        <div>Ready block: {detail.ready_block ?? 'n/a'}</div>
-        <div>Result block: {detail.result_block ?? 'n/a'}</div>
-        <div>Last action: {detail.last_action || 'n/a'}</div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
-        <div style={{ fontWeight: 700 }}>Options</div>
-        {options.length === 0 ? (
-          <div style={{ opacity: 0.8 }}>No options provided.</div>
-        ) : (
-          options.map((opt, idx) => (
-            <div key={`opt-${idx}`} style={{ opacity: 0.9 }}>
-              {idx + 1}. {opt}
-            </div>
-          ))
-        )}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
-        <div style={{ fontWeight: 700 }}>Payouts</div>
-        {payouts.length === 0 ? (
-          <div style={{ opacity: 0.8 }}>No payouts listed.</div>
-        ) : (
-          payouts.map((pay, idx) => (
-            <div key={`payout-${idx}`} style={{ opacity: 0.9 }}>
-              {pay}
-            </div>
-          ))
-        )}
-      </div>
-      {metaEntries.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
-          <div style={{ fontWeight: 700 }}>Outcome Meta</div>
-          {metaEntries.map((entry, idx) => (
-            <div key={`meta-${idx}`} style={{ opacity: 0.9 }}>
-              {entry}
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {isMember && <NeonButton onClick={onVote}>Vote</NeonButton>}
-        <NeonButton disabled={tallyLocked} onClick={onTally}>
-          {tallyLocked ? 'Tally (after deadline)' : 'Tally'}
-        </NeonButton>
-        {canExecute && (
-          <NeonButton disabled={!hasResult} onClick={onExecute}>
-            {hasResult ? 'Execute' : 'Execute (after tally)'}
-          </NeonButton>
-        )}
-      </div>
-    </div>
-  )
-}
-
 const DAO_DETAIL_QUERY = gql`
   query DaoDetail($projectId: numeric!) {
     project: okinoko_dao_project_overview(where: { project_id: { _eq: $projectId } }) {
@@ -497,6 +363,7 @@ export default function DaoUserLists({
     contract: daoContract,
     fn: joinFn,
     params: {},
+    disablePreview: true,
   })
 
   const projects = data?.projects ?? []
@@ -1029,7 +896,16 @@ const renderDaoList = () => {
 
   const selectProposalAction = useCallback(
     (fnName, proposalId) => {
+      console.log('[Proposal] navigate start', {
+        fnName,
+        proposalId,
+        hasFnName: Boolean(setFnName),
+        hasStep: Boolean(setStep),
+        hasParams: Boolean(setParams),
+        hasContractId: Boolean(setContractId),
+      })
       if (!setFnName || !setStep || !setParams || !setContractId) return
+      popup?.closePopup?.()
       setContractId(DAO_VSC_ID)
       setFnName(fnName)
       setParams((prev) => ({
@@ -1038,7 +914,7 @@ const renderDaoList = () => {
         proposalId,
       }))
       setStep(2)
-      popup?.closePopup?.()
+      console.log('[Proposal] navigate done', { fnName, proposalId })
     },
     [setContractId, setFnName, setParams, setStep, popup]
   )
@@ -1052,14 +928,23 @@ const renderDaoList = () => {
         sameUser(dao?.created_by, user) ||
         sameUser(proposal?.created_by, user)
       popup?.openPopup?.({
-        title: proposal.name || `Proposal #${proposal.proposal_id}`,
+        title: `Proposal #${proposal.proposal_id}`,
         body: () => (
-          <ProposalDetail
+          <ProposalDetailPopup
             proposal={proposal}
             isMember={isMember}
-            onVote={() => selectProposalAction('proposals_vote', proposal.proposal_id)}
-            onTally={() => selectProposalAction('proposal_tally', proposal.proposal_id)}
-            onExecute={() => selectProposalAction('proposal_execute', proposal.proposal_id)}
+            onVote={() => {
+              console.log('[Proposal] vote clicked', proposal.proposal_id)
+              selectProposalAction('proposals_vote', proposal.proposal_id)
+            }}
+            onTally={() => {
+              console.log('[Proposal] tally clicked', proposal.proposal_id)
+              selectProposalAction('proposal_tally', proposal.proposal_id)
+            }}
+            onExecute={() => {
+              console.log('[Proposal] execute clicked', proposal.proposal_id)
+              selectProposalAction('proposal_execute', proposal.proposal_id)
+            }}
           />
         ),
       })

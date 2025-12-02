@@ -274,7 +274,7 @@ function GameMovesTable({ game }) {
       if (dimensions && Number.isFinite(cellIndex) && cellIndex >= 0) {
         const row = Math.floor(cellIndex / dimensions.cols)
         const col = cellIndex % dimensions.cols
-        coords = `R${row + 1}C${col + 1}`
+        coords = `R${row }C${col }`
       }
       let desc = coords
       if ((game?.type || '').toLowerCase() === 'gomoku') {
@@ -306,7 +306,7 @@ function GameMovesTable({ game }) {
         if (dimensions && Number.isFinite(cellIndex) && cellIndex >= 0) {
           const row = Math.floor(cellIndex / dimensions.cols)
           const col = cellIndex % dimensions.cols
-          coords = `R${row + 1}C${col + 1}`
+          coords = `R${row}C${col}`
         }
         let description = ''
         if (op === 'place' || op === 'add') {

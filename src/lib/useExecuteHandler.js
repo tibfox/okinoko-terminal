@@ -18,7 +18,7 @@ const TONE_PAUSE = 300 // ms between tones to keep the cue snappy
 
 const RC_LIMIT_DEFAULT = 10000
 
-export default function useExecuteHandler({ contract, fn, params }) {
+export default function useExecuteHandler({ contract, fn, params, disablePreview = false }) {
   const { openPopup } = useContext(PopupContext)
 
   const { aioha, user } = useAioha()
@@ -103,7 +103,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
 
   // Payload builder
   const buildPayload = (fn, params) => {
-    console.log("creating payload for " + fn.name)
+    console.log('creating payload for ' + fn.name)
     if (!fn) return { payload: '', intents: [] }
 
     const ps = fn.parameters ?? []
@@ -226,6 +226,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
           })
         }
         console.log('Game payload:', payload, ' Intents:', intents, ' Action:', action)
+        console.log('Game payload:', payload, ' Intents:', intents, ' Action:', action)
         return { payload: payload, intents, action }
       }
 
@@ -233,7 +234,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
         const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
         const val =
           params?.[first?.name] ?? getDefaultValue(first ?? { type: 'string' })
-        console.log("action: " + action)
+        console.log('action: ' + action)
         return { payload: val != null ? val.toString() : '', intents, action }
       }
 
@@ -596,7 +597,7 @@ export default function useExecuteHandler({ contract, fn, params }) {
   }
 
   const jsonPreview = useMemo(() => {
-    if (!fn || !contract) return '{}'
+    if (disablePreview || !fn || !contract) return '{}'
     const { payload, intents } = buildPayload(fn, params)
     const raw = JSON.stringify({
       contract_id: contract.vscId,

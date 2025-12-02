@@ -118,9 +118,21 @@ export default function GameField({
 
   const determineNextSwapColor = useCallback(
     (placements) => {
-      const counts = countSwapColors(placements)
-      if (counts.x < 2) return 1
-      if (counts.o < 1) return 2
+      if (placements.length === 0) return 1 // First stone must be X
+      if (placements.length === 1) {
+        // Second stone should be the opposite of the first to follow X, O, X
+        return placements[0].color === 1 ? 2 : 1
+      }
+      if (placements.length === 2) {
+        // If we already have X then O, cap with an X; otherwise fall back to counts to stay valid
+        if (placements[0].color === 1 && placements[1].color === 2) {
+          return 1
+        }
+        const counts = countSwapColors(placements)
+        if (counts.x < 2) return 1
+        if (counts.o < 1) return 2
+        return null
+      }
       return null
     },
     [countSwapColors],
