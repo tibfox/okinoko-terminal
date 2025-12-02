@@ -1274,6 +1274,40 @@ export default function ExecuteForm({
       )
     }
 
+    const isDaoVoteChoices =
+      fn?.name === 'proposals_vote' &&
+      (params?.proposalIsPoll === false || params?.is_poll === false) &&
+      ((p.payloadName || '').toLowerCase() === 'choices' ||
+        (p.name || '').toLowerCase().includes('choice'))
+
+    if (isDaoVoteChoices) {
+      const rawVal = params[p.name] ?? params[p.payloadName || p.name] ?? ''
+      const checked = String(rawVal).toLowerCase() === 'true'
+      const setChoice = (val) =>
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: val ? 'true' : 'false',
+          [p.payloadName || p.name]: val ? 'true' : 'false',
+        }))
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+            No
+          </span>
+          <NeonSwitch name="" checked={checked} onChange={setChoice} />
+          <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+            Yes
+          </span>
+        </div>
+      )
+    }
+
     if (p.type === 'bool') {
       return (
         <NeonSwitch

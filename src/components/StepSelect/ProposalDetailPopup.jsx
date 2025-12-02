@@ -186,10 +186,10 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
         }}
       >
         {isMember && <NeonButton onClick={onVote}>Vote</NeonButton>}
-        <NeonButton disabled={tallyLocked} onClick={onTally}>
+        {isMember && <NeonButton disabled={tallyLocked} onClick={onTally}>
           {tallyLocked ? 'Tally (after deadline)' : 'Tally'}
-        </NeonButton>
-        {canExecute && (
+        </NeonButton>}
+        {isMember && canExecute && (
           <NeonButton disabled={!hasResult} onClick={onExecute}>
             {hasResult ? 'Execute' : 'Execute (after tally)'}
           </NeonButton>

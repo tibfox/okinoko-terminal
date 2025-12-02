@@ -895,7 +895,8 @@ const renderDaoList = () => {
   }
 
   const selectProposalAction = useCallback(
-    (fnName, proposalId) => {
+    (fnName, proposal) => {
+      const proposalId = typeof proposal === 'object' ? proposal?.proposal_id : proposal
       console.log('[Proposal] navigate start', {
         fnName,
         proposalId,
@@ -904,16 +905,20 @@ const renderDaoList = () => {
         hasParams: Boolean(setParams),
         hasContractId: Boolean(setContractId),
       })
-      if (!setFnName || !setStep || !setParams || !setContractId) return
       popup?.closePopup?.()
-      setContractId(DAO_VSC_ID)
-      setFnName(fnName)
-      setParams((prev) => ({
-        ...prev,
-        'Proposal Id': proposalId,
-        proposalId,
-      }))
-      setStep(2)
+      setContractId?.(DAO_VSC_ID)
+      setFnName?.(fnName)
+      if (setParams) {
+        setParams((prev) => ({
+          ...prev,
+          'Proposal Id': proposalId,
+          proposalId,
+          proposalIsPoll: typeof proposal === 'object' ? proposal?.is_poll ?? null : null,
+        }))
+      } else {
+        console.warn('[Proposal] setParams missing; skipping param prefill')
+      }
+      setStep?.(2)
       console.log('[Proposal] navigate done', { fnName, proposalId })
     },
     [setContractId, setFnName, setParams, setStep, popup]
@@ -935,15 +940,15 @@ const renderDaoList = () => {
             isMember={isMember}
             onVote={() => {
               console.log('[Proposal] vote clicked', proposal.proposal_id)
-              selectProposalAction('proposals_vote', proposal.proposal_id)
+              selectProposalAction('proposals_vote', proposal)
             }}
             onTally={() => {
               console.log('[Proposal] tally clicked', proposal.proposal_id)
-              selectProposalAction('proposal_tally', proposal.proposal_id)
+              selectProposalAction('proposal_tally', proposal)
             }}
             onExecute={() => {
               console.log('[Proposal] execute clicked', proposal.proposal_id)
-              selectProposalAction('proposal_execute', proposal.proposal_id)
+              selectProposalAction('proposal_execute', proposal)
             }}
           />
         ),
