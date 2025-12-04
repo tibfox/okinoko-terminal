@@ -100,7 +100,15 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
   }, [createdAt, durationHours])
   const tallyLocked = deadline ? Date.now() < deadline.getTime() : false
   const hasResult = detail?.result !== null && detail?.result !== undefined && detail?.result !== ''
-  const canExecute = detail?.is_poll === false
+  const stateLower = (detail?.state || '').toLowerCase()
+  const executionReady =
+    hasResult ||
+    stateLower === 'ready' ||
+    stateLower === 'passed' ||
+    stateLower === 'approved' ||
+    stateLower === 'completed'
+  const alreadyExecuted = stateLower === 'executed'
+  const canExecute = detail?.is_poll === false && !alreadyExecuted
 
   const options = (detail?.options || '')
     .split(';')
@@ -190,8 +198,8 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
           {tallyLocked ? 'Tally (after deadline)' : 'Tally'}
         </NeonButton>}
         {isMember && canExecute && (
-          <NeonButton disabled={!hasResult} onClick={onExecute}>
-            {hasResult ? 'Execute' : 'Execute (after tally)'}
+          <NeonButton disabled={!executionReady} onClick={onExecute}>
+            {executionReady ? 'Execute' : 'Execute (after tally)'}
           </NeonButton>
         )}
       </div>

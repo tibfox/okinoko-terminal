@@ -194,7 +194,7 @@
               "name": "Description",
               "payloadName": "description",
               "type": "string",
-              "mandatory": true,
+              "mandatory": false,
               "hintText": "Add a description but always remember the more characters you use, the higher the gas cost.",
               "sortIndex": 2
             },
@@ -506,7 +506,7 @@
               "name": "Proposal Description",
               "payloadName": "description",
               "type": "string",
-              "mandatory": true,
+              "mandatory": false,
               "hintText": "This is the description of the proposal. Remember that longer descriptions increase gas costs.",
               "sortIndex": 3
             },

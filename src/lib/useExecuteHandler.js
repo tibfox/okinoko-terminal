@@ -18,6 +18,22 @@ const TONE_PAUSE = 300 // ms between tones to keep the cue snappy
 
 const RC_LIMIT_DEFAULT = 10000
 
+const resolveRcLimit = (val) => {
+  const num = Number(val)
+  if (Number.isFinite(num) && num > 0) {
+    return Math.floor(num)
+  }
+  return RC_LIMIT_DEFAULT
+}
+
+const attachRcLimit = (payload, rcLimit) => {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    return { ...payload, rcLimit }
+  }
+  // For string/array payloads, leave untouched to avoid spreading characters
+  return payload
+}
+
 export default function useExecuteHandler({ contract, fn, params, disablePreview = false }) {
   const { openPopup } = useContext(PopupContext)
 
@@ -543,13 +559,15 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
 
     try {
       const { payload, intents, action } = buildPayload(fn, effectiveParams)
+      const rcLimit = resolveRcLimit(effectiveParams?.rcLimit)
+      const payloadWithRc = attachRcLimit(payload, rcLimit)
 
       console.log('[useExecuteHandler] Payload:', payload, ' Intents:', intents, ' Action:', action)
       const res = await aioha.vscCallContract(
         contract.vscId,
         action,
-        payload,
-        RC_LIMIT_DEFAULT,
+        payloadWithRc,
+        rcLimit,
         intents,
         KeyTypes.Active
       )
@@ -567,7 +585,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
           status: 'pending',
           startedAt: Date.now(),
           action: action,
-          payload: payload,
+          payload: payloadWithRc,
           onStatus: (status, result) => {
             if (status === 'success') {
               playSuccessChime()
@@ -599,12 +617,14 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
   const jsonPreview = useMemo(() => {
     if (disablePreview || !fn || !contract) return '{}'
     const { payload, intents } = buildPayload(fn, params)
+    const rcLimit = resolveRcLimit(params?.rcLimit)
+    const payloadWithRc = attachRcLimit(payload, rcLimit)
     const raw = JSON.stringify({
       contract_id: contract.vscId,
       action: fn.name,
-      payload,
+      payload: payloadWithRc,
       ...(intents.length > 0 && { intents }),
-      rcLimit: RC_LIMIT_DEFAULT,
+      rcLimit,
     })
     return raw.replace(/\s+/g, ' ')
   }, [contract, fn, params])

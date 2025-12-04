@@ -18,6 +18,7 @@ import NeonListDropdown from '../common/NeonListDropdown.jsx'
 
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
+const RC_LIMIT_DEFAULT = 10000
 const DAO_PROJECTS_QUERY = `
   query DaoProjects {
     projects: okinoko_dao_project_overview(order_by: { project_id: asc }) {
@@ -76,6 +77,11 @@ export default function ExecuteForm({
   const lowerHive = hiveUser.toLowerCase()
   const newOptionInputRef = useRef(null)
   const editingInputRef = useRef(null)
+  const parseOptionList = (str) =>
+    (str || '')
+      .split(';')
+      .map((o) => o.trim())
+      .filter(Boolean)
   const balances = useMemo(() => {
     if (!accountBalances) {
       return { hive: 0, hbd: 0 }
@@ -93,6 +99,14 @@ export default function ExecuteForm({
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Default RC limit
+  useEffect(() => {
+    if (!setParams) return
+    if (params?.rcLimit === undefined || params?.rcLimit === null || params?.rcLimit === '') {
+      setParams((prev) => ({ ...prev, rcLimit: RC_LIMIT_DEFAULT }))
+    }
+  }, [params?.rcLimit, setParams])
 
   // Track insufficient balance for vscIntent fields
   useEffect(() => {
@@ -315,6 +329,20 @@ export default function ExecuteForm({
     if (pid === undefined || pid === null || pid === '') return null
     return daoProjects.find((p) => Number(p.id) === Number(pid)) || null
   }, [daoProjects, params, projectIdParam])
+
+  const proposalIsPoll =
+    params?.proposalIsPoll === true || params?.is_poll === true
+
+  const proposalOptions = useMemo(() => {
+    const raw = params?.proposalOptions ?? params?.options
+    if (Array.isArray(raw)) {
+      return raw.filter(Boolean)
+    }
+    if (typeof raw === 'string') {
+      return parseOptionList(raw)
+    }
+    return []
+  }, [params])
 
   // Clear meta/payout fields when force poll is enabled
   useEffect(() => {
@@ -1274,38 +1302,62 @@ export default function ExecuteForm({
       )
     }
 
+    const isDaoVote = fn?.name === 'proposals_vote'
     const isDaoVoteChoices =
-      fn?.name === 'proposals_vote' &&
-      (params?.proposalIsPoll === false || params?.is_poll === false) &&
+      isDaoVote &&
       ((p.payloadName || '').toLowerCase() === 'choices' ||
         (p.name || '').toLowerCase().includes('choice'))
 
     if (isDaoVoteChoices) {
-      const rawVal = params[p.name] ?? params[p.payloadName || p.name] ?? ''
-      const checked = String(rawVal).toLowerCase() === 'true'
-      const setChoice = (val) =>
-        setParams((prev) => ({
-          ...prev,
-          [p.name]: val ? 'true' : 'false',
-          [p.payloadName || p.name]: val ? 'true' : 'false',
+      const fieldName = p.payloadName || p.name
+      const rawVal = params[p.name] ?? params[fieldName] ?? ''
+
+      if (proposalIsPoll) {
+        const options = proposalOptions.map((label, idx) => ({
+          label,
+          value: String(idx),
         }))
-      return (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
-            No
-          </span>
-          <NeonSwitch name="" checked={checked} onChange={setChoice} />
-          <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
-            Yes
-          </span>
-        </div>
-      )
+        return (
+          <NeonListDropdown
+            placeholder="Select choice"
+            value={String(rawVal)}
+            options={options}
+            onChange={(val) =>
+              setParams((prev) => ({
+                ...prev,
+                [p.name]: val === null || val === undefined ? '' : String(val),
+                [fieldName]: val === null || val === undefined ? '' : String(val),
+              }))
+            }
+          />
+        )
+      } else {
+        const normalized = String(rawVal).toLowerCase()
+        const checked = normalized === '1' || normalized === 'true'
+        const setChoice = (val) =>
+          setParams((prev) => ({
+            ...prev,
+            [p.name]: val ? '1' : '0',
+            [fieldName]: val ? '1' : '0',
+          }))
+        return (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+              No
+            </span>
+            <NeonSwitch name="" checked={checked} onChange={setChoice} />
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+              Yes
+            </span>
+          </div>
+        )
+      }
     }
 
     if (p.type === 'bool') {
@@ -1848,6 +1900,30 @@ export default function ExecuteForm({
     ? parameters.filter((p) => !p.mandatory && !isProposalCoreParam(p))
     : []
 
+  const rcLimitValue =
+    params?.rcLimit === undefined || params?.rcLimit === null || params?.rcLimit === ''
+      ? RC_LIMIT_DEFAULT
+      : params.rcLimit
+
+  const handleRcLimitChange = (val) => {
+    if (!setParams) return
+    const cleaned = String(val).replace(/[^\d]/g, '')
+    setParams((prev) => ({
+      ...prev,
+      rcLimit: cleaned === '' ? '' : cleaned,
+    }))
+  }
+
+  const handleRcLimitBlur = () => {
+    if (!setParams) return
+    const num = Number(params?.rcLimit)
+    if (!Number.isFinite(num) || num <= 0) {
+      setParams((prev) => ({ ...prev, rcLimit: RC_LIMIT_DEFAULT }))
+    } else {
+      setParams((prev) => ({ ...prev, rcLimit: Math.floor(num) }))
+    }
+  }
+
   return (
     <div
       style={{
@@ -1908,6 +1984,52 @@ export default function ExecuteForm({
                 </div>
               </CyberContainer>
             ) : null}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px', maxWidth: '180px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>Max RC</span>
+                <FontAwesomeIcon
+                  icon={faCircleInfo}
+                  title="Limits resources used for this call."
+                  style={{ color: 'var(--color-primary-lighter)', cursor: 'help' }}
+                  onClick={() =>
+                    openPopup?.({
+                      title: 'Max RC',
+                      body: 'Limits resources used for this call.',
+                    })
+                  }
+                  onMouseEnter={(e) =>
+                    setHintOverlay({
+                      text: 'Limits resources used for this call.',
+                      x: e.clientX - 60,
+                      y: e.clientY - 60,
+                    })
+                  }
+                  onMouseMove={(e) =>
+                    setHintOverlay((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            x: e.clientX - 60,
+                            y: e.clientY - 60,
+                          }
+                        : prev
+                    )
+                  }
+                  onMouseLeave={() => setHintOverlay(null)}
+                />
+              </div>
+              <FloatingLabelInput
+                label="Max RC"
+                type="number"
+                min="1"
+                step="1"
+                hideLabel
+                value={rcLimitValue}
+                onChange={(e) => handleRcLimitChange(e.target.value)}
+                onBlur={handleRcLimitBlur}
+              />
+            </div>
 
             {hintOverlay ? (
               <div

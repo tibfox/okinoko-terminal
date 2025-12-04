@@ -9,6 +9,7 @@ import {
   faUserPlus,
   faPause,
   faUserShield,
+  faUserAstronaut,
 } from '@fortawesome/free-solid-svg-icons'
 import ListButton from '../buttons/ListButton.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
@@ -16,12 +17,15 @@ import contractsCfg from '../../data/contracts.json'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import { PopupContext } from '../../popup/context.js'
 import ProposalDetailPopup from './ProposalDetailPopup.jsx'
+import ThresholdCircle from './ThresholdCircle.jsx'
+import PollPie from './PollPie.jsx'
 
 const sameUser = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase()
 
 
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 const DAO_JOIN_FN = 'project_join'
+const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
 const DAO_USER_QUERY = gql`
   query DaoUserLists($user: String!) {
@@ -46,6 +50,11 @@ const DAO_USER_QUERY = gql`
       active
       last_action
     }
+    allMembers: okinoko_dao_membership_latest {
+      project_id
+      member
+      active
+    }
     daoProposals: okinoko_dao_proposal_overview(order_by: { proposal_id: desc }) {
       proposal_id
       project_id
@@ -65,6 +74,20 @@ const DAO_USER_QUERY = gql`
       member
       member_active
       is_poll
+      active_members
+      members
+    }
+    daoVotes: okinoko_dao_votes_view {
+      proposal_id
+      voter
+      weight
+      choices
+    }
+    stakeBalances: okinoko_dao_stake_balances {
+      project_id
+      account
+      stake_amount
+      asset
     }
   }`
 
@@ -341,6 +364,9 @@ export default function DaoUserLists({
   const [daosCollapsed, setDaosCollapsed] = useState(false)
   const [collapsedDaos, setCollapsedDaos] = useState(new Set())
   const [joiningDaoId, setJoiningDaoId] = useState(null)
+  const [daoStateTabs, setDaoStateTabs] = useState({}) // per dao: 'active' | 'closed'
+  const [daoTypeTabs, setDaoTypeTabs] = useState({}) // per dao: 'payout_meta' | 'polls'
+  const [daoRelationFilter, setDaoRelationFilter] = useState('all') // 'all' | 'created' | 'member' | 'viewer'
   const popup = useContext(PopupContext)
   const client = useClient()
 
@@ -368,7 +394,10 @@ export default function DaoUserLists({
 
   const projects = data?.projects ?? []
   const memberships = data?.memberships ?? []
+  const allMembers = data?.allMembers ?? []
   const proposalsRaw = data?.daoProposals ?? []
+  const daoVotes = data?.daoVotes ?? []
+  const stakeBalances = data?.stakeBalances ?? []
 
   const proposalsByDao = useMemo(() => {
     const map = new Map()
@@ -391,6 +420,18 @@ export default function DaoUserLists({
     })
     return map
   }, [memberships])
+
+  const membersByDao = useMemo(() => {
+    const map = new Map()
+    allMembers.forEach((m) => {
+      const pid = Number(m.project_id)
+      if (!Number.isFinite(pid)) return
+      const arr = map.get(pid) || []
+      arr.push({ name: m.member, active: m.active })
+      map.set(pid, arr)
+    })
+    return map
+  }, [allMembers])
 
   const daos = useMemo(() => {
     const seen = new Set()
@@ -434,11 +475,80 @@ export default function DaoUserLists({
     return Array.from(byId.values())
   }, [proposalsRaw, user])
 
+  const votesByProposal = useMemo(() => {
+    const map = new Map()
+    daoVotes.forEach((v) => {
+      if (!v) return
+      const pid = Number(v.proposal_id)
+      if (!Number.isFinite(pid)) return
+      const arr = map.get(pid) || []
+      arr.push(v)
+      map.set(pid, arr)
+    })
+    return map
+  }, [daoVotes])
+
+  const totalVoteWeightByProposal = useMemo(() => {
+    const map = new Map()
+    votesByProposal.forEach((arr, pid) => {
+      const total = arr.reduce((sum, v) => sum + (Number(v.weight) || 0), 0)
+      map.set(pid, total)
+    })
+    return map
+  }, [votesByProposal])
+
+  const userVotedProposals = useMemo(() => {
+    const set = new Set()
+    const normalizedUser = (user || '').toLowerCase()
+    daoVotes.forEach((v) => {
+      if (!v?.voter) return
+      if ((v.voter || '').toLowerCase() === normalizedUser) {
+        const pid = Number(v.proposal_id)
+        if (Number.isFinite(pid)) set.add(pid)
+      }
+    })
+    return set
+  }, [daoVotes, user])
+
+  const totalStakeByProject = useMemo(() => {
+    const map = new Map()
+    stakeBalances.forEach((row) => {
+      const pid = Number(row.project_id)
+      if (!Number.isFinite(pid)) return
+      const amt = Number(row.stake_amount) || 0
+      map.set(pid, (map.get(pid) || 0) + amt)
+    })
+    return map
+  }, [stakeBalances])
+
+  const parseOptions = (str) =>
+    (str || '')
+      .split(';')
+      .map((o) => o.trim())
+      .filter(Boolean)
+
   const relationLabel = useMemo(() => (dao) => {
     if (membershipMap.get(dao.project_id)) return 'Member'
     if (dao.created_by === user) return 'Creator'
     return 'Viewer'
   }, [membershipMap, user])
+
+  const matchesRelationFilter = useCallback(
+    (dao) => {
+      const isCreator = sameUser(dao.created_by, user)
+      const isMember = membershipMap.get(dao.project_id)
+      if (daoRelationFilter === 'created') return isCreator
+      if (daoRelationFilter === 'member') return isMember && !isCreator
+      if (daoRelationFilter === 'viewer') return !isCreator && !isMember
+      return true
+    },
+    [daoRelationFilter, membershipMap, user]
+  )
+
+  const isClosedProposal = (p) => {
+    const state = (p.state || '').toLowerCase()
+    return Boolean(p.result) || state === 'closed' || state === 'executed' || state === 'completed' || state === 'ready'
+  }
 
   const renderHeader = (label, collapsed, setCollapsed, count, extra = null) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -536,9 +646,44 @@ const renderDaoList = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {daos.map((dao) => {
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '6px' }}>
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'created', label: 'Created' },
+          { key: 'member', label: 'Member' },
+          { key: 'viewer', label: 'Viewer' },
+        ].map((tab) => (
+          <button
+            key={`rel-${tab.key}`}
+            onClick={() => setDaoRelationFilter(tab.key)}
+            style={{
+              border: '1px solid var(--color-primary-darkest)',
+              background: daoRelationFilter === tab.key ? 'var(--color-primary-darkest)' : 'transparent',
+              color: 'var(--color-primary)',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {daos.filter(matchesRelationFilter).map((dao) => {
         const collapsed = collapsedDaos.has(dao.project_id)
         const daoProposals = proposalsByDao.get(Number(dao.project_id)) || []
+        const totalStake = totalStakeByProject.get(Number(dao.project_id)) || 0
+        const stateTab = daoStateTabs[dao.project_id] || 'active'
+        const typeTab = daoTypeTabs[dao.project_id] || 'all'
+        const filteredProposals = daoProposals.filter((p) => {
+          const closed = isClosedProposal(p)
+          if (stateTab === 'active' && closed) return false
+          if (stateTab === 'closed' && !closed) return false
+          if (typeTab === 'polls' && !p.is_poll) return false
+          if (typeTab === 'payout_meta' && p.is_poll) return false
+          return true
+        })
         return (
           <div
             key={`dao-block-${dao.project_id}`}
@@ -564,8 +709,26 @@ const renderDaoList = () => {
                   icon={collapsed ? faChevronDown : faChevronUp}
                   style={{ fontSize: '0.9rem' }}
                 />
-                <span style={{ fontWeight: 700 }}>
+                <span style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {dao.name || `DAO #${dao.project_id}`}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openDaoDetail(dao.project_id)
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--color-primary)',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    title="DAO info"
+                  >
+                    <FontAwesomeIcon icon={faCircleInfo} />
+                  </button>
                 </span>
                 <span
                   style={{
@@ -678,7 +841,57 @@ const renderDaoList = () => {
                     No proposals yet.
                   </div>
                 ) : (
-                  daoProposals.map((p, idx) => (
+                  <>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '6px', alignItems: 'center' }}>
+                      {['active', 'closed'].map((tab) => (
+                        <button
+                          key={`state-${dao.project_id}-${tab}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDaoStateTabs((prev) => ({ ...prev, [dao.project_id]: tab }))
+                          }}
+                          style={{
+                            border: '1px solid var(--color-primary-darkest)',
+                            background: stateTab === tab ? 'var(--color-primary-darkest)' : 'transparent',
+                            color: 'var(--color-primary)',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          {tab === 'active' ? 'Active' : 'Closed'}
+                        </button>
+                      ))}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+                        {['all', 'payout_meta', 'polls'].map((tab) => (
+                          <button
+                            key={`type-${dao.project_id}-${tab}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDaoTypeTabs((prev) => ({ ...prev, [dao.project_id]: tab }))
+                            }}
+                            style={{
+                              border: '1px solid var(--color-primary-darkest)',
+                              background: typeTab === tab ? 'var(--color-primary-darkest)' : 'transparent',
+                              color: 'var(--color-primary)',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                            }}
+                          >
+                            {tab === 'payout_meta' ? 'Payout/Meta' : tab === 'polls' ? 'Polls' : 'All'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {filteredProposals.length === 0 ? (
+                      <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                        No proposals in this filter.
+                      </div>
+                    ) : (
+                  filteredProposals.map((p, idx) => (
                       <ListButton
                         key={`proposal-${dao.project_id}-${p.proposal_id}-${idx}`}
                         onClick={(e) => {
@@ -714,6 +927,11 @@ const renderDaoList = () => {
                       >
                         <span style={{ fontWeight: 700 }}>
                           {p.name || `Proposal #${p.proposal_id}`}
+                          {userVotedProposals.has(Number(p.proposal_id)) ? (
+                            <span style={{ marginLeft: '8px', fontSize: '0.8rem', color: 'var(--color-primary)' }}>
+                              • Voted
+                            </span>
+                          ) : null}
                         </span>
                         <span
                           style={{
@@ -756,17 +974,86 @@ const renderDaoList = () => {
                               )
                             }
                             return (
-                              <span style={{ color: 'var(--color-primary-lighter)' }}>
-                                Payouts: {summary}
-                              </span>
-                            )
-                          })()}
-                        </div>
-                      </ListButton>
-                    ))
-                  )}
-                </div>
-              )}
+                          <span style={{ color: 'var(--color-primary-lighter)' }}>
+                            Payouts: {summary}
+                          </span>
+                        )
+                      })()}
+                      </div>
+                      {(() => {
+                        const pid = Number(p.proposal_id)
+                        const votes = votesByProposal.get(pid) || []
+                        const voteTotal = dao.voting_system === '1'
+                          ? totalVoteWeightByProposal.get(pid) || 0
+                          : votes.length
+                        const memberSet = new Set(
+                          (p.active_members || p.members || [])
+                            .map((m) => (m || '').toLowerCase())
+                            .filter(Boolean),
+                        )
+                        // Ensure creator counts as member
+                        if (dao.created_by) memberSet.add((dao.created_by || '').toLowerCase())
+                        if (p.created_by) memberSet.add((p.created_by || '').toLowerCase())
+                        // Fallback: if we still have nothing, include voters to avoid 100% on single vote
+                        if (memberSet.size === 0) {
+                          votes.forEach((v) => {
+                            if (v?.voter) memberSet.add(String(v.voter).toLowerCase())
+                          })
+                        }
+                        const memberCount = memberSet.size
+                        const totalPool = dao.voting_system === '1' ? totalStake : memberCount
+                        const opts = parseOptions(p.options).map((label, idx) => {
+                          const optVotes = votes.reduce((sum, v) => {
+                            const choices = String(v.choices || '')
+                              .split(/[;,]/)
+                              .map((c) => parseInt(c.trim(), 10))
+                              .filter((n) => Number.isFinite(n))
+                            if (choices.includes(idx)) {
+                              return sum + (dao.voting_system === '1' ? (Number(v.weight) || 0) : 1)
+                            }
+                            return sum
+                          }, 0)
+                          const percent = totalPool > 0 ? (optVotes / totalPool) * 100 : 0
+                          return { label, percent }
+                        })
+                        return p.is_poll ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
+                            <PollPie parts={opts} size={120} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                              {opts.map((o, i) => (
+                                <div key={`opt-${pid}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                                  <span style={{ color: 'var(--color-primary-lighter)' }}>
+                                    {o.label}: {o.percent.toFixed(1)}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            <ThresholdCircle
+                              label="Threshold"
+                              value={voteTotal}
+                              total={totalPool}
+                              targetPercent={dao.threshold_percent}
+                            />
+                            <ThresholdCircle
+                              label="Quorum"
+                              value={voteTotal}
+                              total={totalPool}
+                              targetPercent={dao.quorum_percent}
+                            />
+                          </div>
+                        )
+                      })()}
+                    </ListButton>
+                  ))
+                )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )
       })}
@@ -881,6 +1168,40 @@ const renderDaoList = () => {
                 <div>Quorum: {dao.quorum_percent ?? '?'}%</div>
                 <div>Creator: {dao.created_by}</div>
               </div>
+              <div style={{ marginTop: '6px' }}>
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Members</div>
+                {(() => {
+                  const members = [...(membersByDao.get(dao.project_id) || [])]
+                  if (dao.created_by) {
+                    const exists = members.some(
+                      (m) => String(m.name || '').toLowerCase() === String(dao.created_by || '').toLowerCase()
+                    )
+                    if (!exists) {
+                      members.push({ name: dao.created_by, active: true })
+                    }
+                  }
+                  if (!members.length) {
+                    return <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>No members listed yet.</div>
+                  }
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.85rem' }}>
+                      {members.map((m) => (
+                        <span
+                          key={`${dao.project_id}-${m.name}`}
+                          style={{
+                            padding: '4px 8px',
+                            border: '1px solid var(--color-primary-darkest)',
+                            borderRadius: '6px',
+                            opacity: m.active ? 1 : 0.6,
+                          }}
+                        >
+                          {m.name} {m.active ? '' : '(former)'}
+                        </span>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
               <NeonButton
                 disabled={joinPending || joiningDaoId === dao.project_id}
                 onClick={() => handleJoinDao(dao)}
@@ -897,6 +1218,7 @@ const renderDaoList = () => {
   const selectProposalAction = useCallback(
     (fnName, proposal) => {
       const proposalId = typeof proposal === 'object' ? proposal?.proposal_id : proposal
+      const proposalOptions = typeof proposal === 'object' ? parseOptions(proposal?.options) : []
       console.log('[Proposal] navigate start', {
         fnName,
         proposalId,
@@ -914,6 +1236,7 @@ const renderDaoList = () => {
           'Proposal Id': proposalId,
           proposalId,
           proposalIsPoll: typeof proposal === 'object' ? proposal?.is_poll ?? null : null,
+          proposalOptions,
         }))
       } else {
         console.warn('[Proposal] setParams missing; skipping param prefill')
