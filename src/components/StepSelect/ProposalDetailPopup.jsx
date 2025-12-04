@@ -149,25 +149,36 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
     return formatDateUtc(num * 1000) // ready_at is seconds
   }
 
+  const proposalUrl = detail.url || `https://example.com/proposal`
+
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 900 : false
+  const headerLayoutStyle = isMobile
+    ? { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }
+    : { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'center' }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '260px' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: '12px',
-          alignItems: 'center',
-        }}
-      >
+      <div style={headerLayoutStyle}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px' }}>
+          <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
             {detail.name || `Proposal #${detail.proposal_id}`}
           </div>
           {detail.description ? (
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.35, opacity: 0.9 }}>
+            <div style={{ fontSize: '0.9rem', lineHeight: 1.35, opacity: 0.9, textAlign: isMobile ? 'center' : 'left' }}>
               {detail.description}
             </div>
           ) : null}
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+            <NeonButton
+              onClick={() => {
+                try {
+                  window.open(proposalUrl, '_blank')
+                } catch {}
+              }}
+            >
+              Open Proposal URL
+            </NeonButton>
+          </div>
         </div>
         <div
           style={{
@@ -176,6 +187,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
             flexDirection: 'column',
             alignItems: 'center',
             gap: '6px',
+            order: isMobile ? -1 : 0,
           }}
         >
           <ProposalAvatar creator={detail.created_by} />

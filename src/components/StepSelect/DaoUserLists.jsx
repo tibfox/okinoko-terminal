@@ -1,4 +1,4 @@
-import { useMemo, useState, useContext, useCallback } from 'preact/hooks'
+import { useMemo, useState, useContext, useCallback, useEffect } from 'preact/hooks'
 import { gql, useQuery, useClient } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -10,6 +10,9 @@ import {
   faPause,
   faUserShield,
   faUserAstronaut,
+  faBars,
+  faFilter,
+  faChevronLeft,
 } from '@fortawesome/free-solid-svg-icons'
 import ListButton from '../buttons/ListButton.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
@@ -26,6 +29,7 @@ const sameUser = (a, b) => String(a || '').toLowerCase() === String(b || '').toL
 const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
 const DAO_JOIN_FN = 'project_join'
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
+const ALLOWED_DAO_FILTERS = ['all', 'created', 'member', 'viewer']
 
 const DAO_USER_QUERY = gql`
   query DaoUserLists($user: String!) {
@@ -132,7 +136,7 @@ const ProposalAvatar = ({ creator }) => {
   )
 }
 
-  const DaoDetail = ({ projectId, client, onCreateProposal: detailCreate, onProposalClick }) => {
+  const DaoDetail = ({ projectId, client, onCreateProposal: detailCreate, onProposalClick, isMember, onJoin, joinPending, isMobile }) => {
     const [{ data: detailData, fetching: detailFetching, error: detailError }] = useQuery({
       query: DAO_DETAIL_QUERY,
       variables: { projectId },
@@ -179,6 +183,7 @@ const ProposalAvatar = ({ creator }) => {
     })
     const proposals = Array.from(proposalsMap.values())
     const treasury = detailData.treasury || []
+    const daoUrl = base.url || `https://example.com/dao`
 
     const treasuryTotals = treasury.reduce((acc, t) => {
       const key = (t.asset || '').toUpperCase()
@@ -188,13 +193,43 @@ const ProposalAvatar = ({ creator }) => {
       return acc
     }, {})
 
+    const headerLayoutStyle = isMobile
+      ? { display: 'flex', flexDirection: 'column', gap: '12px' }
+      : { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'center' }
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '260px' }}>
-        <div>
-          <div style={{ fontWeight: 700 }}>{base.name || `DAO #${projectId}`}</div>
-          <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
-          <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
-          
+        <div style={headerLayoutStyle}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{base.name || `DAO #${projectId}`}</div>
+            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
+            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
+            <div style={{ marginTop: '8px' }}>
+              <NeonButton
+                onClick={() => {
+                  try {
+                    window.open(daoUrl, '_blank')
+                  } catch {}
+                }}
+              >
+                Open DAO URL
+              </NeonButton>
+            </div>
+          </div>
+          <div
+            style={{
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <ProposalAvatar creator={base.created_by} />
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+              {base.created_by || 'Unknown owner'}
+            </div>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '0.9rem' }}>
@@ -228,6 +263,24 @@ const ProposalAvatar = ({ creator }) => {
               ))}
             </div>
           )}
+          {!isMember && onJoin ? (
+            <div style={{ marginTop: '8px' }}>
+              <NeonButton disabled={joinPending} onClick={() => onJoin(base)}>
+                {joinPending ? 'Joining…' : 'Join DAO'}
+              </NeonButton>
+            </div>
+          ) : null}
+          <div style={{ marginTop: '8px' }}>
+            <NeonButton
+              onClick={() => {
+                try {
+                  window.open(daoUrl, '_blank')
+                } catch {}
+              }}
+            >
+              Open DAO URL
+            </NeonButton>
+          </div>
         </div>
 
         <div>
@@ -366,7 +419,25 @@ export default function DaoUserLists({
   const [joiningDaoId, setJoiningDaoId] = useState(null)
   const [daoStateTabs, setDaoStateTabs] = useState({}) // per dao: 'active' | 'closed'
   const [daoTypeTabs, setDaoTypeTabs] = useState({}) // per dao: 'payout_meta' | 'polls'
-  const [daoRelationFilter, setDaoRelationFilter] = useState('all') // 'all' | 'created' | 'member' | 'viewer'
+  const getDaoFilterFromCookie = () => {
+    if (typeof document === 'undefined') return 'all'
+    const match = (document.cookie || '')
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('daoRelationFilter='))
+    if (!match) return 'all'
+    const val = decodeURIComponent(match.split('=')[1] || '')
+    return ALLOWED_DAO_FILTERS.includes(val) ? val : 'all'
+  }
+
+  const [daoRelationFilter, setDaoRelationFilter] = useState(getDaoFilterFromCookie) // 'all' | 'created' | 'member' | 'viewer'
+  const [showFilters, setShowFilters] = useState(false)
+  const [showProposalFilters, setShowProposalFilters] = useState({})
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.cookie = `daoRelationFilter=${encodeURIComponent(daoRelationFilter)}; path=/; max-age=${60 * 60 * 24 * 30}`
+  }, [daoRelationFilter])
   const popup = useContext(PopupContext)
   const client = useClient()
 
@@ -538,7 +609,7 @@ export default function DaoUserLists({
       const isCreator = sameUser(dao.created_by, user)
       const isMember = membershipMap.get(dao.project_id)
       if (daoRelationFilter === 'created') return isCreator
-      if (daoRelationFilter === 'member') return isMember && !isCreator
+      if (daoRelationFilter === 'member') return isMember || isCreator
       if (daoRelationFilter === 'viewer') return !isCreator && !isMember
       return true
     },
@@ -547,7 +618,7 @@ export default function DaoUserLists({
 
   const isClosedProposal = (p) => {
     const state = (p.state || '').toLowerCase()
-    return Boolean(p.result) || state === 'closed' || state === 'executed' || state === 'completed' || state === 'ready'
+    return Boolean(p.result) || state === 'closed' || state === 'executed' || state === 'completed' || state === 'ready' || state === 'failed'
   }
 
   const renderHeader = (label, collapsed, setCollapsed, count, extra = null) => (
@@ -646,29 +717,50 @@ const renderDaoList = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '6px' }}>
-        {[
-          { key: 'all', label: 'All' },
-          { key: 'created', label: 'Created' },
-          { key: 'member', label: 'Member' },
-          { key: 'viewer', label: 'Viewer' },
-        ].map((tab) => (
-          <button
-            key={`rel-${tab.key}`}
-            onClick={() => setDaoRelationFilter(tab.key)}
-            style={{
-              border: '1px solid var(--color-primary-darkest)',
-              background: daoRelationFilter === tab.key ? 'var(--color-primary-darkest)' : 'transparent',
-              color: 'var(--color-primary)',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', position: 'relative', zIndex: 2, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setShowFilters((prev) => !prev)}
+          style={{
+            border: '1px solid var(--color-primary-darkest)',
+            background: showFilters ? 'var(--color-primary)' : 'transparent',
+            color: showFilters ? 'black' : 'var(--color-primary)',
+            padding: '4px 8px',
+            borderRadius: '0',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+          title="Toggle filters"
+        >
+          <FontAwesomeIcon icon={showFilters ? faChevronLeft : faFilter} />
+        </button>
+        {showFilters && (
+          <>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'created', label: 'Created' },
+              { key: 'member', label: 'Member' },
+              { key: 'viewer', label: 'Public' },
+            ].map((tab) => (
+              <button
+                key={`rel-${tab.key}`}
+                onClick={() => setDaoRelationFilter(tab.key)}
+                style={{
+                  border: '1px solid var(--color-primary-darkest)',
+                  background: daoRelationFilter === tab.key ? 'var(--color-primary)' : 'transparent',
+                  color: daoRelationFilter === tab.key ? 'black' : 'var(--color-primary)',
+                  padding: '4px 8px',
+                  borderRadius: '0',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </>
+        )}
       </div>
       {daos.filter(matchesRelationFilter).map((dao) => {
         const collapsed = collapsedDaos.has(dao.project_id)
@@ -691,7 +783,7 @@ const renderDaoList = () => {
               border: '1px solid var(--color-primary-darkest)',
               borderRadius: '8px',
               padding: '8px',
-              background: 'rgba(0,0,0,0.3)',
+              background: 'rgba(0, 0, 0, 0.7)',
             }}
           >
             <div
@@ -743,11 +835,11 @@ const renderDaoList = () => {
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 {String(dao.created_by || '').toLowerCase() === String(user || '').toLowerCase() && (
-                  <>
+                  isMobile ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleOwnerAction(dao, 'project_pause')
+                        openOwnerMenu(dao)
                       }}
                       style={{
                         background: 'transparent',
@@ -759,32 +851,54 @@ const renderDaoList = () => {
                         alignItems: 'center',
                         gap: '6px',
                       }}
-                      title="Pause / Unpause DAO"
+                      title="Owner actions"
                     >
-                      <FontAwesomeIcon icon={faPause} />
-                      {!isMobile && <span>Pause</span>}
+                      <FontAwesomeIcon icon={faBars} />
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleOwnerAction(dao, 'project_transfer')
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid var(--color-primary-darkest)',
-                        color: 'var(--color-primary)',
-                        padding: '4px 8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                      title="Change owner"
-                    >
-                      <FontAwesomeIcon icon={faUserShield} />
-                      {!isMobile && <span>Owner</span>}
-                    </button>
-                  </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOwnerAction(dao, 'project_pause')
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--color-primary-darkest)',
+                          color: 'var(--color-primary)',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                        title="Pause / Unpause DAO"
+                      >
+                        <FontAwesomeIcon icon={faPause} />
+                        {!isMobile && <span>Pause</span>}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOwnerAction(dao, 'project_transfer')
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--color-primary-darkest)',
+                          color: 'var(--color-primary)',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                        title="Change owner"
+                      >
+                        <FontAwesomeIcon icon={faUserShield} />
+                        {!isMobile && <span>Owner</span>}
+                      </button>
+                    </>
+                  )
                 )}
                 <button
                   onClick={(e) => {
@@ -804,7 +918,7 @@ const renderDaoList = () => {
                   title="Create proposal"
                 >
                   <FontAwesomeIcon icon={faPlusCircle} />
-                  <span>Proposal</span>
+                  {!isMobile && <span>Proposal</span>}
                 </button>
                 {/* <button
                   onClick={(e) => {
@@ -842,50 +956,84 @@ const renderDaoList = () => {
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '6px', alignItems: 'center' }}>
-                      {['active', 'closed'].map((tab) => (
-                        <button
-                          key={`state-${dao.project_id}-${tab}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDaoStateTabs((prev) => ({ ...prev, [dao.project_id]: tab }))
-                          }}
-                          style={{
-                            border: '1px solid var(--color-primary-darkest)',
-                            background: stateTab === tab ? 'var(--color-primary-darkest)' : 'transparent',
-                            color: 'var(--color-primary)',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                          }}
-                        >
-                          {tab === 'active' ? 'Active' : 'Closed'}
-                        </button>
-                      ))}
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
-                        {['all', 'payout_meta', 'polls'].map((tab) => (
-                          <button
-                            key={`type-${dao.project_id}-${tab}`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setDaoTypeTabs((prev) => ({ ...prev, [dao.project_id]: tab }))
-                            }}
-                            style={{
-                              border: '1px solid var(--color-primary-darkest)',
-                              background: typeTab === tab ? 'var(--color-primary-darkest)' : 'transparent',
-                              color: 'var(--color-primary)',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              fontSize: '0.85rem',
-                            }}
-                          >
-                            {tab === 'payout_meta' ? 'Payout/Meta' : tab === 'polls' ? 'Polls' : 'All'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    {(() => {
+                      const showProposalFilterRow = showProposalFilters[dao.project_id] || false
+                      return (
+                        <>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '6px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setShowProposalFilters((prev) => ({
+                                  ...prev,
+                                  [dao.project_id]: !showProposalFilterRow,
+                                }))
+                              }}
+                              style={{
+                                border: '1px solid var(--color-primary-darkest)',
+                                background: showProposalFilterRow ? 'var(--color-primary)' : 'transparent',
+                                color: showProposalFilterRow ? 'black' : 'var(--color-primary)',
+                                padding: '4px 8px',
+                                borderRadius: '0',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                              }}
+                              title="Toggle proposal filters"
+                            >
+                              <FontAwesomeIcon icon={showProposalFilterRow ? faChevronLeft : faFilter} />
+                            </button>
+                            {showProposalFilterRow && (
+                              <>
+                                {['active', 'closed'].map((tab) => (
+                                  <button
+                                    key={`state-${dao.project_id}-${tab}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setDaoStateTabs((prev) => ({ ...prev, [dao.project_id]: tab }))
+                                    }}
+                                    style={{
+                                      border: '1px solid var(--color-primary-darkest)',
+                                      background: stateTab === tab ? 'var(--color-primary)' : 'transparent',
+                                      color: stateTab === tab ? 'black' : 'var(--color-primary)',
+                                      padding: '4px 8px',
+                                      borderRadius: '0',
+                                      cursor: 'pointer',
+                                      fontSize: '0.85rem',
+                                    }}
+                                  >
+                                    {tab === 'active' ? 'Active' : 'Closed'}
+                                  </button>
+                                ))}
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+                                  {['all', 'payout_meta', 'polls'].map((tab) => (
+                                    <button
+                                      key={`type-${dao.project_id}-${tab}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setDaoTypeTabs((prev) => ({ ...prev, [dao.project_id]: tab }))
+                                      }}
+                                      style={{
+                                        border: '1px solid var(--color-primary-darkest)',
+                                        background: typeTab === tab ? 'var(--color-primary)' : 'transparent',
+                                        color: typeTab === tab ? 'black' : 'var(--color-primary)',
+                                        padding: '4px 8px',
+                                        borderRadius: '0',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                      }}
+                                    >
+                                      {tab === 'payout_meta' ? 'Payout/Meta' : tab === 'polls' ? 'Polls' : 'All'}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )
+                    })()}
                     {filteredProposals.length === 0 ? (
                       <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
                         No proposals in this filter.
@@ -1282,12 +1430,27 @@ const renderDaoList = () => {
 
   const openDaoDetail = useCallback(
     (projectId) => {
+      const daoRow = projects.find((p) => Number(p.project_id) === Number(projectId))
+      const isMember =
+        !!membershipMap.get(projectId) ||
+        sameUser(daoRow?.created_by, user)
+      const canJoin = !isMember && daoRow
       popup?.openPopup?.({
         title: `DAO #${projectId}`,
         body: () => (
           <DaoDetail
             projectId={projectId}
             client={client}
+            isMember={isMember}
+            joinPending={joiningDaoId === projectId}
+            isMobile={isMobile}
+            onJoin={
+              canJoin
+                ? (base) => {
+                    handleJoinDao(base || daoRow)
+                  }
+                : null
+            }
             onCreateProposal={(pid) => {
               onCreateProposal?.(pid)
               popup?.closePopup?.()
@@ -1297,7 +1460,7 @@ const renderDaoList = () => {
         ),
       })
     },
-    [client, popup, onCreateProposal, openProposalDetail]
+    [client, popup, onCreateProposal, openProposalDetail, projects, membershipMap, user, handleJoinDao, joiningDaoId]
   )
 
   const handleOwnerAction = (dao, fnName) => {
@@ -1311,6 +1474,59 @@ const renderDaoList = () => {
     }))
     setStep(2)
   }
+
+  const openOwnerMenu = useCallback(
+    (dao) => {
+      popup?.openPopup?.({
+        title: 'Owner actions',
+        body: () => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button
+              onClick={() => {
+                handleOwnerAction(dao, 'project_pause')
+                popup?.closePopup?.()
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color: 'var(--color-primary)',
+                padding: '8px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <FontAwesomeIcon icon={faPause} />
+              <span>Pause / Unpause</span>
+            </button>
+            <button
+              onClick={() => {
+                handleOwnerAction(dao, 'project_transfer')
+                popup?.closePopup?.()
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color: 'var(--color-primary)',
+                padding: '8px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <FontAwesomeIcon icon={faUserShield} />
+              <span>Change owner</span>
+            </button>
+          </div>
+        ),
+      })
+    },
+    [popup, handleOwnerAction]
+  )
 
   return (
     <div
