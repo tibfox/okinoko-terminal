@@ -8,6 +8,20 @@ import { TransactionContext } from '../transactions/context';
 
 import { PopupContext } from '../popup/context.js'
 
+const getDefaultValue = (p) => {
+  if (!p) return ''
+  if (p.type === 'bool' || p.type === 'boolean') return false
+  if (p.type === 'number') return 0
+  if (p.type?.startsWith('meta-')) return {}
+  if (p.type === 'address') return 'hive:'
+  return ''
+}
+
+const getMandatoryDefault = (p) => {
+  if (!p?.mandatory) return ''
+  return getDefaultValue(p)
+}
+
 const successBeep = 800
 const successLength = 100
 const failureBeep = 270
@@ -157,14 +171,6 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
 
     const metaAsArrayGlobal = fn?.metaAsArray ?? false
 
-    const getDefaultValue = (p) => {
-      if (p.type === 'bool') return false
-      if (p.type === 'number') return 0
-      if (p.type?.startsWith('meta-')) return {}
-      if (p.type === 'address') return 'hive:'
-      return ''
-    }
-
     var action = fn.name
     switch (fn.parse) {
 
@@ -249,7 +255,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
       case 'raw': {
         const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
         const val =
-          params?.[first?.name] ?? getDefaultValue(first ?? { type: 'string' })
+          params?.[first?.name] ?? getMandatoryDefault(first ?? { type: 'string', mandatory: true })
         console.log('action: ' + action)
         return { payload: val != null ? val.toString() : '', intents, action }
       }
@@ -279,7 +285,10 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         const str = ps
           .filter((p) => p.type !== 'vscIntent')
           .map((p) => {
-            let val = params?.[p.name] ?? getDefaultValue(p)
+            let val = params?.[p.name]
+            if (val === undefined || val === null || val === '') {
+              val = getMandatoryDefault(p)
+            }
 
             // Pull from parameter-level config, fallback to standard values
             const trueOut = p.boolTrue != null ? String(p.boolTrue) : 'true'
@@ -289,8 +298,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
             if (isBoolType(p)) {
               const parsed = toBool(val)
               if (parsed === true) val = trueOut
-              else if (parsed === false) val = falseOut
-              // else leave val as-is (fallback)
+              else if (parsed === false || parsed === null || parsed === undefined || val === '') val = falseOut
             }
 
             // Ensure val is a string
@@ -322,7 +330,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
           let value = params?.[p.name]
 
           if (value === undefined || value === null || value === '') {
-            value = getDefaultValue(p)
+            value = getMandatoryDefault(p)
           }
 
           const metaAsArray = p.metaAsArray ?? metaAsArrayGlobal
@@ -453,7 +461,11 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
 
       return (fn?.parameters ?? []).every((p) => {
         if (!p.mandatory) return true
-        const val = inputParams?.[p.name]
+        let val = inputParams?.[p.name]
+
+        if ((val === undefined || val === null || val === '') && p.mandatory && (p.type === 'bool' || p.type === 'boolean')) {
+          val = getDefaultValue(p)
+        }
 
         if (p.type === 'vscIntent') {
           if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) return false
@@ -496,6 +508,9 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
             )
           }
           return
+        }
+        if ((val === undefined || val === null || val === '') && p.mandatory && (p.type === 'bool' || p.type === 'boolean')) {
+          val = getDefaultValue(p)
         }
         if (val === '' || val === undefined || val === null) {
           issues.push(`Missing value for "${p.name}"`)

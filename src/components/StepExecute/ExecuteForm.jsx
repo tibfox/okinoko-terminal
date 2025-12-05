@@ -16,7 +16,7 @@ import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
 
-const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
+const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 const RC_LIMIT_DEFAULT = 10000
 const DAO_PROJECTS_QUERY = `
@@ -365,9 +365,11 @@ export default function ExecuteForm({
 
   // Auto-fill proposal cost when selecting project
   useEffect(() => {
-    if (!isDaoContract || fn?.name !== 'proposal_create') return
+    if (fn?.name !== 'proposal_create') return
     if (!projectIdParam || !proposalCostParam) return
-    const selectedProject = params[projectIdParam.name]
+    const selectedProject =
+      params[projectIdParam.name] ??
+      params[projectIdParam.payloadName || projectIdParam.name]
     if (!selectedProject) return
     const proj = daoProjects.find(
       (p) => Number(p.id) === Number(selectedProject)
@@ -378,20 +380,18 @@ export default function ExecuteForm({
       amount: Number(proj.proposal_cost || 0).toFixed(3),
       asset: proj.asset,
     }
-    const current = params[proposalCostParam.name]
-    if (current) {
-      const sameAmount =
-        current.amount !== undefined &&
-        current.amount !== '' &&
-        Number(current.amount) === Number(desired.amount)
-      const sameAsset =
-        (current.asset || '').toUpperCase() === desired.asset
-      if (sameAmount && sameAsset) return
-    }
-    setParams((prev) => ({
-      ...prev,
-      [proposalCostParam.name]: desired,
-    }))
+    console.log('[proposal_create] autofill cost', {
+      selectedProject,
+      desired,
+      projectIdParam,
+      proposalCostParam,
+    })
+    setParams((prev) => {
+      const next = { ...prev }
+      next[proposalCostParam.name] = desired
+      next[proposalCostParam.payloadName || proposalCostParam.name] = desired
+      return next
+    })
   }, [
     daoProjects,
     fn,
@@ -576,13 +576,29 @@ export default function ExecuteForm({
       return (
         <NeonListDropdown
           value={value}
-          onChange={(val) =>
-            setParams((prev) => ({
-              ...prev,
-              [p.name]: Number(val),
-              [p.payloadName || p.name]: Number(val),
-            }))
-          }
+          onChange={(val) => {
+            const numericVal = Number(val)
+            setParams((prev) => {
+              const next = {
+                ...prev,
+                [p.name]: numericVal,
+                [p.payloadName || p.name]: numericVal,
+              }
+              if (fn?.name === 'proposal_create' && proposalCostParam) {
+                const proj = daoProjects.find((d) => Number(d.id) === Number(numericVal))
+                if (proj && proj.proposal_cost !== undefined && proj.proposal_cost !== null) {
+                  const desired = {
+                    amount: Number(proj.proposal_cost || 0).toFixed(3),
+                    asset: proj.asset,
+                  }
+                  next[proposalCostParam.name] = desired
+                  next[proposalCostParam.payloadName || proposalCostParam.name] = desired
+                  console.log('[proposal_create] dropdown autofill cost', { numericVal, desired })
+                }
+              }
+              return next
+            })
+          }}
           placeholder={daoProjects.length ? 'Select a DAO' : 'No accessible DAOs found'}
           options={daoProjects.map((proj) => ({
             value: String(proj.id),
@@ -1361,14 +1377,44 @@ export default function ExecuteForm({
     }
 
     if (p.type === 'bool') {
-      return (
-        <NeonSwitch
-          name=""
-          checked={!!params[p.name]}
-          onChange={(val) =>
+      const falseLabel =
+        p.displayFalse ??
+        p.DisplayFalse ??
+        p.displayfalse ??
+        p.display_false ??
+        p.boolFalse ??
+        null
+      const trueLabel =
+        p.displayTrue ??
+        p.DisplayTrue ??
+        p.displaytrue ??
+        p.display_true ??
+        p.boolTrue ??
+        null
+     const switchControl = (
+       <NeonSwitch
+         name=""
+         checked={!!params[p.name]}
+         onChange={(val) =>
             setParams((prev) => ({ ...prev, [p.name]: val }))
           }
         />
+      )
+      if (!falseLabel && !trueLabel) return switchControl
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {falseLabel ? (
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+              {falseLabel}
+            </span>
+          ) : null}
+          {switchControl}
+          {trueLabel ? (
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+              {trueLabel}
+            </span>
+          ) : null}
+        </div>
       )
     }
 
@@ -1775,6 +1821,34 @@ export default function ExecuteForm({
           onChange={handleChange}
           hideLabel
           style={{ marginTop: '4px' }}
+        />
+      )
+    }
+
+    if (p.type === 'url') {
+      const value = params[p.name] ?? ''
+      const isValidUrl = (val) => {
+        try {
+          const url = new URL(val)
+          return !!url.protocol && !!url.host
+        } catch {
+          return false
+        }
+      }
+      const valid = value === '' || isValidUrl(value)
+      return (
+        <FloatingLabelInput
+          label={labelText}
+          type="text"
+          placeholder="https://example.com"
+          value={value}
+          onChange={(e) => setParams((prev) => ({ ...prev, [p.name]: e.target.value }))}
+          hideLabel
+          style={{
+            marginTop: '4px',
+            borderColor: valid ? undefined : 'red',
+            boxShadow: valid ? 'none' : '0 0 8px red',
+          }}
         />
       )
     }

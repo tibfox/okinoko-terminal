@@ -111,7 +111,7 @@
       "name": "Ōkinoko In-A-Row (beta)",
       "id": 2,
       "sortIndex": 2,
-      "vscId": "vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh",
+      "vscId": "vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-11-06T14:53:27",
       "verifiedOn": "2025-11-06T14:54:20",
@@ -144,9 +144,19 @@
           "hintText": "",
           "groupHeader": ""
         },
+        
+        {
+          "name": "6",
+          "friendlyName": "Gomoku Freestyle",
+          "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve at least five in a row. To ensure fairness we use Swap2 rules for the opening moves.",
+          "parse": "game",
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": ""
+        },
         {
           "name": "3",
-          "friendlyName": "Gomoku (beta)",
+          "friendlyName": "Gomoku",
           "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row (not more). To ensure fairness we use Swap2 rules for the opening moves.",
           "parse": "game",
           "parameters": [],
@@ -168,7 +178,7 @@
       "name": "Ōkinoko DAO (beta)",
       "id": 2,
       "sortIndex": 3,
-      "vscId": "vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt",
+      "vscId": "vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-11-28T22:20:57",
       "verifiedOn": "unverified",
@@ -206,7 +216,9 @@
               "hintText": "Choose between democratic (1 vote per member) or stake-weighted voting.",
               "boolFalse": "0",
               "boolTrue": "1",
-              "sortIndex": 3
+              "sortIndex": 3,
+              "displayTrue": "Stake-weighted",
+              "displayFalse": "Democratic"
             },
             {
               "name": "Threshold Percent",
@@ -301,14 +313,16 @@
               "sortIndex": 14
             },
             {
-              "name": "Proposal Creator Restriction (members/public)",
+              "name": "Proposal Creator Restriction",
               "payloadName": "creatorRestriction",
               "type": "bool",
               "mandatory": false,
               "hintText": "Restrict proposal creation to members only or allow the public.",
               "boolFalse": "members",
               "boolTrue": "public",
-              "sortIndex": 15
+              "sortIndex": 15,
+              "displayTrue": "Public",
+              "displayFalse": "Members only"
             },
             {
               "name": "Membership Payload Format ({nft}|{caller})",
@@ -325,6 +339,14 @@
               "mandatory": true,
               "hintText": "This is the initial deposit required to create the project. Excess funds after stake will go to the treasury.",
               "sortIndex": 17
+            },
+            {
+              "name": "Project URL",
+              "payloadName": "url",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "Optional URL for this DAO",
+              "sortIndex": 18
             }
           ],
           "hintText": "",
@@ -580,9 +602,17 @@
               "name": "Proposal cost",
               "payloadName": "vscIntent",
               "type": "vscIntent",
-              "mandatory": false,
+              "mandatory": true,
               "hintText": "This is the cost of the proposal you will pay in order to create the proposal.",
               "sortIndex": 10
+            },
+            {
+              "name": "Proposal URL",
+              "payloadName": "url",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "Optional URL for this proposal",
+              "sortIndex": 11
             }
           ],
           "hintText": "",

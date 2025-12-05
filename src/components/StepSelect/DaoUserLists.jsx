@@ -26,7 +26,7 @@ import PollPie from './PollPie.jsx'
 const sameUser = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase()
 
 
-const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
+const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_JOIN_FN = 'project_join'
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 const ALLOWED_DAO_FILTERS = ['all', 'created', 'member', 'viewer']
@@ -39,6 +39,7 @@ const DAO_USER_QUERY = gql`
       description
       created_by
       funds_asset
+      url
       voting_system
       threshold_percent
       quorum_percent
@@ -183,7 +184,7 @@ const ProposalAvatar = ({ creator }) => {
     })
     const proposals = Array.from(proposalsMap.values())
     const treasury = detailData.treasury || []
-    const daoUrl = base.url || `https://example.com/dao`
+    const daoUrl = base.url
 
     const treasuryTotals = treasury.reduce((acc, t) => {
       const key = (t.asset || '').toUpperCase()
@@ -204,17 +205,19 @@ const ProposalAvatar = ({ creator }) => {
             <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{base.name || `DAO #${projectId}`}</div>
             <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
             <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
-            <div style={{ marginTop: '8px' }}>
-              <NeonButton
-                onClick={() => {
-                  try {
-                    window.open(daoUrl, '_blank')
-                  } catch {}
-                }}
-              >
-                Open DAO URL
-              </NeonButton>
-            </div>
+            {daoUrl ? (
+              <div style={{ marginTop: '8px' }}>
+                <NeonButton
+                  onClick={() => {
+                    try {
+                      window.open(daoUrl, '_blank')
+                    } catch {}
+                  }}
+                >
+                  Open DAO URL
+                </NeonButton>
+              </div>
+            ) : null}
           </div>
           <div
             style={{
@@ -375,6 +378,7 @@ const DAO_DETAIL_QUERY = gql`
       stake_min_amount
       proposals_members_only
       voting_system
+      url
       threshold_percent
       quorum_percent
       proposal_duration_hours
@@ -395,6 +399,7 @@ const DAO_DETAIL_QUERY = gql`
       created_by
       member
       member_active
+      url
     }
     treasury: okinoko_dao_treasury_movements(where: { project_id: { _eq: $projectId } }) {
       direction
@@ -433,6 +438,7 @@ export default function DaoUserLists({
   const [daoRelationFilter, setDaoRelationFilter] = useState(getDaoFilterFromCookie) // 'all' | 'created' | 'member' | 'viewer'
   const [showFilters, setShowFilters] = useState(false)
   const [showProposalFilters, setShowProposalFilters] = useState({})
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(null)
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -833,72 +839,27 @@ const renderDaoList = () => {
                   {relationLabel(dao)}
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
                 {String(dao.created_by || '').toLowerCase() === String(user || '').toLowerCase() && (
-                  isMobile ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openOwnerMenu(dao)
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid var(--color-primary-darkest)',
-                        color: 'var(--color-primary)',
-                        padding: '4px 8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                      title="Owner actions"
-                    >
-                      <FontAwesomeIcon icon={faBars} />
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleOwnerAction(dao, 'project_pause')
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid var(--color-primary-darkest)',
-                          color: 'var(--color-primary)',
-                          padding: '4px 8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                        title="Pause / Unpause DAO"
-                      >
-                        <FontAwesomeIcon icon={faPause} />
-                        {!isMobile && <span>Pause</span>}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleOwnerAction(dao, 'project_transfer')
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid var(--color-primary-darkest)',
-                          color: 'var(--color-primary)',
-                          padding: '4px 8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                        title="Change owner"
-                      >
-                        <FontAwesomeIcon icon={faUserShield} />
-                        {!isMobile && <span>Owner</span>}
-                      </button>
-                    </>
-                  )
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setOwnerMenuOpen((prev) => (prev === dao.project_id ? null : dao.project_id))
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--color-primary-darkest)',
+                      color: 'var(--color-primary)',
+                      padding: '4px 8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                    title="Owner actions"
+                  >
+                    <FontAwesomeIcon icon={faBars} />
+                  </button>
                 )}
                 <button
                   onClick={(e) => {
@@ -920,6 +881,66 @@ const renderDaoList = () => {
                   <FontAwesomeIcon icon={faPlusCircle} />
                   {!isMobile && <span>Proposal</span>}
                 </button>
+                {ownerMenuOpen === dao.project_id && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      right: 0,
+                      background: 'rgba(0,0,0,0.85)',
+                      border: '1px solid var(--color-primary-darkest)',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      zIndex: 5,
+                      minWidth: '160px',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => {
+                        handleOwnerAction(dao, 'project_pause')
+                        setOwnerMenuOpen(null)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--color-primary-darkest)',
+                        color: 'var(--color-primary)',
+                        padding: '6px 8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faPause} />
+                      <span>Pause / Unpause</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleOwnerAction(dao, 'project_transfer')
+                        setOwnerMenuOpen(null)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--color-primary-darkest)',
+                        color: 'var(--color-primary)',
+                        padding: '6px 8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faUserShield} />
+                      <span>Change owner</span>
+                    </button>
+                  </div>
+                )}
                 {/* <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -1475,58 +1496,6 @@ const renderDaoList = () => {
     setStep(2)
   }
 
-  const openOwnerMenu = useCallback(
-    (dao) => {
-      popup?.openPopup?.({
-        title: 'Owner actions',
-        body: () => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              onClick={() => {
-                handleOwnerAction(dao, 'project_pause')
-                popup?.closePopup?.()
-              }}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--color-primary-darkest)',
-                color: 'var(--color-primary)',
-                padding: '8px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <FontAwesomeIcon icon={faPause} />
-              <span>Pause / Unpause</span>
-            </button>
-            <button
-              onClick={() => {
-                handleOwnerAction(dao, 'project_transfer')
-                popup?.closePopup?.()
-              }}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--color-primary-darkest)',
-                color: 'var(--color-primary)',
-                padding: '8px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <FontAwesomeIcon icon={faUserShield} />
-              <span>Change owner</span>
-            </button>
-          </div>
-        ),
-      })
-    },
-    [popup, handleOwnerAction]
-  )
 
   return (
     <div

@@ -12,8 +12,8 @@ import { useAioha } from '@aioha/react-ui'
 import { PopupContext } from '../../popup/context.js'
 
 const STORAGE_KEY = 'stepSelectActivePage'
-const IN_A_ROW_VSC_ID = 'vsc1BV7jzektV1eyh4Wyfaet1Xfz1WzDH72hRh'
-const DAO_VSC_ID = 'vsc1BVa7SPMVKQqsJJZVp2uPQwmxkhX4qbugGt'
+const IN_A_ROW_VSC_ID = 'vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n'
+const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 // const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 

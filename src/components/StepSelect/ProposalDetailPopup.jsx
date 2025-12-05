@@ -13,6 +13,7 @@ const PROPOSAL_DETAIL_QUERY = gql`
       name
       description
       metadata
+      url
       options
       payouts
       outcome_meta
@@ -83,10 +84,15 @@ const ProposalAvatar = ({ creator }) => {
 
 export default function ProposalDetailPopup({ proposal, isMember, onVote, onTally, onExecute }) {
   const proposalId = proposal?.proposal_id
+  const numericProposalId = Number(proposalId)
+  const hasProposalId = proposalId !== undefined && proposalId !== null && !Number.isNaN(numericProposalId)
+  if (!hasProposalId) {
+    console.warn('[ProposalDetailPopup] Missing proposal_id in payload', proposal)
+  }
   const [{ data, fetching, error }] = useQuery({
     query: PROPOSAL_DETAIL_QUERY,
-    variables: { proposalId },
-    pause: !proposalId,
+    variables: { proposalId: numericProposalId },
+    pause: !hasProposalId,
     requestPolicy: 'network-only',
   })
 
@@ -124,10 +130,17 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
     .filter(Boolean)
 
   if (fetching) {
+    console.log('[ProposalDetailPopup] fetching proposal', proposalId)
     return <div>Loading proposal…</div>
   }
 
-  if (error || !detail?.proposal_id) {
+  const hasDetailId =
+    detail?.proposal_id !== undefined &&
+    detail?.proposal_id !== null &&
+    !Number.isNaN(Number(detail?.proposal_id))
+
+  if (error || !hasDetailId) {
+    console.error('[ProposalDetailPopup] Failed to load proposal', { proposalId, error, data })
     return <div style={{ color: 'var(--color-primary-lighter)' }}>Could not load proposal details.</div>
   }
 
@@ -149,7 +162,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
     return formatDateUtc(num * 1000) // ready_at is seconds
   }
 
-  const proposalUrl = detail.url || `https://example.com/proposal`
+  const proposalUrl = detail.url
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 900 : false
   const headerLayoutStyle = isMobile
@@ -168,17 +181,19 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
               {detail.description}
             </div>
           ) : null}
-          <div style={{ marginTop: '8px', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-            <NeonButton
-              onClick={() => {
-                try {
-                  window.open(proposalUrl, '_blank')
-                } catch {}
-              }}
-            >
-              Open Proposal URL
-            </NeonButton>
-          </div>
+          {proposalUrl ? (
+            <div style={{ marginTop: '8px', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+              <NeonButton
+                onClick={() => {
+                  try {
+                    window.open(proposalUrl, '_blank')
+                  } catch {}
+                }}
+              >
+                Open Proposal URL
+              </NeonButton>
+            </div>
+          ) : null}
         </div>
         <div
           style={{
