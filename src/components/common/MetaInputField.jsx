@@ -58,7 +58,7 @@ export default function MetaInputField({
     <div
       style={{
         border: '1px solid rgba(0,255,255,0.2)',
-        borderRadius: '6px',
+        
         padding: '6px',
         marginTop: '4px',
         display: 'flex',
@@ -133,7 +133,7 @@ export default function MetaInputField({
               color: '#0ff',
               cursor: 'pointer',
               padding: '0 6px',
-              borderRadius: '4px',
+              
               flexShrink: 0,
             }}
           >

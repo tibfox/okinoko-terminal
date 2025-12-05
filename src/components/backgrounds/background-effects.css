@@ -8,7 +8,7 @@
 }
 
 .background-effect--color-bends {
-  filter: blur(80px);
+  filter: blur(55px); /* softer overall blur without being as heavy as 80px */
   background: radial-gradient(
       circle at 50% 50%,
       color-mix(in srgb, var(--color-primary-darker) 20%, #000000),
@@ -25,16 +25,22 @@
   top: var(--bend-top, -15%);
   left: var(--bend-left, -15%);
   border-radius: 50%;
-  filter: blur(var(--bend-blur, 60px));
-  opacity: var(--bend-opacity, 0.55);
+  filter: blur(var(--bend-blur, 40px)); /* was 60px original; reduced but closer to look */
+  opacity: var(--bend-opacity, 0.5);
   mix-blend-mode: screen;
   transform-origin: center;
+  will-change: transform, opacity;
+  transform: translateZ(0);
   background: radial-gradient(
     circle,
     color-mix(in srgb, var(--color-primary-darker) var(--bend-intensity, 55%), transparent) 0%,
-    transparent 72%
+    transparent 55%
   );
   animation: var(--bend-animation, color-bends-orbit-one 12s ease-in-out infinite alternate);
+}
+
+.color-bends--paused .color-bends__layer {
+  animation-play-state: paused !important;
 }
 
 @keyframes color-bends-orbit-one {
@@ -265,7 +271,6 @@
   /* background: radial-gradient(circle at 50% 50%, var(--color-primary-darker), transparent 40%), #000000; */
   background:  #000000;
   overflow: hidden;
-  
 }
 
 .background-effect--threads::before {
@@ -305,6 +310,11 @@
   animation-iteration-count: infinite;
   animation-direction: var(--strand-direction, alternate);
   will-change: transform;
+  transform: translateZ(0);
+}
+
+.threads--paused .threads__strand {
+  animation-play-state: paused !important;
 }
 
 
@@ -402,6 +412,7 @@
   background-size: 80px 80px;
   opacity: 0.4;
   animation: faulty-grid-flicker 2.8s steps(2) infinite;
+  will-change: opacity;
 }
 
 .faulty-terminal__scan {
@@ -410,6 +421,8 @@
   
   background: linear-gradient(180deg, transparent 0%, var(--color-primary-darkest) 15%, transparent 80%);
   animation: faulty-scan 8s linear infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .faulty-terminal__noise {
@@ -425,6 +438,8 @@
   mix-blend-mode: screen;
   opacity: 0.2;
   animation: faulty-noise 1.2s steps(3) infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 @keyframes faulty-grid-flicker {
@@ -435,6 +450,12 @@
   50% {
     opacity: 0.25;
   }
+}
+
+.faulty-terminal--paused .faulty-terminal__grid,
+.faulty-terminal--paused .faulty-terminal__scan,
+.faulty-terminal--paused .faulty-terminal__noise {
+  animation-play-state: paused !important;
 }
 
 @keyframes faulty-scan {

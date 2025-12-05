@@ -79,7 +79,7 @@ export default function NeonListDropdown({
             minWidth: '100%',
             background: 'rgba(0, 0, 0, 0.95)',
             border: '2px solid var(--color-primary-darkest)',
-            borderRadius: '8px',
+            
             boxShadow: '0 0 18px var(--color-primary-darkest)',
             padding: '0.5rem',
             display: 'flex',
@@ -96,7 +96,7 @@ export default function NeonListDropdown({
               style={{
                 textAlign: 'left',
                 border: '1px solid var(--color-primary-darkest)',
-                borderRadius: '5px',
+                
                 padding: '0.4rem 0.5rem',
                 background: 'rgba(6, 6, 6, 0.9)',
                 color: 'var(--color-primary-lighter)',

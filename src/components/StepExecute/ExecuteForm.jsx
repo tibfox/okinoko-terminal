@@ -695,7 +695,7 @@ export default function ExecuteForm({
                       gap: '6px',
                       background: 'rgba(0,0,0,0.4)',
                       border: '1px solid var(--color-primary-darkest)',
-                      borderRadius: '6px',
+                     
                       padding: '6px 8px',
                     }}
                   >
@@ -755,7 +755,7 @@ export default function ExecuteForm({
                       gap: '6px',
                       background: 'rgba(0,0,0,0.35)',
                       border: '1px solid var(--color-primary-darkest)',
-                      borderRadius: '6px',
+                     
                       padding: '6px 8px',
                       cursor: 'pointer',
                     }}
@@ -795,7 +795,7 @@ export default function ExecuteForm({
                 gap: '8px',
                 background: 'rgba(0,0,0,0.4)',
                 border: '1px solid var(--color-primary-darkest)',
-                borderRadius: '6px',
+               
                 padding: '6px 8px',
               }}
             >
@@ -845,7 +845,7 @@ export default function ExecuteForm({
                 color: 'var(--color-primary)',
                 padding: '6px 10px',
                 cursor: 'pointer',
-                borderRadius: '6px',
+               
               }}
             >
               <FontAwesomeIcon icon={faPlusCircle} />
@@ -1083,7 +1083,7 @@ export default function ExecuteForm({
       const baseInputStyle = {
         background: 'transparent',
         border: '1px solid var(--color-primary-darkest)',
-        borderRadius: '6px',
+       
         color: 'var(--color-primary-lighter)',
         padding: '6px 8px',
       }
@@ -1190,7 +1190,7 @@ export default function ExecuteForm({
                       gap: '8px',
                       padding: '6px 8px',
                       border: '1px solid var(--color-primary-darkest)',
-                      borderRadius: '6px',
+                     
                       background: 'rgba(0,0,0,0.35)',
                       cursor: 'pointer',
                       flexWrap: 'wrap',
@@ -1280,7 +1280,7 @@ export default function ExecuteForm({
                     : 'gray',
                 padding: '6px 10px',
                 cursor: 'pointer',
-                borderRadius: '6px',
+               
               }}
               title="Add meta"
             >
@@ -1498,7 +1498,7 @@ export default function ExecuteForm({
       const amountInputStyle = {
         background: 'transparent',
         border: '1px solid var(--color-primary-darkest)',
-        borderRadius: '6px',
+       
         color: 'var(--color-primary-lighter)',
         padding: '6px 8px',
         minWidth: '100px',
@@ -1507,7 +1507,7 @@ export default function ExecuteForm({
       const addressInputStyle = {
         background: 'transparent',
         border: '1px solid var(--color-primary-darkest)',
-        borderRadius: '6px',
+       
         color: 'var(--color-primary-lighter)',
         padding: '6px 8px',
         minWidth: '200px',
@@ -1613,7 +1613,7 @@ export default function ExecuteForm({
                       gap: '8px',
                       padding: '6px 8px',
                       border: '1px solid var(--color-primary-darkest)',
-                      borderRadius: '6px',
+                     
                       background: 'rgba(0,0,0,0.35)',
                       cursor: 'pointer',
                       flexWrap: 'wrap',
@@ -1697,7 +1697,7 @@ export default function ExecuteForm({
                 color: isValidAmount(payoutAmount) && payoutReceiver ? 'var(--color-primary)' : 'gray',
                 padding: '6px 10px',
                 cursor: 'pointer',
-                borderRadius: '6px',
+               
               }}
               title="Add payout"
             >
@@ -2115,7 +2115,7 @@ export default function ExecuteForm({
                   background: 'rgba(0, 0, 0, 0.9)',
                   border: '1px solid var(--color-primary-darker)',
                   padding: '8px 10px',
-                  borderRadius: '6px',
+                 
                   maxWidth: '280px',
                   color: 'var(--color-primary-lighter)',
                   fontSize: '0.85rem',

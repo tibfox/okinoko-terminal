@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faUserAstronaut } from '@fortawesome/free-solid-svg-icons'
+import { faUserAstronaut, faVoteYea, faCalculator, faPlay, faLink } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { formatUTC } from '../../lib/friendlyDates.js'
 
@@ -168,6 +168,29 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
   const headerLayoutStyle = isMobile
     ? { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }
     : { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'center' }
+  const tableCellLabel = {
+    paddingRight: '12px',
+    paddingBottom: '6px',
+    whiteSpace: 'nowrap',
+    width: '1%',
+    opacity: 0.8,
+  }
+  const tableCellValue = { paddingBottom: '6px' }
+  const popupButtonStyle = {
+    backgroundColor: 'transparent',
+    color: 'var(--color-primary-lighter)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    fontSize: '0.85rem',
+    padding: '0.35em 0.8em',
+    cursor: 'pointer',
+    border: '1px solid var(--color-primary-darkest)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '260px' }}>
@@ -189,8 +212,10 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
                     window.open(proposalUrl, '_blank')
                   } catch {}
                 }}
+                style={popupButtonStyle}
               >
-                Open Proposal URL
+                <FontAwesomeIcon icon={faLink} />
+                <span>Open Proposal URL</span>
               </NeonButton>
             </div>
           ) : null}
@@ -214,34 +239,57 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
       <div
         style={{
           display: 'flex',
-          gap: '10px',
+          gap: '6px',
           flexWrap: 'wrap',
+          justifyContent: 'space-evenly',
           margin: '4px 0 6px',
           alignItems: 'center',
+          width: '100%',
         }}
       >
-        {isMember && <NeonButton onClick={onVote}>Vote</NeonButton>}
-        {isMember && <NeonButton disabled={tallyLocked} onClick={onTally}>
-          {tallyLocked ? 'Tally (after deadline)' : 'Tally'}
-        </NeonButton>}
+        {isMember && (
+          <NeonButton onClick={onVote} style={popupButtonStyle}>
+            <FontAwesomeIcon icon={faVoteYea} />
+            <span>Vote</span>
+          </NeonButton>
+        )}
+        {isMember && (
+          <NeonButton disabled={tallyLocked} onClick={onTally} style={popupButtonStyle}>
+            <FontAwesomeIcon icon={faCalculator} />
+            <span>{tallyLocked ? 'Tally (after deadline)' : 'Tally'}</span>
+          </NeonButton>
+        )}
         {isMember && canExecute && (
-          <NeonButton disabled={!executionReady} onClick={onExecute}>
-            {executionReady ? 'Execute' : 'Execute (after tally)'}
+          <NeonButton disabled={!executionReady} onClick={onExecute} style={popupButtonStyle}>
+            <FontAwesomeIcon icon={faPlay} />
+            <span>{executionReady ? 'Execute' : 'Execute (after tally)'}</span>
           </NeonButton>
         )}
       </div>
       <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-        
-        {createdAt && <div>Created: {formatDateUtc(createdAt)}</div>}
-          
-        <div>
-          Duration: {Number.isFinite(durationHours) ? `${durationHours}h` : 'n/a'}
-          {deadline ? ` (ends ${formatDateUtc(deadline)})` : ''}
-        </div>
-        State: {detail.result?.toUpperCase() || detail.state || 'pending'}
-        {detail.metadata && <div>Metadata: {detail.metadata}</div>}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '0.9rem' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            <tr>
+              <td style={tableCellLabel}>Created</td>
+              <td style={tableCellValue}>{createdAt ? formatDateUtc(createdAt) : 'n/a'}</td>
+            </tr>
+            <tr>
+              <td style={tableCellLabel}>Duration</td>
+              <td style={tableCellValue}>
+                {Number.isFinite(durationHours) ? `${durationHours}h` : 'n/a'}
+                {deadline ? ` (ends ${formatDateUtc(deadline)})` : ''}
+              </td>
+            </tr>
+            <tr>
+              <td style={tableCellLabel}>State</td>
+              <td style={tableCellValue}>{detail.result?.toUpperCase() || detail.state || 'pending'}</td>
+            </tr>
+            <tr>
+              <td style={tableCellLabel}>Metadata</td>
+              <td style={tableCellValue}>{detail.metadata || '—'}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
       {detail.is_poll ? (
@@ -304,40 +352,21 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
       {metaEntries.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
           <div style={{ fontWeight: 700 }}>Outcome Meta</div>
-          {metaEntries.map((entry, idx) => {
-            const eqIdx = entry.indexOf('=')
-            const left = eqIdx === -1 ? entry : entry.slice(0, eqIdx)
-            const right = eqIdx === -1 ? '' : entry.slice(eqIdx + 1)
-            return (
-              <div key={`meta-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {idx === 0 && (
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '8px',
-                      fontWeight: 700,
-                      opacity: 0.8,
-                    }}
-                  >
-                    <div>Key</div>
-                    <div>Value</div>
-                  </div>
-                )}
-                <div
-                  style={{
-                    opacity: 0.9,
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '8px',
-                  }}
-                >
-                  <div>{left}</div>
-                  <div>{right}</div>
-                </div>
-              </div>
-            )
-          })}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              {metaEntries.map((entry, idx) => {
+                const eqIdx = entry.indexOf('=')
+                const left = eqIdx === -1 ? entry : entry.slice(0, eqIdx)
+                const right = eqIdx === -1 ? '' : entry.slice(eqIdx + 1)
+                return (
+                  <tr key={`meta-${idx}`}>
+                    <td style={tableCellLabel}>{left}</td>
+                    <td style={tableCellValue}>{right || '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

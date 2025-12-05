@@ -94,7 +94,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               disabled={txs.length === 0}
               style={{
                 border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: "4px",
+                
                 padding: "4px 10px",
                 background: "transparent",
                 color: "inherit",
@@ -234,7 +234,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                     padding: "6px",
                     fontSize: "11px",
                     overflowX: "auto",
-                    borderRadius: "4px",
+                    
                     color: "var(--color-primary-lighter)",
                   }}
                 >

@@ -176,7 +176,7 @@ export default function ExecutePreview({ jsonPreview, logs }) {
         background: 'rgba(0,255,255,0.1)',
         border: '1px solid var(--color-primary)',
         color: 'var(--color-primary)',
-        borderRadius: '6px',
+       
         fontSize: '0.8rem',
         cursor: 'pointer',
         padding: '4px 8px',

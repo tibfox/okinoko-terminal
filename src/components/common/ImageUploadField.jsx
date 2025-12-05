@@ -55,7 +55,7 @@ export default function ImageUploadField({ paramName, user, params, setParams })
           style={{
             marginTop: '6px',
             border: '1px solid #0ff',
-            borderRadius: '6px',
+            
             padding: '4px',
             background: 'rgba(0, 255, 255, 0.05)',
             display: 'flex',
@@ -75,7 +75,7 @@ export default function ImageUploadField({ paramName, user, params, setParams })
               maxWidth: '180px',
               maxHeight: '180px',
               objectFit: 'contain',
-              borderRadius: '4px',
+              
               filter: 'drop-shadow(0 0 6px #0ff)',
               animation: hasUploaded
                 ? 'scanlinePulse 4s linear infinite'

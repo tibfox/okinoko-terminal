@@ -86,6 +86,7 @@ export function PopupProvider({ children }) {
               <button
                 onClick={closePopup}
                 aria-label="Close popup"
+                className="popup-close-btn"
                 style={{
                   marginTop: "20px",
                   width: "100%",

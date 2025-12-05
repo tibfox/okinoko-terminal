@@ -586,7 +586,7 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           style={{
             minWidth: '70px',
             padding: '4px 10px',
-            borderRadius: '4px',
+            
             border: '1px solid rgba(255, 255, 255, 0.2)',
             background: 'transparent',
             color: 'inherit',
@@ -604,7 +604,7 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           style={{
             minWidth: '70px',
             padding: '4px 10px',
-            borderRadius: '4px',
+            
             border: '1px solid rgba(255, 255, 255, 0.2)',
             background: 'transparent',
             color: 'inherit',

@@ -528,7 +528,7 @@ export default function TerminalContainer({
   const floatingButtonStyle = {
     width: '2rem',
     height: '2rem',
-    borderRadius: '6px',
+    
     border: '2px solid var(--color-primary-darkest)',
     background: '#000',
     color: 'var(--color-primary-darker)',
@@ -592,7 +592,7 @@ export default function TerminalContainer({
                       minWidth: '14rem',
                       background: 'rgba(0, 0, 0, 0.95)',
                       border: '2px solid var(--color-primary-darkest)',
-                      borderRadius: '8px',
+                      
                       boxShadow: '0 0 18px var(--color-primary-darkest)',
                       padding: '0.5rem',
                       display: 'flex',
@@ -630,7 +630,7 @@ export default function TerminalContainer({
                         style={{
                           textAlign: 'left',
                           border: '1px solid var(--color-primary-darkest)',
-                          borderRadius: '5px',
+                          
                           padding: '0.4rem 0.5rem',
                           background:
                             selectedLayoutId === preset.id
@@ -672,7 +672,7 @@ export default function TerminalContainer({
                                 flex: 1,
                                 textAlign: 'left',
                                 border: '1px solid var(--color-primary-darkest)',
-                                borderRadius: '5px',
+                                
                                 padding: '0.4rem 0.5rem',
                                 background:
                                   selectedLayoutId === layout.id
@@ -692,7 +692,7 @@ export default function TerminalContainer({
                               title="Delete saved layout"
                               style={{
                                 width: '2.25rem',
-                                borderRadius: '5px',
+                                
                                 border: '1px solid var(--color-primary-darkest)',
                                 background: 'rgba(20, 20, 20, 0.95)',
                                 color: 'var(--color-primary-darker)',
@@ -718,7 +718,7 @@ export default function TerminalContainer({
                         justifyContent: 'center',
                         gap: '0.35rem',
                         border: '1px solid var(--color-primary-darkest)',
-                        borderRadius: '5px',
+                        
                         padding: '0.45rem 0.6rem',
                         background: 'rgba(0, 0, 0, 0.85)',
                         color: 'var(--color-primary-lighter)',
@@ -759,7 +759,7 @@ export default function TerminalContainer({
                         minWidth: '16rem',
                         background: 'rgba(0, 0, 0, 0.95)',
                         border: '2px solid var(--color-primary-darkest)',
-                        borderRadius: '8px',
+                        
                         boxShadow: '0 0 18px var(--color-primary-darkest)',
                         padding: '0.5rem',
                         display: 'flex',
@@ -786,7 +786,7 @@ export default function TerminalContainer({
                           style={{
                             textAlign: 'left',
                             border: '1px solid var(--color-primary-darkest)',
-                            borderRadius: '5px',
+                            
                             padding: '0.4rem 0.5rem',
                             background:
                               activeEffectId === effect.id
@@ -961,7 +961,7 @@ export default function TerminalContainer({
               right: '-0.5rem',
               width: '1.2rem',
               height: '1.2rem',
-              borderRadius: '4px',
+              
               border: '2px solid var(--color-primary-darkest)',
               background: '#000',
               color: 'var(--color-primary-darker)',
@@ -994,7 +994,7 @@ export default function TerminalContainer({
               right: '-0.5rem',
               bottom: '-0.6rem',
               border: '2px solid var(--color-primary-darkest)',
-              borderRadius: '4px',
+              
               background: '#000',
               color: 'var(--color-primary-darker)',
               display: 'flex',

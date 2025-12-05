@@ -1,4 +1,4 @@
-import { useMemo } from 'preact/hooks'
+import { useEffect, useMemo, useState } from 'preact/hooks'
 import './background-effects.css'
 
 const LAYER_COUNT = 6
@@ -18,17 +18,39 @@ const seededRandom = (seed) => {
 const seededBetween = (seed, min, max) => min + seededRandom(seed) * (max - min)
 
 export default function ColorBendsEffect() {
+  const [paused, setPaused] = useState(false)
+
+  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    return null
+  }
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      setPaused(document.hidden)
+    }
+    const handleBlur = () => setPaused(true)
+    const handleFocus = () => setPaused(false)
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('blur', handleBlur)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('blur', handleBlur)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
+
   const layers = useMemo(() => {
     return Array.from({ length: LAYER_COUNT }).map((_, index) => {
       const seed = (index + 1) * 2.314
       const size = seededBetween(seed * 1.17, 38, 65)
-      const maxSize = size * 16
+      const maxSize = size * 14 // a bit smaller than original *16
       const top = seededBetween(seed * 1.33, -25, 10)
       const left = seededBetween(seed * 1.51, -20, 100)
-      const blur = seededBetween(seed * 1.77, 40, 95)
-      const opacity = seededBetween(seed * 1.93, 0.35, 0.75)
+      const blur = seededBetween(seed * 1.77, 30, 60) // lower than original 40-95
+      const opacity = seededBetween(seed * 1.93, 0.35, 0.7)
       const intensity = seededBetween(seed * 2.18, 35, 70)
-      const duration = seededBetween(seed * 2.35, 8, 16).toFixed(2)
+      const duration = seededBetween(seed * 2.35, 10, 18).toFixed(2)
       const delay = seededBetween(seed * 2.51, -6, 2).toFixed(2)
       const direction = seededRandom(seed * 2.76) > 0.5 ? 'alternate-reverse' : 'alternate'
       const keyframe = KEYFRAMES[index % KEYFRAMES.length]
@@ -51,7 +73,10 @@ export default function ColorBendsEffect() {
   }, [])
 
   return (
-    <div className="background-effect background-effect--color-bends" aria-hidden="true">
+    <div
+      className={`background-effect background-effect--color-bends ${paused ? 'color-bends--paused' : ''}`}
+      aria-hidden="true"
+    >
       {layers.map((layer) => (
         <div key={layer.id} className="color-bends__layer" style={layer.style} />
       ))}

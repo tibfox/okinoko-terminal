@@ -34,7 +34,7 @@ const cellValueStyle = {
 
 const skeletonRowStyle = {
   height: '0.75rem',
-  borderRadius: '4px',
+  
   background: 'linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.2), rgba(255,255,255,0.08))',
 }
 
@@ -173,7 +173,7 @@ export default function AccountDataPanel() {
                 background: 'transparent',
                 color: 'var(--color-primary-lighter)',
                 padding: '0.25rem 0.75rem',
-                borderRadius: '4px',
+                
                 cursor: 'pointer',
                 fontSize: '0.75rem',
                 letterSpacing: '0.1em',

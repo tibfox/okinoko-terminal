@@ -30,7 +30,7 @@ export default function SoundToggleButton({ style = {} }) {
     justifyContent: 'center',
     overflow: 'hidden',
     transition: 'all 0.3s ease',
-    borderRadius: '50%',
+    // borderRadius: '50%',
     textShadow: hovered
       ? '0 0 8px var(--color-primary), 0 0 12px var(--color-primary-lighter)'
       : 'none',

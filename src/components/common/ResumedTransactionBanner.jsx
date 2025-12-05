@@ -7,7 +7,7 @@ export default function ResumedTransactionBanner({ tx }) {
         background: 'rgba(0,255,136,0.1)',
         border: '1px solid var(--color-primary-darker)',
         padding: '8px 12px',
-        borderRadius: '8px',
+        
         fontFamily: 'monospace',
         fontSize: '0.85rem',
         marginBottom: '10px',
