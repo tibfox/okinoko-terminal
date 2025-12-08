@@ -569,6 +569,10 @@ export default function TerminalContainer({
 
   const visualMinimized = renderMinimized
   const headerKey = visualMinimized ? 'header-min' : 'header-full'
+  const fadeStyle = {
+    opacity: contentOpacity,
+    transition: contentOpacity === 0 ? 'opacity 0ms linear' : 'opacity 240ms ease-in-out',
+  }
 
   const resolvedWidth = isMobile
     ? mobileWidth
@@ -1109,6 +1113,7 @@ export default function TerminalContainer({
               maxHeight: isMobile ? '80vh' : visualMinimized ? 'auto' : '100%',
               height: isMobile ? undefined : '100%',
               paddingBottom: isMobile ? '0.1rem' : '0',
+              ...fadeStyle,
             }}
           >
             {children}

@@ -27,8 +27,8 @@ export default function CompactHeader({
         cursor: 'grab',
         display: 'flex',
         justifyContent: 'flex-start',
-        marginBottom: '1.5rem',
         minWidth: 0,
+        marginBottom: '1.5rem',
       }}
     >
       {showGlyphFallback ? (
