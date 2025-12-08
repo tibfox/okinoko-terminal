@@ -494,8 +494,8 @@ export default function MonitorPanel() {
     const disableNext = fetching || rows.length < TX_PAGE_SIZE
 
     return (
-      <>
-        <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -556,7 +556,7 @@ export default function MonitorPanel() {
           onNext: () =>
             setTxPage((prev) => (disableNext ? prev : prev + 1)),
         })}
-      </>
+      </div>
     )
   }
 
@@ -641,8 +641,8 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
     const disableNext = witnessPage >= totalPages
 
     return (
-      <>
-        <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -679,7 +679,7 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           onNext: () =>
             setWitnessPage((prev) => (disableNext ? prev : Math.min(totalPages, prev + 1))),
         })}
-      </>
+      </div>
     )
   }
 
@@ -706,8 +706,8 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
     const disableNext = blockPage >= totalPages
 
     return (
-      <>
-        <div className="neon-scroll" style={{ height: '100%', overflow: 'auto' }} >
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -771,7 +771,7 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           onNext: () =>
             setBlockPage((prev) => (disableNext ? prev : Math.min(totalPages, prev + 1))),
         })}
-      </>
+      </div>
     )
   }
 
@@ -795,7 +795,7 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
         onChange={setActiveTab}
       />
 
-      <div style={{ flex: 1, minHeight: 0 }}>{renderActiveContent()}</div>
+      <div className="neon-scroll" style={{ flex: 1, minHeight: 0 }}>{renderActiveContent()}</div>
     </div>
   )
 }

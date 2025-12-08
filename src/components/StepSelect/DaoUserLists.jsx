@@ -696,6 +696,7 @@ export default function DaoUserLists({
           justifyContent: 'space-between',
           cursor: 'pointer',
           marginTop: '8px',
+          
         }}
         onClick={() => setCollapsed((prev) => !prev)}
         role="button"
@@ -708,7 +709,17 @@ export default function DaoUserLists({
           }
         }}
       >
-        <span>
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            paddingTop: '4px',
+            paddingBottom: '4px',
+            flex: '1 1 0',
+            minWidth: 0,
+          }}
+        >
           {label}
           {/* {typeof count === 'number' ? ` (${count})` : ''} */}
         </span>

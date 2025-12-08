@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'preact/hooks'
+import { useMemo, useState, useEffect, useRef } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
@@ -12,6 +12,18 @@ import { faChevronLeft, faChevronRight, faBolt } from '@fortawesome/free-solid-s
 import MobileTabs from '../common/MobileTabs.jsx'
 import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
+import ResizableDivider from '../common/ResizableDivider.jsx'
+import { getCookie, setCookie } from '../../lib/cookies.js'
+
+const DIVIDER_COOKIE = 'stepExecuteDivider'
+const SPLITTER_WIDTH_PX = 2
+
+const clampPosition = (value, fallback = 0.5) => {
+  if (value === null || value === undefined || value === '') return fallback
+  const num = Number(value)
+  if (!Number.isFinite(num)) return fallback
+  return Math.min(1, Math.max(0, num))
+}
 
 const sortContracts = (list = []) =>
   [...list].sort((a, b) => {
@@ -33,6 +45,12 @@ export default function StepExecute({
   const isMobile = useDeviceBreakpoint()
   const [activePage, setActivePage] = useState('form')
   const [resumedTx, setResumedTx] = useState(null)
+  const [dividerPosition, setDividerPosition] = useState(() => {
+    const saved = typeof document !== 'undefined' ? getCookie(DIVIDER_COOKIE) : null
+    return clampPosition(saved, 0.5)
+  })
+  const [draggingDivider, setDraggingDivider] = useState(false)
+  const layoutRef = useRef(null)
 
   // ✅ load pending tx only after everything mounts
   useEffect(() => {
@@ -44,6 +62,35 @@ export default function StepExecute({
       }
     }, 800) // wait briefly to ensure user/session ready
   }, [])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    setCookie(DIVIDER_COOKIE, dividerPosition, 30)
+  }, [dividerPosition])
+
+  useEffect(() => {
+    if (!draggingDivider) return
+    const handleMove = (event) => {
+      const clientX = event.touches?.[0]?.clientX ?? event.clientX
+      const rect = layoutRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const relative = (clientX - rect.left) / rect.width
+      const clamped = Math.min(1, Math.max(0, relative))
+      const snapped = clamped < 0.06 ? 0 : clamped > 0.94 ? 1 : clamped
+      setDividerPosition(snapped)
+    }
+    const handleUp = () => setDraggingDivider(false)
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleMove, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleMove)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [draggingDivider])
 
   const sortedContracts = useMemo(
     () => sortContracts(contractsCfg.contracts || []),
@@ -84,6 +131,18 @@ export default function StepExecute({
     []
   )
 
+  const leftCollapsed = !isMobile && dividerPosition <= 0.05
+  const rightCollapsed = !isMobile && dividerPosition >= 0.95
+  const leftFraction = dividerPosition
+  const rightFraction = Math.max(0, 1 - dividerPosition)
+  const gridTemplateColumns = isMobile
+    ? '1fr'
+    : leftCollapsed
+      ? `0px ${SPLITTER_WIDTH_PX}px 1fr`
+      : rightCollapsed
+        ? `1fr ${SPLITTER_WIDTH_PX}px 0px`
+        : `${leftFraction}fr ${SPLITTER_WIDTH_PX}px ${rightFraction}fr`
+
   return (
     <TerminalContainer title="Input & Execute Function"
     titleOnMinimize="Execute"
@@ -102,8 +161,8 @@ export default function StepExecute({
         style={{
           display: isMobile ? 'flex' : 'grid',
           flexDirection: isMobile ? 'column' : 'unset',
-          gridTemplateColumns: isMobile ? 'none' : '1fr 1fr',
-          gap: isMobile ? '0' : '20px',
+          gridTemplateColumns,
+          gap: isMobile ? '0' : '0',
           flex: 1,
           minHeight: 0,
           height: '100%',
@@ -111,6 +170,7 @@ export default function StepExecute({
           overflow: 'hidden',
           position: 'relative',
         }}
+        ref={layoutRef}
       >
         {/* FORM (hide only on mobile when not active) */}
         <div
@@ -120,6 +180,9 @@ export default function StepExecute({
             height: '100%',
             overflowY: 'auto',
             flex: 1,
+            minWidth: 0,
+            pointerEvents: leftCollapsed ? 'none' : 'auto',
+            visibility: leftCollapsed ? 'hidden' : 'visible',
           }}
         >
           <ExecuteForm
@@ -135,6 +198,14 @@ export default function StepExecute({
           />
         </div>
 
+        {!isMobile && (
+          <ResizableDivider
+            leftCollapsed={leftCollapsed}
+            rightCollapsed={rightCollapsed}
+            onDragStart={() => setDraggingDivider(true)}
+          />
+        )}
+
         {/* PREVIEW (always visible on desktop) */}
         <div
           style={{
@@ -143,6 +214,10 @@ export default function StepExecute({
             height: '100%',
             overflowY: 'auto',
             flex: 1,
+            minWidth: 0,
+            paddingLeft: isMobile ? '0' : '20px',
+            pointerEvents: rightCollapsed ? 'none' : 'auto',
+            visibility: rightCollapsed ? 'hidden' : 'visible',
           }}
         >
           <ExecutePreview jsonPreview={jsonPreview} logs={logs} />

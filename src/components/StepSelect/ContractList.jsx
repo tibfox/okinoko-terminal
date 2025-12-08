@@ -36,7 +36,6 @@ export default function ContractList({
           maxHeight: isMobile ? '50%' : '100%',
           minHeight: isMobile ? '50%' : '100%',
           overflowY: 'auto',
-          borderRight: !isMobile ? '1px solid var(--color-primary-darkest)' : 'none',
           borderBottom: isMobile ? '1px solid var(--color-primary-darkest)' : 'none',
           paddingRight: !isMobile ? '10px' : 0,
           zIndex: 1,

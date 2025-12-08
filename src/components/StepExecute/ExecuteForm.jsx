@@ -2022,8 +2022,6 @@ export default function ExecuteForm({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        borderRight: isMobile ? 'none' : '1px solid var(--color-primary-darkest)',
-        paddingRight: isMobile ? '0' : '10px',
         overflow: 'hidden',
         minHeight: 0,
         overflowY: isMobile ? 'auto' : 'visible',

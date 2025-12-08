@@ -17,8 +17,7 @@ import { useGameSelection } from './hooks/useGameSelection.js'
 import { deriveGameTypeId } from './gameTypes.js'
 import { Tabs } from '../common/Tabs.jsx'
 import { useRef } from 'preact/hooks'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronRight, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import ResizableDivider from '../common/ResizableDivider.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
 
 const DIVIDER_COOKIE = 'stepGameDivider'
@@ -283,68 +282,11 @@ export default function StepGame({
         </div>
 
         {!isMobile && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'col-resize',
-              position: 'relative',
-              background: 'var(--color-primary-darkest)',
-              userSelect: 'none',
-              width: '100%',
-            }}
-            onMouseDown={() => setDraggingDivider(true)}
-            onTouchStart={(e) => {
-              e.preventDefault()
-              setDraggingDivider(true)
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '0px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '28px',
-                height: '28px',
-                borderRadius: '8px',
-                background: 'black',
-                border: '1px solid var(--color-primary-darker)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                // boxShadow: '0 0 8px rgba(0,0,0,0.4)',
-              }}
-            >
-              {leftCollapsed ? (
-                <FontAwesomeIcon
-                  icon={faChevronRight}
-                  style={{ color: 'var(--color-primary-lightest)', fontSize: '0.9rem' }}
-                />
-              ) : rightCollapsed ? (
-                <FontAwesomeIcon
-                  icon={faChevronLeft}
-                  style={{ color: 'var(--color-primary-lightest)', fontSize: '0.9rem' }}
-                />
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-                  <FontAwesomeIcon
-                    icon={faChevronLeft}
-                    style={{ color: 'var(--color-primary-lightest)', fontSize: '0.9rem' }}
-                  />
-                  <FontAwesomeIcon
-                    icon={faChevronRight}
-                    style={{
-                      color: 'var(--color-primary-lightest)',
-                      fontSize: '0.9rem',
-                      marginLeft: '-6px',
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+          <ResizableDivider
+            leftCollapsed={leftCollapsed}
+            rightCollapsed={rightCollapsed}
+            onDragStart={() => setDraggingDivider(true)}
+          />
         )}
 
         <div

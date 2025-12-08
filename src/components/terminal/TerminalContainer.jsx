@@ -60,6 +60,8 @@ export default function TerminalContainer({
   const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false)
   const [isControlsOpen, setIsControlsOpen] = useState(false)
   const [contentOpacity, setContentOpacity] = useState(1)
+  const [isPixelating, setIsPixelating] = useState(false)
+  const [shouldHideBody, setShouldHideBody] = useState(false)
   
   const hasCustomInitialState =
     initialStateProp && typeof initialStateProp === 'object' && Object.keys(initialStateProp).length > 0
@@ -118,6 +120,10 @@ export default function TerminalContainer({
   useEffect(() => {
     initialStateRef.current = resolvedInitialState
   }, [resolvedInitialStateKey])
+
+  useEffect(() => {
+    setShouldHideBody(isMinimized)
+  }, [])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900)
@@ -500,18 +506,30 @@ export default function TerminalContainer({
 
     clearTimers()
 
-    // Fade out immediately, swap at midpoint, fade back in.
-    setContentOpacity(0)
+    // If maximizing, show body immediately so content is visible during fade-in
+    if (!next) {
+      setShouldHideBody(false)
+    }
+
+    // Start fade out after a brief delay, swap at midpoint, fade back in.
+    fadeTimersRef.current.out = setTimeout(() => {
+      setContentOpacity(0)
+      fadeTimersRef.current.out = null
+    }, 30)
 
     visualSwitchTimerRef.current = setTimeout(() => {
       setRenderMinimized(next)
+      // If minimizing, hide body at midpoint after content fades out
+      if (next) {
+        setShouldHideBody(true)
+      }
       visualSwitchTimerRef.current = null
     }, LAYOUT_ANIMATION_DURATION / 2)
 
     fadeTimersRef.current.in = setTimeout(() => {
       setContentOpacity(1)
       fadeTimersRef.current.in = null
-    }, LAYOUT_ANIMATION_DURATION)
+    }, LAYOUT_ANIMATION_DURATION / 2 + 30)
 
     prevMinimizedRef.current = isMinimized
 
@@ -548,11 +566,23 @@ export default function TerminalContainer({
     handleResetLayout()
   }, [layoutResetToken])
 
-  const toggleMinimize = () => setIsMinimized((prev) => !prev)
+  const toggleMinimize = () => {
+    if (!isMobile && !prefersReducedMotionRef.current) {
+      setIsPixelating(true)
+      setTimeout(() => setIsPixelating(false), LAYOUT_ANIMATION_DURATION)
+    }
+    setIsMinimized((prev) => !prev)
+  }
+
   const handleActivate = () => {
     if (!isMobile) {
       bringToFront()
     }
+  }
+
+  const fadeStyle = {
+    opacity: contentOpacity,
+    transition: 'opacity 100ms ease-in-out',
   }
 
   if (isMobile === null) {
@@ -569,20 +599,16 @@ export default function TerminalContainer({
 
   const visualMinimized = renderMinimized
   const headerKey = visualMinimized ? 'header-min' : 'header-full'
-  const fadeStyle = {
-    opacity: contentOpacity,
-    transition: contentOpacity === 0 ? 'opacity 0ms linear' : 'opacity 240ms ease-in-out',
-  }
 
   const resolvedWidth = isMobile
     ? mobileWidth
-    : isMinimized
+    : visualMinimized
       ? MINIMIZED_DESKTOP_WIDTH
       : desktopWidth
 
   const resolvedHeight = isMobile
     ? undefined
-    : isMinimized
+    : visualMinimized
       ? `${MINIMIZED_DESKTOP_HEIGHT}px`
       : desktopHeight
 
@@ -1023,7 +1049,7 @@ export default function TerminalContainer({
     <>
       <div
         ref={containerRef}
-        className={['terminal', className].filter(Boolean).join(' ')}
+        className={['terminal', className, isPixelating ? 'pixelate-transition' : ''].filter(Boolean).join(' ')}
         onPointerDownCapture={handleActivate}
         style={{
           position: isFloating ? 'fixed' : 'relative',
@@ -1105,14 +1131,16 @@ export default function TerminalContainer({
           <div
             className="terminal-body"
             style={{
-              flex: visualMinimized ? '0' : 1,
-              display: visualMinimized ? 'none' : 'flex',
+              flex: shouldHideBody ? '0' : 1,
+              display: 'flex',
               flexDirection: 'column',
-              overflow: visualMinimized ? 'hidden' : 'auto',
+              overflow: shouldHideBody ? 'hidden' : 'auto',
               minHeight: 0,
-              maxHeight: isMobile ? '80vh' : visualMinimized ? 'auto' : '100%',
-              height: isMobile ? undefined : '100%',
+              maxHeight: isMobile ? '80vh' : shouldHideBody ? 'auto' : '100%',
+              height: shouldHideBody ? 0 : (isMobile ? undefined : '100%'),
               paddingBottom: isMobile ? '0.1rem' : '0',
+              visibility: shouldHideBody ? 'hidden' : 'visible',
+              pointerEvents: shouldHideBody ? 'none' : 'auto',
               ...fadeStyle,
             }}
           >

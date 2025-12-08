@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, useCallback } from 'preact/hooks'
+import { useContext, useEffect, useMemo, useState, useCallback, useRef } from 'preact/hooks'
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
@@ -7,11 +7,22 @@ import ContractDetails from './ContractDetails.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import MobileTabs from '../common/MobileTabs.jsx'
+import ResizableDivider from '../common/ResizableDivider.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import { useAioha } from '@aioha/react-ui'
 import { PopupContext } from '../../popup/context.js'
+import { getCookie, setCookie } from '../../lib/cookies.js'
 
 const STORAGE_KEY = 'stepSelectActivePage'
+const DIVIDER_COOKIE = 'stepSelectDivider'
+const SPLITTER_WIDTH_PX = 2
+
+const clampPosition = (value, fallback = 0.33) => {
+  if (value === null || value === undefined || value === '') return fallback
+  const num = Number(value)
+  if (!Number.isFinite(num)) return fallback
+  return Math.min(1, Math.max(0, num))
+}
 const IN_A_ROW_VSC_ID = 'vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n'
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
@@ -43,11 +54,46 @@ export default function StepSelect({
   const isMobile = useDeviceBreakpoint()
   const [activePage, setActivePage] = useState(getStoredPage)
   const popup = useContext(PopupContext)
+  const [dividerPosition, setDividerPosition] = useState(() => {
+    const saved = typeof document !== 'undefined' ? getCookie(DIVIDER_COOKIE) : null
+    return clampPosition(saved, 0.33)
+  })
+  const [draggingDivider, setDraggingDivider] = useState(false)
+  const layoutRef = useRef(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     sessionStorage.setItem(STORAGE_KEY, activePage)
   }, [activePage])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    setCookie(DIVIDER_COOKIE, dividerPosition, 30)
+  }, [dividerPosition])
+
+  useEffect(() => {
+    if (!draggingDivider) return
+    const handleMove = (event) => {
+      const clientX = event.touches?.[0]?.clientX ?? event.clientX
+      const rect = layoutRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const relative = (clientX - rect.left) / rect.width
+      const clamped = Math.min(1, Math.max(0, relative))
+      const snapped = clamped < 0.06 ? 0 : clamped > 0.94 ? 1 : clamped
+      setDividerPosition(snapped)
+    }
+    const handleUp = () => setDraggingDivider(false)
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleMove, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleMove)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [draggingDivider])
 
   const normalizedUser = (user || '').replace(/^hive:/i, '').toLowerCase()
   const hiveUser = normalizedUser ? `hive:${normalizedUser}` : ''
@@ -129,6 +175,18 @@ export default function StepSelect({
     ]
   }, [isDaoContract, selectedContract])
 
+  const leftCollapsed = !isMobile && dividerPosition <= 0.05
+  const rightCollapsed = !isMobile && dividerPosition >= 0.95
+  const leftFraction = dividerPosition
+  const rightFraction = Math.max(0, 1 - dividerPosition)
+  const gridTemplateColumns = isMobile
+    ? '1fr'
+    : leftCollapsed
+      ? `0px ${SPLITTER_WIDTH_PX}px 1fr`
+      : rightCollapsed
+        ? `1fr ${SPLITTER_WIDTH_PX}px 0px`
+        : `${leftFraction}fr ${SPLITTER_WIDTH_PX}px ${rightFraction}fr`
+
   return (
     <TerminalContainer title="Select Contract Function"
     titleOnMinimize="Contract"
@@ -187,14 +245,16 @@ export default function StepSelect({
         style={{
           display: isMobile ? 'flex' : 'grid',
           flexDirection: isMobile ? 'column' : 'unset',
-          gridTemplateColumns: isMobile ? 'none' : '1fr 2fr',
-          gap: isMobile ? '0' : '25px',
+          gridTemplateColumns,
+          gap: isMobile ? '0' : '0',
           flex: 1,
           minHeight: 0,
           height: '100%',
           width: '100%',
           overflow: 'hidden',
+          position: 'relative',
         }}
+        ref={layoutRef}
       >
         {/* --- Contract List --- */}
         <div
@@ -207,6 +267,8 @@ export default function StepSelect({
             height: '100%',
             minHeight: 0,
             overflowY: 'auto',
+            pointerEvents: leftCollapsed ? 'none' : 'auto',
+            visibility: leftCollapsed ? 'hidden' : 'visible',
           }}
         >
           <ContractList
@@ -221,6 +283,15 @@ export default function StepSelect({
           />
         </div>
 
+        {/* --- Divider --- */}
+        {!isMobile && (
+          <ResizableDivider
+            leftCollapsed={leftCollapsed}
+            rightCollapsed={rightCollapsed}
+            onDragStart={() => setDraggingDivider(true)}
+          />
+        )}
+
         {/* --- Contract Details --- */}
         <div
           style={{
@@ -232,6 +303,9 @@ export default function StepSelect({
             height: '100%',
             minHeight: 0,
             overflowY: 'auto',
+            paddingLeft: isMobile ? '0' : '10px',
+            pointerEvents: rightCollapsed ? 'none' : 'auto',
+            visibility: rightCollapsed ? 'hidden' : 'visible',
           }}
         >
           <ContractDetails
