@@ -9,6 +9,7 @@ export default function CompactHeader({
   const normalizedTitle = title?.toUpperCase().replace(/Ō/g, 'ō') ?? ''
   const { wrapperRef, fontSize, isClamped } = useResponsiveTitleSize({
     text: normalizedTitle,
+    isMinimized,
   })
 
   const showGlyphFallback = isMinimized && isClamped

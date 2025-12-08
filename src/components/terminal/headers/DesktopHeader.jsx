@@ -16,6 +16,7 @@ export default function DesktopHeader({
     .replace(/Ō/g, "ō");
   const { wrapperRef, fontSize, isClamped } = useResponsiveTitleSize({
     text: displayTitle,
+    isMinimized,
   });
 
   const showGlyphFallback = isMinimized && isClamped;

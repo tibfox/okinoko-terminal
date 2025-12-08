@@ -40,6 +40,7 @@ const TerminalWindowContext = createContext({
   bringToFront: () => {},
   triggerLayoutReset: () => {},
   layoutResetToken: 0,
+  layoutTransitionToken: 0,
   layoutPresets: LAYOUT_PRESETS,
   customLayouts: [],
   applyLayoutPreset: () => false,
@@ -233,6 +234,7 @@ export function TerminalWindowProvider({ children }) {
   const layerCounterRef = useRef(1)
   const viewportRef = useRef(getViewportSize())
   const [layoutResetToken, setLayoutResetToken] = useState(0)
+  const [layoutTransitionToken, setLayoutTransitionToken] = useState(0)
   const [customLayouts, setCustomLayouts] = useState(() => readCustomLayouts())
 
   useEffect(() => {
@@ -409,6 +411,7 @@ export function TerminalWindowProvider({ children }) {
       }, {})
 
       layerCounterRef.current = nextZ
+      setLayoutTransitionToken((token) => token + 1)
       setWindows(nextWindows)
       return true
     },
@@ -423,6 +426,7 @@ export function TerminalWindowProvider({ children }) {
       bringToFront,
       triggerLayoutReset,
       layoutResetToken,
+      layoutTransitionToken,
       layoutPresets: LAYOUT_PRESETS,
       customLayouts,
       applyLayoutPreset,
@@ -436,6 +440,7 @@ export function TerminalWindowProvider({ children }) {
       bringToFront,
       triggerLayoutReset,
       layoutResetToken,
+      layoutTransitionToken,
       customLayouts,
       applyLayoutPreset,
       saveCustomLayout,
@@ -458,6 +463,7 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     bringToFront: contextBringToFront,
     triggerLayoutReset,
     layoutResetToken,
+    layoutTransitionToken,
     applyLayoutPreset,
     layoutPresets,
     customLayouts,
@@ -521,6 +527,7 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     bringToFront: () => contextBringToFront(windowId),
     triggerLayoutReset,
     layoutResetToken,
+    layoutTransitionToken,
     layoutPresets,
     applyLayoutPreset,
     customLayouts,

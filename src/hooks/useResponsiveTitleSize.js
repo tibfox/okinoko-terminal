@@ -5,11 +5,13 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 export const TITLE_FONT_MIN = 5
 export const TITLE_FONT_MAX = 16
 const DEFAULT_CHAR_SCALE = 0.7
+const MINIMIZED_MAX = 11
 
 export function useResponsiveTitleSize({
   text,
   min = TITLE_FONT_MIN,
   max = TITLE_FONT_MAX,
+  isMinimized = false,
   charScale = DEFAULT_CHAR_SCALE,
 } = {}) {
   const wrapperRef = useRef(null)
@@ -29,7 +31,8 @@ export function useResponsiveTitleSize({
 
     const charCount = Math.max(text?.replace(/\s+/g, '').length ?? 1, 1)
     const proposed = (width / charCount) * charScale
-    const nextSize = clamp(proposed, min, max)
+    const cap = isMinimized ? Math.min(max, MINIMIZED_MAX) : max
+    const nextSize = clamp(proposed, min, cap)
     setFontSize(nextSize)
 
     requestAnimationFrame(() => {

@@ -2,7 +2,7 @@ import DesktopHeader from './headers/DesktopHeader.jsx'
 import MobileHeader from './headers/MobileHeader.jsx'
 import CompactHeader from './headers/CompactHeader.jsx'
 
-import { useState, useEffect, useMemo, useRef, useContext } from 'preact/hooks'
+import { useState, useEffect, useMemo, useRef, useContext, useLayoutEffect } from 'preact/hooks'
 import { createPortal } from 'preact/compat'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { PopupContext } from '../../popup/context.js'
@@ -34,6 +34,7 @@ const DEFAULT_VIEWPORT_PADDING = 32
 const GRID_ROW_COUNT = 60
 const DEFAULT_GRID_CELL_SIZE = 10
 const MIN_GRID_CELL_SIZE = 6
+const LAYOUT_ANIMATION_DURATION = 250
 
 export default function TerminalContainer({
   title,
@@ -58,6 +59,7 @@ export default function TerminalContainer({
   const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false)
   const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false)
   const [isControlsOpen, setIsControlsOpen] = useState(false)
+  const [contentOpacity, setContentOpacity] = useState(1)
   
   const hasCustomInitialState =
     initialStateProp && typeof initialStateProp === 'object' && Object.keys(initialStateProp).length > 0
@@ -82,12 +84,14 @@ export default function TerminalContainer({
     bringToFront,
     triggerLayoutReset,
     layoutResetToken,
+    layoutTransitionToken,
     layoutPresets,
     applyLayoutPreset,
     customLayouts = [],
     saveCustomLayout,
     deleteCustomLayout,
   } = useTerminalWindow(windowId, resolvedInitialState)
+  const [renderMinimized, setRenderMinimized] = useState(isMinimized)
   const { effects: backgroundEffects = [], activeEffectId, setActiveEffectId } = useBackgroundEffects()
   const popup = useContext(PopupContext)
 
@@ -103,6 +107,13 @@ export default function TerminalContainer({
   const resetTokenRef = useRef(layoutResetToken)
   const initialStateRef = useRef(resolvedInitialState)
   const controlsMenuRef = useRef(null)
+  const lastRectRef = useRef(null)
+  const layoutTokenRef = useRef(layoutTransitionToken)
+  const prefersReducedMotionRef = useRef(false)
+  const lastMinimizedRef = useRef(isMinimized)
+  const visualSwitchTimerRef = useRef(null)
+  const fadeTimersRef = useRef({ out: null, in: null })
+  const prevMinimizedRef = useRef(isMinimized)
 
   useEffect(() => {
     initialStateRef.current = resolvedInitialState
@@ -165,6 +176,26 @@ export default function TerminalContainer({
     document.addEventListener('pointerdown', handlePointerDown, true)
     return () => document.removeEventListener('pointerdown', handlePointerDown, true)
   }, [isControlsOpen])
+
+  useEffect(() => {
+    if (!canUseWindow || typeof window.matchMedia !== 'function') {
+      return
+    }
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const handleChange = (event) => {
+      prefersReducedMotionRef.current = Boolean(event.matches)
+    }
+    prefersReducedMotionRef.current = Boolean(mediaQuery.matches)
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
+    if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(handleChange)
+      return () => mediaQuery.removeListener(handleChange)
+    }
+    return undefined
+  }, [canUseWindow])
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
   const getSafeGridSize = () => gridCellSize || DEFAULT_GRID_CELL_SIZE
@@ -373,6 +404,120 @@ export default function TerminalContainer({
     event.stopPropagation()
   }
 
+  useLayoutEffect(() => {
+    if (!canUseWindow || !containerRef.current) {
+      return
+    }
+
+    const previousRect = lastRectRef.current
+    const nextRect = containerRef.current.getBoundingClientRect()
+    const hasTokenChanged = layoutTransitionToken !== layoutTokenRef.current
+    const hasMinimizeChanged = isMinimized !== lastMinimizedRef.current
+    const hasTransitionSignal = hasTokenChanged || hasMinimizeChanged
+    const shouldAnimate =
+      hasTransitionSignal &&
+      previousRect &&
+      !prefersReducedMotionRef.current &&
+      !isMobile &&
+      !isDragging &&
+      !isResizing
+
+    if (shouldAnimate && typeof containerRef.current?.animate === 'function') {
+      const node = containerRef.current
+      const deltaX = previousRect.left - nextRect.left
+      const deltaY = previousRect.top - nextRect.top
+      const scaleX =
+        nextRect.width && Number.isFinite(nextRect.width) ? previousRect.width / nextRect.width : 1
+      const scaleY =
+        nextRect.height && Number.isFinite(nextRect.height) ? previousRect.height / nextRect.height : 1
+      const previousOrigin = node.style.transformOrigin
+      node.style.transformOrigin = 'top left'
+
+      const animationDuration = LAYOUT_ANIMATION_DURATION
+
+      const frames = [
+        { transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})` },
+        { transform: 'translate(0, 0) scale(1, 1)' },
+      ]
+
+      const animation =
+        typeof node.animate === 'function'
+          ? node.animate(frames, {
+              duration: animationDuration,
+              easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+            })
+          : null
+
+      const cleanupTransform = () => {
+        if (node) {
+          node.style.removeProperty('transform')
+          node.style.transformOrigin = previousOrigin || ''
+        }
+      }
+      if (animation) {
+        animation.addEventListener('finish', cleanupTransform)
+        animation.addEventListener('cancel', cleanupTransform)
+      } else {
+        setTimeout(cleanupTransform, animationDuration)
+      }
+    }
+
+    layoutTokenRef.current = layoutTransitionToken
+    lastMinimizedRef.current = isMinimized
+    lastRectRef.current = nextRect
+  }, [
+    layoutTransitionToken,
+    isMobile,
+    isDragging,
+    isResizing,
+    isMinimized,
+    canUseWindow,
+    dimensions,
+    position,
+  ])
+
+  useEffect(() => {
+    const next = isMinimized
+
+    if (prevMinimizedRef.current === isMinimized) {
+      return
+    }
+
+    const clearTimers = () => {
+      if (visualSwitchTimerRef.current) {
+        clearTimeout(visualSwitchTimerRef.current)
+        visualSwitchTimerRef.current = null
+      }
+      if (fadeTimersRef.current.out) {
+        clearTimeout(fadeTimersRef.current.out)
+        fadeTimersRef.current.out = null
+      }
+      if (fadeTimersRef.current.in) {
+        clearTimeout(fadeTimersRef.current.in)
+        fadeTimersRef.current.in = null
+      }
+    }
+
+    clearTimers()
+
+    // Fade out immediately, swap at midpoint, fade back in.
+    setContentOpacity(0)
+
+    visualSwitchTimerRef.current = setTimeout(() => {
+      setRenderMinimized(next)
+      visualSwitchTimerRef.current = null
+    }, LAYOUT_ANIMATION_DURATION / 2)
+
+    fadeTimersRef.current.in = setTimeout(() => {
+      setContentOpacity(1)
+      fadeTimersRef.current.in = null
+    }, LAYOUT_ANIMATION_DURATION)
+
+    prevMinimizedRef.current = isMinimized
+
+    return clearTimers
+  }, [isMinimized])
+
   const resolveInitialLayout = () => {
     const overrides = initialStateRef.current ?? {}
     return {
@@ -422,6 +567,9 @@ export default function TerminalContainer({
   const MINIMIZED_DESKTOP_WIDTH = `${Math.round(DESKTOP_MIN_WIDTH * 0.5)}px`
   const MINIMIZED_DESKTOP_HEIGHT = 65
 
+  const visualMinimized = renderMinimized
+  const headerKey = visualMinimized ? 'header-min' : 'header-full'
+
   const resolvedWidth = isMobile
     ? mobileWidth
     : isMinimized
@@ -433,6 +581,12 @@ export default function TerminalContainer({
     : isMinimized
       ? `${MINIMIZED_DESKTOP_HEIGHT}px`
       : desktopHeight
+
+  useLayoutEffect(() => {
+    if (containerRef.current && !lastRectRef.current) {
+      lastRectRef.current = containerRef.current.getBoundingClientRect()
+    }
+  }, [isMobile])
 
   const resolvedBackground = backgroundColor ?? 'rgba(0, 0, 0, 0.1)'
   const resolvedBackdrop = 'blur(6px)'
@@ -887,19 +1041,19 @@ export default function TerminalContainer({
               : desktopBounds
                 ? `${desktopBounds.minWidth}px`
                 : desktopWidth,
-          flex: isMinimized ? '0 0 auto' : 1,
+          flex: visualMinimized ? '0 0 auto' : 1,
           display: 'flex',
           flexDirection: 'column',
           margin: isMobile ? '0' : isFloating ? '0' : 'auto',
           padding: isMobile
             ? '3.5rem 1.5rem'
-            : isMinimized
+            : visualMinimized
               ? '0.75rem 1rem'
               : '1rem 1rem',
           overflow: isMobile ? 'hidden' : 'visible',
-          overflowY: isMobile ? (isMinimized ? 'visible' : 'auto') : 'visible',
+          overflowY: isMobile ? (visualMinimized ? 'visible' : 'auto') : 'visible',
           boxSizing: 'border-box',
-          minHeight: isMinimized ? 'auto' : undefined,
+          minHeight: visualMinimized ? 'auto' : undefined,
           transition: isDragging || isResizing ? 'none' : 'transform 120ms ease-out',
           cursor: !isMobile && isDragging ? 'grabbing' : undefined,
           
@@ -913,39 +1067,52 @@ export default function TerminalContainer({
           ...styleOverrides,
         }}
       >
-        {!isMobile ? (
-          headerVariant === 'compact' ? (
-            <CompactHeader
-              title={isMinimized ? (compactTitleOnMinimize ?? titleOnMinimize ?? title) : title}
-              onDragPointerDown={handleDragStart}
-              isMinimized={isMinimized}
-            />
-          ) : (
-            <DesktopHeader
-              title={title}
-              titleOnMinimize={titleOnMinimize}
-              onDragPointerDown={handleDragStart}
-              isMinimized={isMinimized}
-            />
-          )
-        ) : (
-          <MobileHeader title={title} />
-        )}
-
         <div
-          className="terminal-body"
           style={{
-            flex: isMinimized ? '0' : 1,
-            display: isMinimized ? 'none' : 'flex',
+            opacity: contentOpacity,
+            transition: contentOpacity === 0 ? 'opacity 0ms linear' : 'opacity 240ms ease-in-out',
+            display: 'flex',
             flexDirection: 'column',
-            overflow: isMinimized ? 'hidden' : 'auto',
-            minHeight: 0,
-            maxHeight: isMobile ? '80vh' : isMinimized ? 'auto' : '100%',
-            height: isMobile ? undefined : '100%',
-            paddingBottom: isMobile ? '0.1rem' : '0',
+            height: '100%',
+            position: 'relative',
           }}
         >
-          {children}
+          {!isMobile ? (
+            headerVariant === 'compact' ? (
+              <CompactHeader
+                key={headerKey}
+                title={visualMinimized ? (compactTitleOnMinimize ?? titleOnMinimize ?? title) : title}
+                onDragPointerDown={handleDragStart}
+                isMinimized={visualMinimized}
+              />
+            ) : (
+              <DesktopHeader
+                key={headerKey}
+                title={title}
+                titleOnMinimize={titleOnMinimize}
+                onDragPointerDown={handleDragStart}
+                isMinimized={visualMinimized}
+              />
+            )
+          ) : (
+            <MobileHeader title={title} />
+          )}
+
+          <div
+            className="terminal-body"
+            style={{
+              flex: visualMinimized ? '0' : 1,
+              display: visualMinimized ? 'none' : 'flex',
+              flexDirection: 'column',
+              overflow: visualMinimized ? 'hidden' : 'auto',
+              minHeight: 0,
+              maxHeight: isMobile ? '80vh' : visualMinimized ? 'auto' : '100%',
+              height: isMobile ? undefined : '100%',
+              paddingBottom: isMobile ? '0.1rem' : '0',
+            }}
+          >
+            {children}
+          </div>
         </div>
 
         {!isMobile && (
@@ -953,8 +1120,8 @@ export default function TerminalContainer({
             type="button"
             onClick={toggleMinimize}
             onPointerDown={(event) => event.stopPropagation()}
-            aria-label={isMinimized ? 'Restore terminal' : 'Minimize terminal'}
-            title={isMinimized ? 'Restore terminal' : 'Minimize terminal'}
+            aria-label={visualMinimized ? 'Restore terminal' : 'Minimize terminal'}
+            title={visualMinimized ? 'Restore terminal' : 'Minimize terminal'}
             style={{
               position: 'absolute',
               top: '-0.5rem',
@@ -975,13 +1142,13 @@ export default function TerminalContainer({
             }}
           >
             <FontAwesomeIcon
-              icon={isMinimized ? faWindowMaximize : faWindowMinimize}
+              icon={visualMinimized ? faWindowMaximize : faWindowMinimize}
               style={{ fontSize: '0.5rem' }}
             />
           </button>
         )}
 
-        {!isMobile && !isMinimized && (
+        {!isMobile && !visualMinimized && (
           <button
             type="button"
             onPointerDown={handleResizeStart}

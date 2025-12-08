@@ -380,6 +380,16 @@ export default function ExecuteForm({
       amount: Number(proj.proposal_cost || 0).toFixed(3),
       asset: proj.asset,
     }
+    const current =
+      params[proposalCostParam.name] ??
+      params[proposalCostParam.payloadName || proposalCostParam.name]
+    if (
+      current &&
+      Number(current.amount) === Number(desired.amount) &&
+      (current.asset || '').toString() === (desired.asset || '').toString()
+    ) {
+      return
+    }
     console.log('[proposal_create] autofill cost', {
       selectedProject,
       desired,
@@ -1438,24 +1448,30 @@ export default function ExecuteForm({
         })
         .filter(Boolean)
 
-      const updatePayouts = (nextList) => {
-        const serialized = nextList
-          .filter((e) => e.receiver && e.amount)
-          .map((e) => `${e.receiver}:${e.amount}`)
-          .join(';')
-        setParams((prev) => ({
-          ...prev,
-          [p.name]: serialized,
-          [p.payloadName || p.name]: serialized,
-        }))
-      }
-
       const normalizeReceiver = (val) => {
         let next = val.replace(/@/g, '')
         if (!next.startsWith('hive:') && next.trim() !== '') {
           next = 'hive:' + next.replace(/^hive:/, '').replace(/^:+/, '')
         }
         return next
+      }
+
+      const sanitizePayoutEntry = (entry) => {
+        const receiver = normalizeReceiver(entry?.receiver || '').trim()
+        const amount = String(entry?.amount || '').trim()
+        return receiver && amount ? { receiver, amount } : null
+      }
+
+      const updatePayouts = (nextList) => {
+        const sanitized = nextList
+          .map((e) => sanitizePayoutEntry(e))
+          .filter(Boolean)
+        const serialized = sanitized.map((e) => `${e.receiver}:${e.amount}`).join(';')
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
       }
 
       const isValidAmount = (val) => /^\d+(?:\.\d{3})$/.test(val)
@@ -1557,6 +1573,7 @@ export default function ExecuteForm({
                       onChange={(e) =>
                         setEditingReceiver(normalizeReceiver(e.target.value))
                       }
+                      onBlur={(e) => setEditingReceiver(normalizeReceiver(e.target.value))}
                       placeholder="hive:user"
                       style={addressInputStyle}
                     />
@@ -1665,6 +1682,7 @@ export default function ExecuteForm({
               placeholder="hive:user"
               value={payoutReceiver}
               onChange={(e) => setPayoutReceiver(normalizeReceiver(e.target.value))}
+              onBlur={(e) => setPayoutReceiver(normalizeReceiver(e.target.value))}
               style={addressInputStyle}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
