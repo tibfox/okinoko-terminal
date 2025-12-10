@@ -66,6 +66,11 @@
   margin: auto;
 }
 
+.tabs-button:hover {
+  border-color: var(--color-primary-lighter) !important;
+  border-width: 1px !important;
+}
+
 .pixel-sparkle-twinkle:nth-child(3n) {
   animation: pixelTwinkle1 1.5s infinite;
   animation-delay: 0.2s;

@@ -66,16 +66,20 @@ export default function ActionFooter({
 
     if (displayMode === 'g_join') {
       return (
-        <NeonButton onClick={onJoin} disabled={!isSendEnabled} style={{ width: '100%' }}>
-          {pending ? (
-            'Joining...'
-          ) : (
-            <>
-              Join Game
-              <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
-            </>
-          )}
-        </NeonButton>
+        <div className="next-button-glitter-wrapper">
+          <NeonButton onClick={onJoin} disabled={!isSendEnabled} style={{ position: 'relative', overflow: 'hidden' }}>
+            <SparkleButton>
+              {pending ? (
+                'Joining...'
+              ) : (
+                <>
+                  Join Game
+                  <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+                </>
+              )}
+            </SparkleButton>
+          </NeonButton>
+        </div>
       )
     }
 
@@ -112,11 +116,11 @@ export default function ActionFooter({
         alignItems: 'center',
       }}
     >
-      <NeonButton onClick={backButtonHandler} style={{ width: '100%' }}>
+      <NeonButton onClick={backButtonHandler}>
         <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
         {backButtonLabel}
       </NeonButton>
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
         {renderActionButton()}
       </div>
     </div>

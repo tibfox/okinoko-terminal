@@ -365,6 +365,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
             <button
               key={key}
               type="button"
+              className="tabs-button"
               style={{
                 flex: '0 0 auto',
                 padding: '6px 12px',

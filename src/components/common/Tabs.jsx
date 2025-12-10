@@ -24,6 +24,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
         <button
           key={tab.id}
           type="button"
+          className="tabs-button"
           style={tabButtonStyle(activeTab === tab.id)}
           onClick={() => onChange(tab.id)}
         >
