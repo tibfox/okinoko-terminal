@@ -26,7 +26,7 @@ export default function NeonButton({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     fontSize: '1rem',
-    maxWidth: '170px',
+    maxWidth: 'max-content',
     opacity: disabled ? 0.5 : 1,
     position: 'relative',
   }

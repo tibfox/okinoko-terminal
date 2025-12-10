@@ -80,15 +80,29 @@ export default function StepConnect({ setStep }) {
             <p></p>
           ) : (
             // --- Continue button ---
-            <NeonButton
-              onClick={() => {
-                setStep(1) // 🚀 go to next step
-                playBeep(800, 100)
-              }}
-            >
-              Enter
-              <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
-            </NeonButton>
+            <div className="next-button-glitter-wrapper">
+              <NeonButton
+                onClick={() => {
+                  setStep(1) // 🚀 go to next step
+                  playBeep(800, 100)
+                }}
+              >
+                <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
+                  {Array.from({ length: 90 }).map((_, i) => (
+                    <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>
+                  ))}
+                </div>
+                <div className="pixel-sparkle-grid pixel-sparkle-grid-overlay">
+                  {Array.from({ length: 90 }).map((_, i) => (
+                    <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
+                  ))}
+                </div>
+                <span style={{ position: 'relative', zIndex: 3 }}>
+                  Enter
+                  <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
+                </span>
+              </NeonButton>
+            </div>
           )}
         </div>
       </div>

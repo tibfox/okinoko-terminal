@@ -340,13 +340,27 @@ export default function StepSelect({
           <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
           Back
         </NeonButton>
-        <NeonButton
-          disabled={!selectedContract || (!isMobile && !selectedFunction)}
-          onClick={handleNext}
-        >
-          Next
-          <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
-        </NeonButton>
+        <div className="next-button-glitter-wrapper">
+          <NeonButton
+            disabled={!selectedContract || (!isMobile && !selectedFunction)}
+            onClick={handleNext}
+          >
+            <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
+              {Array.from({ length: 90 }).map((_, i) => (
+                <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>
+              ))}
+            </div>
+            <div className="pixel-sparkle-grid pixel-sparkle-grid-overlay">
+              {Array.from({ length: 90 }).map((_, i) => (
+                <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
+              ))}
+            </div>
+            <span style={{ position: 'relative', zIndex: 3 }}>
+              Next
+              <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+            </span>
+          </NeonButton>
+        </div>
       </div>
     </TerminalContainer>
   )

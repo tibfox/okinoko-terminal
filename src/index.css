@@ -9,3 +9,130 @@
   --color-primary-lightest: hsl(180, 100%, 70%);
 }
 
+@keyframes fadeToTransparent {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes pixelTwinkle1 {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+@keyframes pixelTwinkle2 {
+  0%, 100% { opacity: 0; }
+  45%, 55% { opacity: 0.9; }
+}
+@keyframes pixelTwinkle3 {
+  0%, 100% { opacity: 0; }
+  40%, 60% { opacity: 0.8; }
+}
+
+.next-button-glitter-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.pixel-sparkle-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  grid-auto-flow: row;
+  gap: 0;
+  pointer-events: none;
+}
+
+.pixel-sparkle-grid-twinkle { z-index: 1; }
+
+.pixel-sparkle-twinkle {
+  width: 2px;
+  height: 2px;
+  background: var(--color-primary);
+  opacity: 0;
+  margin: auto;
+  box-shadow: 0 0 2px var(--color-primary);
+}
+
+.pixel-sparkle-grid-overlay { z-index: 2; }
+
+.pixel-sparkle-overlay {
+  width: 100%;
+  height: 100%;
+  background: black;
+  opacity: 1;
+  margin: auto;
+}
+
+.pixel-sparkle-twinkle:nth-child(3n) {
+  animation: pixelTwinkle1 1.5s infinite;
+  animation-delay: 0.2s;
+}
+.pixel-sparkle-twinkle:nth-child(3n+1) {
+  animation: pixelTwinkle2 1.3s infinite;
+  animation-delay: 0.4s;
+}
+.pixel-sparkle-twinkle:nth-child(3n+2) {
+  animation: pixelTwinkle3 1.7s infinite;
+  animation-delay: 0.6s;
+}
+.pixel-sparkle-twinkle:nth-child(7n) { animation-delay: 0s; }
+.pixel-sparkle-twinkle:nth-child(7n+1) { animation-delay: 0.8s; }
+.pixel-sparkle-twinkle:nth-child(7n+2) { animation-delay: 0.3s; }
+.pixel-sparkle-twinkle:nth-child(7n+3) { animation-delay: 0.5s; }
+.pixel-sparkle-twinkle:nth-child(7n+4) { animation-delay: 0.1s; }
+.pixel-sparkle-twinkle:nth-child(7n+5) { animation-delay: 0.7s; }
+.pixel-sparkle-twinkle:nth-child(7n+6) { animation-delay: 0.9s; }
+
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay,
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay,
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay {
+  animation: fadeToTransparent 0.8s ease-out forwards;
+}
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+1),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+1),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+1) { animation-delay: 0s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+2),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+2),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+2) { animation-delay: 0.05s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+3),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+3),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+3) { animation-delay: 0.1s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+4),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+4),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+4) { animation-delay: 0.15s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+5),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+5),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+5) { animation-delay: 0.2s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+6),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+6),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+6) { animation-delay: 0.25s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+7),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+7),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+7) { animation-delay: 0.3s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+8),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+8),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+8) { animation-delay: 0.35s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+9),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+9),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+9) { animation-delay: 0.4s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+10),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+10),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+10) { animation-delay: 0.45s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+11),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+11),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+11) { animation-delay: 0.5s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+12),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+12),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+12) { animation-delay: 0.55s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+13),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+13),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+13) { animation-delay: 0.6s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n+14),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n+14),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n+14) { animation-delay: 0.65s; }
+.next-button-glitter-wrapper:hover button:not(:disabled) ~ * .pixel-sparkle-overlay:nth-child(15n),
+.next-button-glitter-wrapper button:not(:disabled):hover ~ * .pixel-sparkle-overlay:nth-child(15n),
+.next-button-glitter-wrapper:has(button:not(:disabled):hover) .pixel-sparkle-overlay:nth-child(15n) { animation-delay: 0.7s; }

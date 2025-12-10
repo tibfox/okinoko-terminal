@@ -597,23 +597,25 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           Prev
         </button>
         <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)', margin: '0 12px' }} />
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={disableNext}
-          style={{
-            minWidth: '70px',
-            padding: '4px 10px',
-            
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            background: 'transparent',
-            color: 'inherit',
-            cursor: disableNext ? 'not-allowed' : 'pointer',
-            opacity: disableNext ? 0.4 : 1,
-          }}
-        >
-          Next
-        </button>
+        <div className="next-button-glitter-wrapper">
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={disableNext}
+            style={{
+              minWidth: '70px',
+              padding: '4px 10px',
+              
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'transparent',
+              color: 'inherit',
+              cursor: disableNext ? 'not-allowed' : 'pointer',
+              opacity: disableNext ? 0.4 : 1,
+            }}
+          >
+            Next
+          </button>
+        </div>
       </div>
     )
   }
