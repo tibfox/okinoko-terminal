@@ -231,7 +231,8 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         }
 
         if (action === "g_move") {
-          payload += `|${params?.__gameCell?.replace(',', '|')}`
+          const moveVal = params?.__gameCell
+          payload += `|${moveVal ? moveVal.replace(',', '|') : ''}`
 
         }
         if (action === "g_swap") {

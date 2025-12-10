@@ -234,20 +234,34 @@ export default function GameField({
       __gameCell: undefined,
     })
   }
+  const coordsEqual = (a, b) => {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i].r !== b[i].r || a[i].c !== b[i].c) return false
+    }
+    return true
+  }
   // helper to sync selection and params
   const updateSelection = (cells) => {
-    setSelected(cells)
-    onSelectionChange?.(cells)
-    // Convert to payload format "__gameMove"
-    const paramMove = cells.length > 1
-      ? cells.map(s => `${s.r},${s.c}`).join(';')
-      : cells.length === 1
-        ? `${cells[0].r}|${cells[0].c}`
-        : ''
-    setParams(prev => ({
-      ...prev,
-      __gameCell: paramMove || undefined   // clear if empty
-    }))
+    setSelected((prevSel) => {
+      if (coordsEqual(prevSel, cells)) return prevSel
+      onSelectionChange?.(cells)
+      // Convert to payload format "__gameMove"
+      const paramMove = cells.length > 1
+        ? cells.map(s => `${s.r},${s.c}`).join(';')
+        : cells.length === 1
+          ? `${cells[0].r}|${cells[0].c}`
+          : ''
+      const nextCell = paramMove || undefined
+      setParams(prev => {
+        if (prev?.__gameCell === nextCell) return prev
+        return {
+          ...prev,
+          __gameCell: nextCell   // clear if empty
+        }
+      })
+      return cells
+    })
   }
   useEffect(() => {
     updateSelection([])

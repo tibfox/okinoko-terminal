@@ -53,28 +53,8 @@ export default function GameField({
   const [resultBanner, setResultBanner] = useState(null)
   const [isAddingExtra, setIsAddingExtra] = useState(false)
   const [extraPlacements, setExtraPlacements] = useState([])
-  const [awaitingAddChoice, setAwaitingAddChoice] = useState(false)
-  const [isSubmittingAddChoice, setIsSubmittingAddChoice] = useState(false)
   const [swapPlacements, setSwapPlacements] = useState([])
-  const disableSwapChoiceButtons = pendingAction || isSubmittingAddChoice || awaitingAddChoice
-  const requestSwapAdd = useCallback(async () => {
-    if (!onExecuteAction || !game?.id) return
-    setAwaitingAddChoice(true)
-    setIsSubmittingAddChoice(true)
-    try {
-      await onExecuteAction({
-        __gameId: game.id,
-        __gameAction: 'g_swap',
-        __gameSwapOp: 'choose',
-        __gameSwapArgs: ['add'],
-      })
-    } catch (err) {
-      console.error('Failed to start extra placements', err)
-      setAwaitingAddChoice(false)
-    } finally {
-      setIsSubmittingAddChoice(false)
-    }
-  }, [game?.id, onExecuteAction])
+  const disableSwapChoiceButtons = pendingAction
   const boardWrapperRef = useRef(null)
   const [boardSize, setBoardSize] = useState(null)
   const fallingTimerRef = useRef(null)
@@ -289,15 +269,18 @@ export default function GameField({
   const normalizedPlayerX = normalizeId(playerX)
   const normalizedPlayerY = normalizeId(playerY)
   const hasOpponent = Boolean(playerX && playerY)
-  const normalizedMoveType = (serverMoveType || game?.moveType || 'm') || 'm'
-  const swapStage = normalizedMoveType.toLowerCase()
+  const normalizedMoveTypeRaw = (serverMoveType || game?.moveType || 'm') || 'm'
+  const normalizedMoveType = typeof normalizedMoveTypeRaw === 'string'
+    ? normalizedMoveTypeRaw.trim().toLowerCase()
+    : String(normalizedMoveTypeRaw || 'm')
+  const swapStage = normalizedMoveType
   const isSwapPlacementPhase =
-    game?.type === 'Gomoku' &&
+    (game?.type || '').toLowerCase() === 'gomoku' &&
     (swapStage === 's_1' || swapStage === 'swap' || swapStage === 'swap1')
   const isSwapDecisionPhase =
-    game?.type === 'Gomoku' && (swapStage === 's_2' || swapStage === 'swap2')
+    (game?.type || '').toLowerCase() === 'gomoku' && (swapStage === 's_2' || swapStage === 'swap2')
   const isSwapFinalChoicePhase =
-    game?.type === 'Gomoku' && (swapStage === 's_3' || swapStage === 'swap3')
+    (game?.type || '').toLowerCase() === 'gomoku' && (swapStage === 's_3' || swapStage === 'swap3')
   const isMyTurn =
     hasOpponent &&
     fullUser &&
@@ -348,89 +331,146 @@ export default function GameField({
     [game?.id, onExecuteAction],
   )
   // helper to sync selection and params
-  const updateSelection = (cells) => {
-    setSelected(cells)
-    onSelectionChange?.(cells)
-    // Convert to payload format "__gameMove"
-    const paramMove = cells.length > 1
-      ? cells.map(s => `${s.r},${s.c}`).join(';')
-      : cells.length === 1
-        ? `${cells[0].r}|${cells[0].c}`
-        : ''
-    setParams(prev => ({
-      ...prev,
-      __gameCell: paramMove || undefined   // clear if empty
-    }))
-  }
+  const coordsEqual = useCallback((a, b) => {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i].r !== b[i].r || a[i].c !== b[i].c) return false
+    }
+    return true
+  }, [])
+  const updateSelection = useCallback((cells) => {
+    setSelected((prevSel) => {
+      if (coordsEqual(prevSel, cells)) return prevSel
+      onSelectionChange?.(cells)
+      // Convert to payload format "__gameMove"
+      const paramMove = cells.length > 1
+        ? cells.map(s => `${s.r},${s.c}`).join(';')
+        : cells.length === 1
+          ? `${cells[0].r}|${cells[0].c}`
+          : ''
+      const nextCell = paramMove || undefined
+      setParams(prev => {
+        if (prev?.__gameCell === nextCell) return prev
+        return {
+          ...prev,
+          __gameCell: nextCell   // clear if empty
+        }
+      })
+      return cells
+    })
+  }, [coordsEqual, onSelectionChange, setParams])
   function syncSwapAddParams(placements) {
-    setParams((prev) => ({
-      ...prev,
-      __gameAction: placements.length === 2 ? 'g_swap' : undefined,
-      __gameSwapOp: placements.length === 2 ? 'add' : undefined,
-      __gameSwapArgs:
-        placements.length === 2
-          ? placements.map((entry) => `${entry.r}-${entry.c}-${entry.color}`)
-          : undefined,
-    }))
+    const nextAction = placements.length === 2 ? 'g_swap' : undefined
+    const nextOp = placements.length === 2 ? 'add' : undefined
+    const nextArgs =
+      placements.length === 2
+        ? placements.map((entry) => `${entry.r}-${entry.c}-${entry.color}`)
+        : undefined
+    const nextArgsKey = Array.isArray(nextArgs) ? nextArgs.join(';') : null
+    setParams((prev = {}) => {
+      const prevArgsKey = Array.isArray(prev.__gameSwapArgs) ? prev.__gameSwapArgs.join(';') : null
+      if (
+        prev.__gameAction === nextAction &&
+        prev.__gameSwapOp === nextOp &&
+        prevArgsKey === nextArgsKey
+      ) {
+        return prev
+      }
+      return {
+        ...prev,
+        __gameAction: nextAction,
+        __gameSwapOp: nextOp,
+        __gameSwapArgs: nextArgs,
+      }
+    })
   }
   function syncSwapPlaceParams(placements) {
-    setParams((prev) => ({
-      ...prev,
-      __gameCell: undefined,
-      __gameAction: placements.length === 3 ? 'g_swap' : undefined,
-      __gameSwapOp: placements.length === 3 ? 'place' : undefined,
-      __gameSwapArgs:
-        placements.length === 3
-          ? placements.map((entry) => `${entry.r}-${entry.c}-${entry.color}`)
-          : undefined,
-    }))
+    const nextAction = placements.length === 3 ? 'g_swap' : undefined
+    const nextOp = placements.length === 3 ? 'place' : undefined
+    const nextArgs =
+      placements.length === 3
+        ? placements.map((entry) => `${entry.r}-${entry.c}-${entry.color}`)
+        : undefined
+    const nextArgsKey = Array.isArray(nextArgs) ? nextArgs.join(';') : null
+    setParams((prev = {}) => {
+      const prevArgsKey = Array.isArray(prev.__gameSwapArgs) ? prev.__gameSwapArgs.join(';') : null
+      if (
+        prev.__gameAction === nextAction &&
+        prev.__gameSwapOp === nextOp &&
+        prevArgsKey === nextArgsKey &&
+        prev.__gameCell === undefined
+      ) {
+        return prev
+      }
+      return {
+        ...prev,
+        __gameCell: undefined,
+        __gameAction: nextAction,
+        __gameSwapOp: nextOp,
+        __gameSwapArgs: nextArgs,
+      }
+    })
   }
+  const startSwapAdd = useCallback(() => {
+    if (!isSwapDecisionPhase || !isMyTurn) return
+    if (isAddingExtra) return
+    setIsAddingExtra(true)
+    setExtraPlacements([])
+    updateSelection([])
+    syncSwapAddParams([])
+  }, [isSwapDecisionPhase, isMyTurn, isAddingExtra, updateSelection])
+
   useEffect(() => {
     updateSelection([])
     setExtraPlacements([])
     setIsAddingExtra(false)
     setFallingFrame(null)
-    setAwaitingAddChoice(false)
     setSwapPlacements([])
-  }, [game?.id, game?.state])
+  }, [game?.id])
 
+  const prevSwapStageRef = useRef(null)
   useEffect(() => {
-    const allowExtras = swapStage === 's_2' && hasAddChoice
-    if (allowExtras) {
-      if (!isAddingExtra) {
-        setIsAddingExtra(true)
+    const inAddStage = swapStage === 's_2' || swapStage === 'swap2'
+    const prevStage = prevSwapStageRef.current
+    prevSwapStageRef.current = swapStage
+
+    // entering add decision stage: start clean, stay locked until user clicks "Place Two More"
+    if (inAddStage && prevStage !== swapStage) {
+      // Only reset if we're transitioning into this stage from a different stage
+      if (isAddingExtra || extraPlacements.length > 0) {
+        setIsAddingExtra(false)
         setExtraPlacements([])
+        updateSelection([])
         syncSwapAddParams([])
       }
-      setAwaitingAddChoice(false)
-    } else if (isAddingExtra) {
+      return
+    }
+
+    // Don't interfere if user is actively in "place two more" mode
+    if (inAddStage && isAddingExtra) {
+      return
+    }
+
+    if (!inAddStage && prevStage && isAddingExtra) {
       setIsAddingExtra(false)
       setExtraPlacements([])
-      setSelected([])
+      updateSelection([])
       syncSwapAddParams([])
     }
-    if (!allowExtras) {
-      setIsSubmittingAddChoice(false)
-      if (!hasAddChoice && awaitingAddChoice) {
-        setAwaitingAddChoice(false)
-      }
-    }
-  }, [swapStage, hasAddChoice, isAddingExtra, awaitingAddChoice])
+  }, [swapStage, isMyTurn, isAddingExtra, extraPlacements.length, updateSelection])
 
   useEffect(() => {
     if (!isSwapPlacementPhase) {
       if (swapPlacements.length) {
         setSwapPlacements([])
         syncSwapPlaceParams([])
-        setSelected([])
-        onSelectionChange?.([])
+        updateSelection([])
       }
       return
     }
     // keep selection in sync with placements during the opening phase
     const coordsOnly = swapPlacements.map(({ r, c }) => ({ r, c }))
-    setSelected(coordsOnly)
-    onSelectionChange?.(coordsOnly)
+    updateSelection(coordsOnly)
     syncSwapPlaceParams(swapPlacements)
   }, [isSwapPlacementPhase, swapPlacements])
 
@@ -464,18 +504,18 @@ export default function GameField({
       }
     }
     if (isSwapDecisionPhase) {
+      const actionsDisabled = pendingAction || !isMyTurn
+      const noop = () => {}
       return {
         active: true,
         waitingText: isMyTurn ? 'Swap Decision' : 'Waiting for opponent swap decision…',
-        description: 'Choose to stay, swap colors, or request two extra stones.',
-        actions: isMyTurn
-          ? {
-              disabled: disableSwapChoiceButtons,
-              onStay: () => handleSwapDecision('stay'),
-              onSwap: () => handleSwapDecision('swap'),
-              onAdd: requestSwapAdd,
-            }
-          : undefined,
+        description: 'Choose to stay, swap colors, or place two extra stones.',
+        actions: {
+          disabled: actionsDisabled,
+          onStay: isMyTurn ? () => handleSwapDecision('stay') : noop,
+          onSwap: isMyTurn ? () => handleSwapDecision('swap') : noop,
+          onAdd: isMyTurn ? startSwapAdd : noop,
+        },
       }
     }
     if (isSwapFinalChoicePhase) {
@@ -499,7 +539,7 @@ export default function GameField({
     determineNextSwapColor,
     disableSwapChoiceButtons,
     handleSwapDecision,
-    requestSwapAdd,
+    startSwapAdd,
   ])
 
   useEffect(() => {
@@ -521,15 +561,16 @@ export default function GameField({
     observer.observe(boardWrapperRef.current)
     return () => observer.disconnect()
   }, [])
-  if (!game || !size) {
-    return (
-      <EmptyGamePanel
-        defaultGameTypeId={defaultGameTypeId}
-        description={gameDescription}
+    if (!game || !size) {
+      return (
+        <EmptyGamePanel
+          defaultGameTypeId={defaultGameTypeId}
+          description={gameDescription}
       />
     )
   }
-  const highlightedCells = isAddingExtra ? extraPlacements : selected
+  const isExtraModeActive = isAddingExtra || extraPlacements.length > 0
+  const highlightedCells = isExtraModeActive ? extraPlacements : selected
   const swapHighlightedCells = isSwapPlacementPhase ? swapPlacements : highlightedCells
   const findC4LandingRow = (col) => {
     for (let r = size.rows - 1; r >= 0; r--) {
@@ -545,7 +586,7 @@ export default function GameField({
     }))
 
   const toggleCell = (r, c) => {
-    if (isSwapDecisionPhase && !isAddingExtra) return
+    if (isSwapDecisionPhase && !isExtraModeActive) return
     const index = r * size.cols + c
     const cellVal = board.charAt(index)
     if (isSwapPlacementPhase) {
@@ -569,7 +610,7 @@ export default function GameField({
         const remainingRaw = extraPlacements.filter((entry) => !(entry.r === r && entry.c === c))
         const remaining = renumberPlacements(remainingRaw)
         setExtraPlacements(remaining)
-        setSelected(remaining.map(({ r, c }) => ({ r, c })))
+        updateSelection(remaining.map(({ r, c }) => ({ r, c })))
         syncSwapAddParams(remaining)
         return
       }
@@ -579,7 +620,7 @@ export default function GameField({
       const nextColor = extraPlacements.length === 0 ? 1 : 2
       const nextPlacements = [...extraPlacements, { r, c, color: nextColor }]
       setExtraPlacements(nextPlacements)
-      setSelected(nextPlacements.map(({ r, c }) => ({ r, c })))
+      updateSelection(nextPlacements.map(({ r, c }) => ({ r, c })))
       syncSwapAddParams(nextPlacements)
       return
     }
@@ -630,6 +671,8 @@ export default function GameField({
   const minsAgo = game.lastMoveMinutesAgo
   const daysAgo = Math.floor(minsAgo / (24 * 60))
   const swapDecisionOverlay = null
+
+  const swapLockedOverlay = null
 
   const swapFinalOverlay = isSwapFinalChoicePhase && isMyTurn ? (
     <div
@@ -755,6 +798,7 @@ export default function GameField({
         }}
       >
         {swapDecisionOverlay || swapFinalOverlay}
+        {swapLockedOverlay}
         {(() => {
           const overlayBanner =
             resultBanner ?? (!hasOpponent ? { text: 'Waiting for another player to join…' } : null)

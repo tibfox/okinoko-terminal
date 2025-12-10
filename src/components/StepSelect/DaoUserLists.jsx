@@ -1105,6 +1105,8 @@ const renderDaoList = () => {
                         <div style={{ fontSize: '0.85rem', opacity: 0.85, whiteSpace: 'normal' }}>
                           {(() => {
                             const summary = payoutSummary(p, dao.funds_asset)
+                            const hasMetaUpdate = (p.metadata || '').trim()
+
                             if (summary === 'Poll') {
                               return <span style={{ color: 'var(--color-primary-lighter)' }}>Poll</span>
                             }
@@ -1131,11 +1133,32 @@ const renderDaoList = () => {
                                 </div>
                               )
                             }
+
+                            // Only show payouts if they exist
+                            const hasPayouts = summary !== 'No payouts'
+
                             return (
-                          <span style={{ color: 'var(--color-primary-lighter)' }}>
-                            Payouts: {summary}
-                          </span>
-                        )
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {hasPayouts && (
+                                  <span style={{ color: 'var(--color-primary-lighter)' }}>
+                                    Payouts: {summary}
+                                  </span>
+                                )}
+                                {hasMetaUpdate && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <span style={{ color: 'var(--color-primary)' }}>Meta Update:</span>
+                                    {hasMetaUpdate.split(';').map((e) => e.trim()).filter(Boolean).map((entry, i) => (
+                                      <span
+                                        key={`metaupdate-${p.proposal_id}-${i}`}
+                                        style={{ color: 'var(--color-primary-lighter)' }}
+                                      >
+                                        {entry}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
                       })()}
                       </div>
                       {(() => {
@@ -1144,15 +1167,13 @@ const renderDaoList = () => {
                         const voteTotal = dao.voting_system === '1'
                           ? totalVoteWeightByProposal.get(pid) || 0
                           : votes.length
+                        // For voting pool: use active_members if available, otherwise fall back to all members
                         const memberSet = new Set(
                           (p.active_members || p.members || [])
                             .map((m) => (m || '').toLowerCase())
                             .filter(Boolean),
                         )
-                        // Ensure creator counts as member
-                        if (dao.created_by) memberSet.add((dao.created_by || '').toLowerCase())
-                        if (p.created_by) memberSet.add((p.created_by || '').toLowerCase())
-                        // Fallback: if we still have nothing, include voters to avoid 100% on single vote
+                        // Fallback: if we have no member list from the proposal, include actual voters
                         if (memberSet.size === 0) {
                           votes.forEach((v) => {
                             if (v?.voter) memberSet.add(String(v.voter).toLowerCase())
@@ -1411,8 +1432,7 @@ const renderDaoList = () => {
       const projectId = dao?.project_id ?? proposal.project_id
       const isMember =
         !!membershipMap.get(projectId) ||
-        sameUser(dao?.created_by, user) ||
-        sameUser(proposal?.created_by, user)
+        sameUser(dao?.created_by, user)
       popup?.openPopup?.({
         title: `Proposal #${proposal.proposal_id}`,
         body: () => (

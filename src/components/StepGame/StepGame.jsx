@@ -56,6 +56,7 @@ export default function StepGame({
   const [selectedCells, setSelectedCells] = useState([])
   const [swapInfo, setSwapInfo] = useState(null)
   const [shouldRedirectHome, setShouldRedirectHome] = useState(false)
+  const [hasInsufficientBalance, setHasInsufficientBalance] = useState(false)
   const [dividerPosition, setDividerPosition] = useState(() => {
     const saved = typeof document !== 'undefined' ? getCookie(DIVIDER_COOKIE) : null
     return clampPosition(saved, 0.5)
@@ -121,7 +122,22 @@ export default function StepGame({
   // const isSendEnabled = isGameMode
   //   ? selectedCells.length > 0 && !pending   // Only depend on selected cell
   //   : allMandatoryFilled && !pending         // Original behavior for non-game flow
-  const isSendEnabled = allMandatoryFilled && !pending         // Original behavior for non-game flow
+  const isSendEnabled = displayMode === 'g_join'
+    ? allMandatoryFilled && !pending && !hasInsufficientBalance
+    : allMandatoryFilled && !pending
+
+  // Debug logging for button state
+  useEffect(() => {
+    if (displayMode === 'g_join') {
+      console.log('[StepGame] Join button state:', {
+        displayMode,
+        allMandatoryFilled,
+        pending,
+        hasInsufficientBalance,
+        isSendEnabled
+      })
+    }
+  }, [displayMode, allMandatoryFilled, pending, hasInsufficientBalance, isSendEnabled])
   const derivedGameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
   const showingGameDetails = Boolean(
     activeGame && displayMode !== 'g_join' && displayMode !== 'g_create',
@@ -152,6 +168,13 @@ export default function StepGame({
       setSwapInfo(null)
     }
   }, [activeGame])
+
+  useEffect(() => {
+    // Reset insufficient balance state when not in join mode
+    if (displayMode !== 'g_join') {
+      setHasInsufficientBalance(false)
+    }
+  }, [displayMode])
 
   useEffect(() => {
     if (!contract || !fn) {
@@ -310,6 +333,7 @@ export default function StepGame({
               game={activeGame}
               setParams={setParams}
               user={user}
+              onBalanceCheck={setHasInsufficientBalance}
             />
           ) : (
             <GameField

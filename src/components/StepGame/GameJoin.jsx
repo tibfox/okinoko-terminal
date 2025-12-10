@@ -3,7 +3,7 @@ import NeonSwitch from '../common/NeonSwitch.jsx'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
-export default function GameJoin({ game, user, setParams }) {
+export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
   const [pfm, setPfm] = useState(false)
   const [insufficient, setInsufficient] = useState(false)
   const { balances: accountBalances } = useAccountBalances()
@@ -26,16 +26,33 @@ export default function GameJoin({ game, user, setParams }) {
 
   // ✅ Calculate required balance based on PFM toggle
   const required = pfm
-    ? parseFloat(game.bet) + parseFloat(game.firstMovePurchase)
-    : parseFloat(game.bet)
+    ? parseFloat(game?.bet ?? 0) + parseFloat(game?.firstMovePurchase ?? 0)
+    : parseFloat(game?.bet ?? 0)
 
-  const asset = game.asset // HIVE or HBD
+  const asset = (game?.asset || 'HIVE').toUpperCase() // HIVE or HBD
   const available = asset === 'HIVE' ? balances.hive : balances.hbd
 
   // ✅ Recheck insufficient funds whenever toggle changes or balance loads
   useEffect(() => {
-    setInsufficient(required > available)
-  }, [required, available])
+    // Handle edge cases: NaN values, undefined, etc.
+    const reqAmount = Number.isFinite(required) ? required : 0
+    const availAmount = Number.isFinite(available) ? available : 0
+    const isInsufficient = reqAmount > availAmount
+
+    setInsufficient(isInsufficient)
+    // Notify parent component about balance status
+    onBalanceCheck?.(isInsufficient)
+
+    // Debug logging
+    console.log('[GameJoin] Balance check:', {
+      required: reqAmount,
+      available: availAmount,
+      asset,
+      isInsufficient,
+      rawBalances: accountBalances,
+      parsedBalances: balances
+    })
+  }, [required, available, asset, accountBalances, balances, onBalanceCheck])
 
   const toggleFmp = (val) => {
     setPfm(val)
@@ -94,7 +111,7 @@ export default function GameJoin({ game, user, setParams }) {
         </span>
       </td>
       <td style={{ paddingLeft: 24 }}>
-        {(game?.bet ?? 0).toFixed(3)} {game?.asset}
+        {(game?.bet ?? 0).toFixed(3)} {(game?.asset || 'HIVE').toUpperCase()}
       </td>
     </tr>
 
@@ -102,7 +119,7 @@ export default function GameJoin({ game, user, setParams }) {
       <tr>
         <td><strong>+ First Move Purchase:</strong></td>
         <td style={{ paddingLeft: 24 }}>
-          {(game?.firstMovePurchase ?? 0).toFixed(3)} {game?.asset}
+          {(game?.firstMovePurchase ?? 0).toFixed(3)} {(game?.asset || 'HIVE').toUpperCase()}
         </td>
       </tr>
     )}
@@ -134,7 +151,7 @@ export default function GameJoin({ game, user, setParams }) {
     <tr>
       <td><strong>You can win:</strong></td>
       <td style={{ paddingLeft: 24 }}>
-        {((game?.bet ?? 0) * 2).toFixed(3)} {game?.asset}
+        {((game?.bet ?? 0) * 2).toFixed(3)} {(game?.asset || 'HIVE').toUpperCase()}
       </td>
     </tr>
   </tbody>
