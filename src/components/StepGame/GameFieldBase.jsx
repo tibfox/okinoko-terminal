@@ -1,17 +1,14 @@
 // GameField.jsx
 import { textStyles } from '@chakra-ui/react/theme'
 import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
-import { useQuery, useSubscription } from '@urql/preact'
+import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHourglassStart, faFlag } from '@fortawesome/free-solid-svg-icons'
-import {
-  GAME_MOVES_QUERY,
-  GAME_EVENTS_SUBSCRIPTION,
-  GAME_MOVE_SUBSCRIPTION,
-} from '../../data/inarow_gql.js'
+import { GAME_MOVES_QUERY } from '../../data/inarow_gql.js'
 import EmptyGamePanel from './components/EmptyGamePanel.jsx'
 import { getBoardDimensions } from './utils/boardDimensions.js'
+import { useGameSubscription } from './providers/GameSubscriptionProvider.jsx'
 
 const BOARD_MAX_DIMENSION = 'min(90vmin, calc(100vh - 220px))'
 const toNumericVar = (value) =>
@@ -57,11 +54,12 @@ export default function GameField({
   const numericGameId = game?.id != null ? toNumericVar(game.id) : null
   const totalCells = size ? size.rows * size.cols : 0
   const defaultBoard = size ? '0'.repeat(totalCells) : ''
+  const { updateCounter, lastEvent } = useGameSubscription()
   const [gameDetails, reexecuteGameDetails] = useQuery({
     query: GAME_MOVES_QUERY,
     pause: !numericGameId,
     variables: numericGameId ? { gameId: numericGameId } : undefined,
-    requestPolicy: 'network-only',
+    requestPolicy: 'cache-and-network',
   })
   const fullUser = user ? (user.startsWith('hive:') ? user : `hive:${user}`) : null
   const applyTerminalEvent = useCallback(
@@ -114,34 +112,24 @@ export default function GameField({
     [fullUser],
   )
 
-  useSubscription(
-    {
-      query: GAME_EVENTS_SUBSCRIPTION,
-      pause: !numericGameId,
-      variables: numericGameId ? { gameId: numericGameId } : undefined,
-    },
-    (_, event) => {
-      if (event && reexecuteGameDetails) {
-        reexecuteGameDetails({ requestPolicy: 'network-only' })
-      }
-      const rows = event?.okinoko_iarv2_all_events ?? []
-      rows.forEach(applyTerminalEvent)
-      return event
-    },
-  )
-  useSubscription(
-    {
-      query: GAME_MOVE_SUBSCRIPTION,
-      pause: !numericGameId,
-      variables: numericGameId ? { gameId: numericGameId } : undefined,
-    },
-    (_, event) => {
-      if (event && reexecuteGameDetails) {
-        reexecuteGameDetails({ requestPolicy: 'network-only' })
-      }
-      return event
-    },
-  )
+  // Re-execute query when subscription updates
+  useEffect(() => {
+    if (updateCounter > 0 && reexecuteGameDetails) {
+      console.log('[GameFieldBase] Subscription update detected, counter:', updateCounter)
+      reexecuteGameDetails({ requestPolicy: 'network-only' })
+    }
+  }, [updateCounter, reexecuteGameDetails])
+
+  // Process terminal events (won, draw, resign, timeout)
+  useEffect(() => {
+    if (!gameDetails.data?.terminal_events) return
+    const terminalEvents = gameDetails.data.terminal_events
+    if (terminalEvents.length > 0) {
+      const latestEvent = terminalEvents[0]
+      applyTerminalEvent(latestEvent)
+    }
+  }, [gameDetails.data?.terminal_events, applyTerminalEvent])
+
   useEffect(() => {
     setBoardState(null)
     setResolvedRoles({ playerX: null, playerY: null })

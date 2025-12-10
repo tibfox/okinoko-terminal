@@ -84,7 +84,11 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
   // === Fetch HIVE/HBD balances once user is known ===
   useEffect(() => {
     async function fetchBalances() {
-      if (!user) return
+      if (!user) {
+        console.log('[useExecuteHandler] No user, skipping balance fetch')
+        return
+      }
+      console.log('[useExecuteHandler] Fetching balances for user:', hiveUser)
       const QUERY = `
         query GetBalances($acc: String!) {
           bal: getAccountBalance(account: $acc) {
@@ -94,11 +98,18 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         }
       `
       const { data, error } = await runQuery(QUERY, { acc: hiveUser })
+      if (error) {
+        console.error('[useExecuteHandler] Error fetching balances:', error)
+      }
       if (!error && data?.bal) {
-        setBalances({
+        const newBalances = {
           hive: Number(data.bal.hive) / 1000,
           hbd: Number(data.bal.hbd) / 1000,
-        })
+        }
+        console.log('[useExecuteHandler] Balances fetched:', newBalances)
+        setBalances(newBalances)
+      } else {
+        console.log('[useExecuteHandler] No balance data returned')
       }
     }
     fetchBalances()
@@ -253,9 +264,10 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
       }
 
       case 'raw': {
-        const first = ps.find((p) => p.type !== 'vscIntent') ?? ps[0]
-        const val =
-          params?.[first?.name] ?? getMandatoryDefault(first ?? { type: 'string', mandatory: true })
+        const first = ps.find((p) => p.type !== 'vscIntent')
+        const val = first
+          ? (params?.[first?.name] ?? getMandatoryDefault(first))
+          : ''
         console.log('action: ' + action)
         return { payload: val != null ? val.toString() : '', intents, action }
       }
@@ -376,10 +388,12 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
 
       if (fn?.parse === 'game') {
         const action = inputParams?.__gameAction
-        if (!action) return false
+        if (!action) {
+          return false
+        }
 
         const requiresGameId = action !== 'g_create'
-        if (requiresGameId && !inputParams?.__gameId) {
+        if (requiresGameId && (inputParams?.__gameId === null || inputParams?.__gameId === undefined)) {
           return false
         }
 
@@ -424,8 +438,21 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
             return true
           }
 
-          if (!joinAsset) return false
+          if (!joinAsset) {
+            console.log('[g_join validation] No joinAsset defined')
+            return false
+          }
           const available = joinAsset === 'HIVE' ? balances.hive : balances.hbd
+          console.log('[g_join validation]', {
+            joinAmount: normalizedJoinAmount,
+            fmpEnabled: fmpEnabledJoin,
+            fmpAmount: normalizedFmp,
+            total,
+            joinAsset,
+            available,
+            balances,
+            result: total <= available
+          })
           return total <= available
         }
 

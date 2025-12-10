@@ -475,3 +475,158 @@
     transform: translate(4px, 4px);
   }
 }
+
+/* Glitter */
+.glitter-effect {
+  background: #000000;
+  overflow: hidden;
+}
+
+.glitter-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glitter-particle {
+  position: absolute;
+  pointer-events: none;
+  animation:
+    glitter-drift var(--drift-duration, 30s) linear infinite,
+    var(--sparkle-type, glitter-twinkle) var(--twinkle-duration, 3s) ease-in-out infinite;
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+/* Generate shape-specific styles for each particle */
+.glitter-particle::before,
+.glitter-particle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-primary);
+  box-shadow:
+    0 0 4px var(--color-primary),
+    0 0 8px var(--color-primary),
+    0 0 12px var(--color-primary-darker),
+    0 0 16px var(--color-primary-darker);
+}
+
+.glitter-effect.glitter--paused .glitter-particle {
+  animation-play-state: paused !important;
+}
+
+@keyframes glitter-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--drift-x, 0), var(--drift-y, 0));
+  }
+}
+
+/* Frequent sparkles - lots of flashes */
+@keyframes glitter-twinkle {
+  0% {
+    opacity: 0.2;
+  }
+  10% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  40% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.3;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+/* Medium sparkles - fewer flashes */
+@keyframes glitter-twinkle-medium {
+  0% {
+    opacity: 0.3;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  35% {
+    opacity: 0.4;
+  }
+  65% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+/* Subtle sparkles - occasional flashes */
+@keyframes glitter-twinkle-subtle {
+  0% {
+    opacity: 0.4;
+  }
+  20% {
+    opacity: 0.5;
+  }
+  45% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+/* Rare sparkles - very occasional flash */
+@keyframes glitter-twinkle-rare {
+  0% {
+    opacity: 0.5;
+  }
+  40% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitter-particle {
+    animation: none;
+    opacity: 0.7;
+  }
+}

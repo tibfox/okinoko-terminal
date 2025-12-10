@@ -6,8 +6,10 @@ import './styles/base.css'
 import './styles/layout.css'
 import './styles/components.css'
 import './styles/animations.css'
-import { createClient, Provider, cacheExchange, fetchExchange, subscriptionExchange } from '@urql/preact';
+import { createClient, Provider, cacheExchange, fetchExchange, subscriptionExchange, makeOperation } from '@urql/preact';
+import { pipe, map, mergeMap, fromPromise, fromValue } from 'wonka';
 import { createClient as createWSClient } from 'graphql-ws';
+import { print } from 'graphql';
 import { HASURA_HTTP, HASURA_WS } from './lib/graphqlEndpoints.js'
 
 // Guard against browsers where adoptedStyleSheets is unsupported or not array-like (e.g., missing Array methods)
@@ -18,6 +20,47 @@ if (typeof document !== 'undefined') {
     sheets.filter = (...args) => Array.prototype.filter.apply(Array.from(sheets), args)
     sheets.push = (...args) => Array.prototype.push.apply(sheets, args)
   }
+}
+
+// Suppress AbortError console logs from urql/GraphQL operations
+if (typeof window !== 'undefined') {
+  // Catch unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+
+    // Check for abort-related errors in various forms
+    const isAbortError =
+      (reason && reason.name === 'AbortError') ||
+      (reason && reason.code === 20) || // DOMException.ABORT_ERR
+      (reason && reason.message && reason.message.includes('aborted'));
+
+    if (isAbortError) {
+      console.log('[Suppressed] Abort error caught and suppressed');
+      event.preventDefault();
+      return false;
+    }
+  });
+
+  // Also filter console.error to suppress abort errors
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    // Check if any argument contains abort-related errors
+    const shouldSuppress = args.some(arg => {
+      if (arg && typeof arg === 'object') {
+        return arg.name === 'AbortError' ||
+               arg.code === 20 || // DOMException.ABORT_ERR
+               (arg.message && arg.message.includes('aborted'));
+      }
+      if (typeof arg === 'string') {
+        return arg.includes('aborted');
+      }
+      return false;
+    });
+
+    if (!shouldSuppress) {
+      originalConsoleError.apply(console, args);
+    }
+  };
 }
 
 import { TransactionProvider } from './transactions/provider';
@@ -39,8 +82,8 @@ const shouldRetryConnection = (eventOrErr) => {
   return true;
 };
 
-const createWsClientInstance = () =>
-  createWSClient({
+const createWsClientInstance = () => {
+  const client = createWSClient({
     url: HASURA_WS,
     connectionParams: {
       headers: {
@@ -56,28 +99,87 @@ const createWsClientInstance = () =>
       const jitter = Math.random() * 300;
       await wait(Math.min(backoff + jitter, 10000));
     },
+    on: {
+      connected: () => console.log('[WebSocket] Connected to Hasura'),
+      connecting: () => console.log('[WebSocket] Connecting to Hasura...'),
+      closed: (event) => console.log('[WebSocket] Connection closed:', event),
+      error: (error) => console.error('[WebSocket] Error:', error),
+    },
   });
+  return client;
+};
 
 const wsClient = typeof window !== 'undefined' ? createWsClientInstance() : null;
+
+// Custom fetch exchange that suppresses abort errors
+const customFetchExchange = ({ forward }) => ops$ => {
+  return pipe(
+    ops$,
+    mergeMap(operation => {
+      const { url, fetchOptions } = operation.context;
+      const body = JSON.stringify({
+        query: typeof operation.query === 'string' ? operation.query : print(operation.query),
+        variables: operation.variables,
+      });
+
+      return pipe(
+        fromPromise(
+          fetch(url || HASURA_HTTP, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-hasura-role': 'public' },
+            body,
+            ...fetchOptions,
+          })
+            .then(response => response.json())
+            .then(result => ({
+              operation,
+              data: result.data,
+              error: result.errors ? new Error(result.errors[0].message) : undefined,
+            }))
+            .catch(error => {
+              // Silently handle abort errors
+              if (error.name === 'AbortError' || error.code === 20 || (error.message && error.message.includes('aborted'))) {
+                return { operation, data: undefined, error: undefined };
+              }
+              return { operation, data: undefined, error };
+            })
+        ),
+        map(result => result)
+      );
+    })
+  );
+};
 
 const client = createClient({
   url: HASURA_HTTP,
   exchanges: [
     cacheExchange,
-    fetchExchange,
     subscriptionExchange({
       forwardSubscription(operation) {
         return {
           subscribe: (sink) => {
             if (!wsClient) {
+              console.error('[SubscriptionExchange] No WebSocket client available');
               return { unsubscribe: () => {} };
             }
-            const dispose = wsClient.subscribe(operation, sink);
+            const dispose = wsClient.subscribe(operation, {
+              next: (data) => {
+                sink.next(data);
+              },
+              error: (error) => {
+                console.error('[SubscriptionExchange] Error for', operation.key, ':', error);
+                sink.error(error);
+              },
+              complete: () => {
+                sink.complete();
+              },
+            });
             return { unsubscribe: dispose };
           },
         };
       },
     }),
+    customFetchExchange,
   ],
   fetchOptions: () => ({
     headers: {

@@ -19,6 +19,8 @@ import { Tabs } from '../common/Tabs.jsx'
 import { useRef } from 'preact/hooks'
 import ResizableDivider from '../common/ResizableDivider.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
+import { GameSubscriptionProvider } from './providers/GameSubscriptionProvider.jsx'
+import { LobbySubscriptionProvider } from './providers/LobbySubscriptionProvider.jsx'
 
 const DIVIDER_COOKIE = 'stepGameDivider'
 const SPLITTER_WIDTH_PX = 2
@@ -212,33 +214,35 @@ export default function StepGame({
       titleOnMinimize="Function"
       backgroundColor="rgba(0, 0, 0, 0.5)"
     >
-      {isMobile && (
-        <div style={{ marginBottom: '8px' }}>
-          <Tabs
-            tabs={mobileTabs}
-            activeTab={activePage}
-            onChange={setActivePage}
-          />
-        </div>
-      )}
+      <LobbySubscriptionProvider gameTypeId={derivedGameTypeId}>
+        {isMobile && (
+          <div style={{ marginBottom: '8px' }}>
+            <Tabs
+              tabs={mobileTabs}
+              activeTab={activePage}
+              onChange={setActivePage}
+            />
+          </div>
+        )}
 
-      <ResumedTransactionBanner tx={resumedTx} />
+        <ResumedTransactionBanner tx={resumedTx} />
 
-      <div
-        style={{
-          display: isMobile ? 'flex' : 'grid',
-          flexDirection: isMobile ? 'column' : 'unset',
-          gridTemplateColumns,
-          gap: isMobile ? '0' : '20px',
-          flex: 1,
-          minHeight: 0,
-          height: '100%',
-          width: '100%',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-        ref={layoutRef}
-      >
+        <GameSubscriptionProvider gameId={activeGame?.id}>
+        <div
+          style={{
+            display: isMobile ? 'flex' : 'grid',
+            flexDirection: isMobile ? 'column' : 'unset',
+            gridTemplateColumns,
+            gap: isMobile ? '0' : '20px',
+            flex: 1,
+            minHeight: 0,
+            height: '100%',
+            width: '100%',
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+          ref={layoutRef}
+        >
         {/** Desktop keeps both columns mounted so grid columns remain stable; mobile still toggles */} 
         <div
           style={{
@@ -326,6 +330,7 @@ export default function StepGame({
             />)}
         </div>
       </div>
+      </GameSubscriptionProvider>
 
       <ActionFooter
         displayMode={displayMode}
@@ -338,6 +343,7 @@ export default function StepGame({
         onBackToGameList={unselectGame}
         showGameListButton={showingGameDetails}
       />
+      </LobbySubscriptionProvider>
     </TerminalContainer>
   )
 }

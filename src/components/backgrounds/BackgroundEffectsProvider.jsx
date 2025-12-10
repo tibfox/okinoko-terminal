@@ -6,6 +6,7 @@ import SilkEffect from './SilkEffect.jsx'
 import ThreadsEffect from './ThreadsEffect.jsx'
 import DarkVeilEffect from './DarkVeilEffect.jsx'
 import FaultyTerminalEffect from './FaultyTerminalEffect.jsx'
+import GlitterEffect from './GlitterEffect.jsx'
 
 export const BACKGROUND_EFFECTS = [
   {
@@ -37,6 +38,12 @@ export const BACKGROUND_EFFECTS = [
     label: 'Terminal',
     description: 'Just flickering scanlines.',
     component: FaultyTerminalEffect,
+  },
+  {
+    id: 'glitter',
+    label: 'Glitter',
+    description: 'Sparkling stars on color-primary background.',
+    component: GlitterEffect,
   },
 ]
 

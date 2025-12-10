@@ -1,5 +1,5 @@
-import { useMemo } from 'preact/hooks'
-import { useQuery, useSubscription } from '@urql/preact'
+import { useMemo, useEffect } from 'preact/hooks'
+import { useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCirclePlay,
@@ -8,12 +8,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import {
   GAME_MOVES_QUERY,
-  GAME_MOVE_SUBSCRIPTION,
 } from '../../../data/inarow_gql.js'
 import { getBoardDimensions } from '../utils/boardDimensions.js'
 import { CyberContainer } from '../../common/CyberContainer.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
 import NeonButton from '../../buttons/NeonButton.jsx'
+import { useGameSubscription } from '../providers/GameSubscriptionProvider.jsx'
 
 /* ---------------- GameDetails ---------------- */
 
@@ -62,6 +62,7 @@ export default function GameDetails({
 
   return (
     <div
+      className="neon-scroll"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -71,6 +72,7 @@ export default function GameDetails({
         gap: '12px',
         textAlign: 'center',
         opacity: 0.9,
+        overflowY: 'auto',
       }}
     >
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -195,7 +197,7 @@ export default function GameDetails({
               </div>
             )}
             {swapInfo.history?.length > 0 && (
-              <div style={{ maxHeight: '90px', overflowY: 'auto' }}>
+              <div className="neon-scroll" style={{ maxHeight: '90px', overflowY: 'auto' }}>
                 <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', textAlign: 'left' }}>
                   {swapInfo.history.slice(-5).map((entry, idx) => (
                     <li key={`${entry}-${idx}`}>{entry}</li>
@@ -231,6 +233,7 @@ const toNumericVar = value =>
 function GameMovesTable({ game }) {
   const dimensions = useMemo(() => getBoardDimensions(game?.type), [game?.type])
   const numericGameId = toNumericVar(game?.id)
+  const { updateCounter } = useGameSubscription()
 
   const [{ data, fetching, error }, reexecute] = useQuery({
     query: GAME_MOVES_QUERY,
@@ -239,28 +242,12 @@ function GameMovesTable({ game }) {
     requestPolicy: 'cache-and-network',
   })
 
-  // useSubscription(
-  //   {
-  //     query: GAME_MOVE_SUBSCRIPTION,
-  //     variables: numericGameId ? { gameId: numericGameId } : undefined,
-  //     pause: !numericGameId,
-  //   },
-  //   (_, event) => {
-  //     if (event) reexecute({ requestPolicy: 'network-only' })
-  //     return event
-  //   }
-  // )
-  // useSubscription(
-  //   {
-  //     query: GAME_SWAP_SUBSCRIPTION,
-  //     variables: numericGameId ? { gameId: numericGameId } : undefined,
-  //     pause: !numericGameId,
-  //   },
-  //   (_, event) => {
-  //     if (event) reexecute({ requestPolicy: 'network-only' })
-  //     return event
-  //   }
-  // )
+  // Re-execute query when subscription updates
+  useEffect(() => {
+    if (updateCounter > 0 && reexecute) {
+      reexecute({ requestPolicy: 'network-only' })
+    }
+  }, [updateCounter, reexecute])
 
   const moves = data?.moves ?? []
   const swaps = data?.swaps ?? []

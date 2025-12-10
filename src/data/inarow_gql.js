@@ -76,6 +76,22 @@ export const GAME_MOVES_QUERY = gql`
       indexer_block_height
       indexer_ts
     }
+    terminal_events: okinoko_iarv2_all_events(
+      where: {
+        id: { _eq: $gameId }
+        event_type: { _in: ["won", "draw", "resign", "timeout"] }
+      }
+      order_by: { indexer_block_height: desc }
+      limit: 1
+    ) {
+      event_type
+      id
+      by
+      winner
+      resigner
+      timedout
+      indexer_block_height
+    }
     stateinfo: okinoko_iarv2_active_with_turn(
       where: { id: { _eq: $gameId } }
       limit: 1
@@ -117,7 +133,10 @@ export const GAME_SWAP_SUBSCRIPTION = gql`
 
 export const IAR_EVENTS_SUBSCRIPTION = gql`
   subscription OnIarEvent {
-    okinoko_iarv2_all_events {
+    okinoko_iarv2_all_events_stream(
+      batch_size: 1
+      cursor: { initial_value: { indexer_block_height: 0 }, ordering: ASC }
+    ) {
       event_type
       id
       indexer_block_height
@@ -127,7 +146,11 @@ export const IAR_EVENTS_SUBSCRIPTION = gql`
 
 export const GAME_EVENTS_SUBSCRIPTION = gql`
   subscription OnGameEvent($gameId: numeric!) {
-    okinoko_iarv2_all_events(where: { id: { _eq: $gameId } }) {
+    okinoko_iarv2_all_events_stream(
+      batch_size: 1
+      cursor: { initial_value: { indexer_block_height: 0 }, ordering: ASC }
+      where: { id: { _eq: $gameId } }
+    ) {
       event_type
       id
       by

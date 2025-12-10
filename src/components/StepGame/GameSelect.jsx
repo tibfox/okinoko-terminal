@@ -1,17 +1,18 @@
 
 // GameSelect.jsx
 import { useState, useEffect, useMemo, useRef } from 'preact/hooks'
-import { useQuery, useSubscription } from '@urql/preact'
+import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import ListButton from '../buttons/ListButton.jsx'
 
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
-import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY, IAR_EVENTS_SUBSCRIPTION } from '../../data/inarow_gql.js'
+import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY } from '../../data/inarow_gql.js'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import { GAME_TYPE_IDS, typeNameFromId, deriveGameTypeId } from './gameTypes.js'
 import { Tabs } from '../common/Tabs.jsx'
+import { useLobbySubscription } from './providers/LobbySubscriptionProvider.jsx'
 
 const ensureHiveAddress = (value) =>
   !value ? null : value.startsWith('hive:') ? value : `hive:${value}`
@@ -24,7 +25,7 @@ const normalizeAmount = (value) => {
 }
 
 export default function GameSelect({ user, contract, fn, onGameSelected, params, setParams,isMobile }) {
-  
+
   const [newGames, setNewGames] = useState([])
   const [continueGames, setContinueGames] = useState([])
   const [fmpActive, setPfmActive] = useState(false)
@@ -33,6 +34,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const normalizedGameType = gameTypeId != null ? Number(gameTypeId) : null
   const lobbyReadyRef = useRef(false)
   const activeReadyRef = useRef(false)
+  const { updateCounter } = useLobbySubscription()
 
   const [lobbyResult, reexecuteLobby] = useQuery({
     query: LOBBY_QUERY,
@@ -65,23 +67,17 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
     error: activeError,
   } = activeResult
 
-  useSubscription(
-    {
-      query: IAR_EVENTS_SUBSCRIPTION,
-      pause: !gameTypeId,
-    },
-    (_, event) => {
-      if (event) {
-        if (reexecuteLobby && lobbyReadyRef.current) {
-          reexecuteLobby({ requestPolicy: 'network-only' })
-        }
-        if (reexecuteActive && activeReadyRef.current) {
-          reexecuteActive({ requestPolicy: 'network-only' })
-        }
+  // Re-execute queries when lobby subscription updates
+  useEffect(() => {
+    if (updateCounter > 0) {
+      if (reexecuteLobby && lobbyReadyRef.current) {
+        reexecuteLobby({ requestPolicy: 'network-only' })
       }
-      return event
-    },
-  )
+      if (reexecuteActive && activeReadyRef.current) {
+        reexecuteActive({ requestPolicy: 'network-only' })
+      }
+    }
+  }, [updateCounter, reexecuteLobby, reexecuteActive])
 
   // UI mode: create | continue | join
   const [view, setView] = useState('continue')
