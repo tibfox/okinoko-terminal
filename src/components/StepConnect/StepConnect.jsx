@@ -29,7 +29,6 @@ export default function StepConnect({ setStep }) {
   if (isMobile === null) {
     return null
   }
-  const mobileAsciiHeight = '40vh'
   const terminalTitle = 'Welcome to the ŌKIՈOKO TERMINAL'
   return (
     <TerminalContainer
@@ -41,11 +40,12 @@ export default function StepConnect({ setStep }) {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem',
+          gap: isMobile ? '0.5rem' : '1.5rem',
           flex: 1,
           minHeight: 0,
           height: '100%',
           width: '100%',
+          overflow: isMobile ? 'hidden' : 'auto',
         }}
       >
         {/* Intro copy */}
@@ -53,12 +53,13 @@ export default function StepConnect({ setStep }) {
 
         <div
           style={{
-            flex: isMobile ? '0 0 auto' : '1 1 auto',
-            minHeight: isMobile ? mobileAsciiHeight : 0,
-            maxHeight: isMobile ? mobileAsciiHeight : 'none',
-            height: isMobile ? mobileAsciiHeight : '100%',
+            flex: isMobile ? '1 1 auto' : '1 1 auto',
+            minHeight: isMobile ? 0 : 0,
+            maxHeight: isMobile ? 'none' : 'none',
+            height: isMobile ? 'auto' : '100%',
             display: 'flex',
             padding: isMobile ? '0 0.5rem' : 0,
+            overflow: isMobile ? 'hidden' : 'auto',
           }}
         >
           {isMobile ? <MobileAsciiArt /> : <DesktopAsciiArt />}
@@ -68,17 +69,16 @@ export default function StepConnect({ setStep }) {
         <div
           style={{
             display: 'flex',
-            marginTop: '10px',
+            marginTop: isMobile ? '0.5rem' : '10px',
             gap: '12px',
-            justifyContent: 'space-between',
+            flexShrink: 0,
+            justifyContent: user ? 'space-between' : 'center',
             width: '100%',
           }}
         >
           <AiohaPage />
 
-          {!user ? (
-            <p></p>
-          ) : (
+          {user && (
             // --- Continue button ---
             <div className="next-button-glitter-wrapper">
               <NeonButton
@@ -97,7 +97,7 @@ export default function StepConnect({ setStep }) {
                     <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
                   ))}
                 </div>
-                <span style={{ position: 'relative', zIndex: 3 }}>
+                <span style={{ position: 'relative', zIndex: 3, textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000' }}>
                   Enter
                   <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
                 </span>

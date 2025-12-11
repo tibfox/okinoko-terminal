@@ -36,13 +36,14 @@ export default function ConnectIntro() {
         style={{
           // maxWidth: '800px',
           // textAlign: 'justify',
-          lineHeight: 1.5,
+          lineHeight: isMobile ? 1.3 : 1.5,
           // color: '#0ff',
-          fontSize: isMobile ? '0.9rem' : '1rem',
+          fontSize: isMobile ? '0.85rem' : '1rem',
+          margin: isMobile ? '0.5rem 0' : '1rem 0',
         }}
       >
         This terminal is your <b>direct uplink</b> to the <a href="https://vsc.eco/" target="_blank"
-                      rel="noreferrer">Magi blockchain</a>!<br></br><br></br>
+                      rel="noreferrer">Magi blockchain</a>!{isMobile ? ' ' : <><br></br><br></br></>}
         Streamlined, fast, and tuned for quick access to curated smart contracts operating on the Magi network.
       </p>
 
