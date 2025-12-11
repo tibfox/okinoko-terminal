@@ -4,15 +4,27 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHourglassStart, faFlag } from '@fortawesome/free-solid-svg-icons'
+import { faHourglassStart, faFlag, faCirclePlay } from '@fortawesome/free-solid-svg-icons'
 import {
   GAME_MOVES_QUERY,
 } from '../../data/inarow_gql.js'
 import EmptyGamePanel from './components/EmptyGamePanel.jsx'
 import { getBoardDimensions } from './utils/boardDimensions.js'
 import { useGameSubscription } from './providers/GameSubscriptionProvider.jsx'
+import { playBeep } from '../../lib/beep.js'
 
 const BOARD_MAX_DIMENSION = 'min(90vmin, calc(100vh - 220px))'
+const isGomokuVariantType = (type) => {
+  const key = String(type || '').trim().toLowerCase()
+  return (
+    key === 'gomoku' ||
+    key === 'gomokofreestyle' ||
+    key === 'gomoku freestyle' ||
+    key === '3' ||
+    key === '6' ||
+    key.includes('gomoku')
+  )
+}
 const toNumericVar = (value) =>
   value === null || value === undefined ? null : value.toString()
 const hasFmp = (value) => {
@@ -176,6 +188,17 @@ export default function GameField({
       reexecuteGameDetails({ requestPolicy: 'network-only' })
     }
   }, [updateCounter, reexecuteGameDetails])
+
+  // Process terminal events (won, draw, resign, timeout)
+  useEffect(() => {
+    if (!gameDetails.data?.terminal_events) return
+    const terminalEvents = gameDetails.data.terminal_events
+    if (terminalEvents.length > 0) {
+      const latestEvent = terminalEvents[0]
+      applyTerminalEvent(latestEvent)
+    }
+  }, [gameDetails.data?.terminal_events, applyTerminalEvent])
+
   useEffect(() => {
     setBoardState(null)
     setResolvedRoles({ playerX: null, playerY: null })
@@ -206,8 +229,7 @@ export default function GameField({
       }
     }
     const boardArr = Array(size.rows * size.cols).fill('0')
-    const isGomoku = (game?.type || '').toLowerCase() === 'gomoku'
-    if (isGomoku) {
+    if (isGomokuVariantType(game?.type)) {
       swapEvents
         .filter((swap) => {
           const op = (swap.operation || '').toLowerCase()
@@ -256,6 +278,8 @@ export default function GameField({
       setServerMoveType(stateMeta.movetype)
     } else if (game?.moveType) {
       setServerMoveType(game.moveType)
+    } else if (game?.state) {
+      setServerMoveType(game.state)
     } else {
       setServerMoveType('m')
     }
@@ -269,18 +293,47 @@ export default function GameField({
   const normalizedPlayerX = normalizeId(playerX)
   const normalizedPlayerY = normalizeId(playerY)
   const hasOpponent = Boolean(playerX && playerY)
-  const normalizedMoveTypeRaw = (serverMoveType || game?.moveType || 'm') || 'm'
+  const normalizedMoveTypeRaw =
+    serverMoveType ||
+    game?.moveType ||
+    game?.state ||
+    'm'
   const normalizedMoveType = typeof normalizedMoveTypeRaw === 'string'
     ? normalizedMoveTypeRaw.trim().toLowerCase()
     : String(normalizedMoveTypeRaw || 'm')
-  const swapStage = normalizedMoveType
+  const swapStageRaw = normalizedMoveType
+  const swapStageKeyBase = swapStageRaw.replace(/[^a-z0-9]/g, '')
+
+  // Check if swap phases are complete by looking for a final color choice
+  const hasSwapCompleted = swapEvents.some(
+    (swap) => {
+      const op = (swap.operation || '').toLowerCase()
+      const choice = (swap.choice || '').toLowerCase()
+      const isColorOp = op === 'color'
+      const isChooseWithStayOrSwap = op === 'choose' && (choice === 'stay' || choice === 'swap')
+      console.log('[GameFieldGomoku] Checking swap event:', { op, choice, isColorOp, isChooseWithStayOrSwap })
+      return isColorOp || isChooseWithStayOrSwap
+    }
+  )
+  console.log('[GameFieldGomoku] hasSwapCompleted:', hasSwapCompleted, 'swapEvents:', swapEvents)
+
+  const swapStageKey =
+    isGomokuVariantType(game?.type) && (!swapStageKeyBase || swapStageKeyBase === 'm') && !hasSwapCompleted
+      ? 'swap'
+      : swapStageKeyBase
   const isSwapPlacementPhase =
-    (game?.type || '').toLowerCase() === 'gomoku' &&
-    (swapStage === 's_1' || swapStage === 'swap' || swapStage === 'swap1')
+    isGomokuVariantType(game?.type) &&
+    (
+      swapStageKey === 's1' ||
+      swapStageKey === 'swap' ||
+      swapStageKey === 'swap1'
+    )
   const isSwapDecisionPhase =
-    (game?.type || '').toLowerCase() === 'gomoku' && (swapStage === 's_2' || swapStage === 'swap2')
+    isGomokuVariantType(game?.type) &&
+    (swapStageKey === 's2' || swapStageKey === 'swap2')
   const isSwapFinalChoicePhase =
-    (game?.type || '').toLowerCase() === 'gomoku' && (swapStage === 's_3' || swapStage === 'swap3')
+    isGomokuVariantType(game?.type) &&
+    (swapStageKey === 's3' || swapStageKey === 'swap3')
   const isMyTurn =
     hasOpponent &&
     fullUser &&
@@ -426,16 +479,19 @@ export default function GameField({
     setIsAddingExtra(false)
     setFallingFrame(null)
     setSwapPlacements([])
+    if (game?.id) {
+      playBeep(800, 25, 'square')
+    }
   }, [game?.id])
 
   const prevSwapStageRef = useRef(null)
   useEffect(() => {
-    const inAddStage = swapStage === 's_2' || swapStage === 'swap2'
+    const inAddStage = swapStageKey === 's2' || swapStageKey === 'swap2'
     const prevStage = prevSwapStageRef.current
-    prevSwapStageRef.current = swapStage
+    prevSwapStageRef.current = swapStageKey
 
     // entering add decision stage: start clean, stay locked until user clicks "Place Two More"
-    if (inAddStage && prevStage !== swapStage) {
+    if (inAddStage && prevStage !== swapStageKey) {
       // Only reset if we're transitioning into this stage from a different stage
       if (isAddingExtra || extraPlacements.length > 0) {
         setIsAddingExtra(false)
@@ -457,7 +513,7 @@ export default function GameField({
       updateSelection([])
       syncSwapAddParams([])
     }
-  }, [swapStage, isMyTurn, isAddingExtra, extraPlacements.length, updateSelection])
+  }, [swapStageKey, isMyTurn, isAddingExtra, extraPlacements.length, updateSelection])
 
   useEffect(() => {
     if (!isSwapPlacementPhase) {
@@ -475,7 +531,7 @@ export default function GameField({
   }, [isSwapPlacementPhase, swapPlacements])
 
   const swapInfoPayload = useMemo(() => {
-    if ((game?.type || '').toLowerCase() !== 'gomoku') {
+    if (!isGomokuVariantType(game?.type)) {
       return null
     }
     const labelStone = (color) => (color === 2 ? 'O' : 'X')
@@ -590,6 +646,7 @@ export default function GameField({
     const index = r * size.cols + c
     const cellVal = board.charAt(index)
     if (isSwapPlacementPhase) {
+      if (!isMyTurn) return
       if (cellVal !== '0') return
       const already = swapPlacements.some((entry) => entry.r === r && entry.c === c)
       if (already) {
@@ -602,6 +659,7 @@ export default function GameField({
       if (nextColor == null) return
       const next = [...swapPlacements, { r, c, color: nextColor }]
       setSwapPlacements(next)
+      playBeep(1000, 25, 'square')
       return
     }
     if (isAddingExtra) {
@@ -622,6 +680,7 @@ export default function GameField({
       setExtraPlacements(nextPlacements)
       updateSelection(nextPlacements.map(({ r, c }) => ({ r, c })))
       syncSwapAddParams(nextPlacements)
+      playBeep(1000, 25, 'square')
       return
     }
     if (!hasOpponent || !isMyTurn) return
@@ -649,6 +708,7 @@ export default function GameField({
           // Final landing
           setFallingFrame(null)
           updateSelection([{ r: landingRow, c }])
+          playBeep(1000, 25, 'square')
           fallingTimerRef.current = null
         }
       }
@@ -666,11 +726,62 @@ export default function GameField({
     } else {
       updateSelection([{ r, c }])
     }
+    playBeep(1000, 25, 'square')
   }
 
   const minsAgo = game.lastMoveMinutesAgo
   const daysAgo = Math.floor(minsAgo / (24 * 60))
-  const swapDecisionOverlay = null
+  const swapDecisionOverlay = isSwapDecisionPhase && isMyTurn && !isAddingExtra ? (
+    <div
+      style={{
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(0,0,0,0.85)',
+        border: '1px solid var(--color-primary)',
+        borderRadius: '10px',
+        padding: '18px',
+        zIndex: 5,
+        width: isMobile ? 'calc(100% - 40px)' : 'auto',
+        maxWidth: '420px',
+        textAlign: 'center',
+        boxShadow: '0 0 20px rgba(0,0,0,0.8)',
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: '12px' }}>Swap Decision</div>
+      <div style={{ fontSize: '0.85rem', marginBottom: '14px' }}>
+        Choose to stay, swap colors, or place two extra stones.
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: '10px',
+          justifyContent: 'center',
+        }}
+      >
+        <NeonButton
+          disabled={pendingAction}
+          onClick={() => handleSwapDecision('stay')}
+        >
+          Stay
+        </NeonButton>
+        <NeonButton
+          disabled={pendingAction}
+          onClick={() => handleSwapDecision('swap')}
+        >
+          Swap
+        </NeonButton>
+        <NeonButton
+          disabled={pendingAction}
+          onClick={startSwapAdd}
+        >
+          Place Two More
+        </NeonButton>
+      </div>
+    </div>
+  ) : null
 
   const swapLockedOverlay = null
 
@@ -767,6 +878,37 @@ export default function GameField({
           </div>
         )
       })()}
+
+      {/* Turn indicator */}
+      {hasOpponent && !resultBanner && (
+        <div
+          style={{
+            textAlign: 'center',
+            color: 'var(--color-primary-lighter)',
+            marginBottom: '16px',
+            fontSize: isMobile ? '0.95rem' : '1.1rem',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            padding: isMobile ? '6px 12px' : '10px 16px',
+            alignSelf: 'center',
+            background: isMobile ? 'transparent' : 'rgba(0, 0, 0, 0.5)',
+            borderRadius: isMobile ? '0' : '6px',
+          }}
+        >
+          <strong>Turn:</strong> {isMyTurn ? (
+            <>
+              <FontAwesomeIcon icon={faCirclePlay} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              your turn
+            </>
+          ) : (
+            <>
+              <FontAwesomeIcon icon={faHourglassStart} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              {resolvedNextPlayer ? formatUserHandle(resolvedNextPlayer) : opponentName || 'opponent'}
+            </>
+          )}
+        </div>
+      )}
+
       {isMobile ? (
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
           <NeonButton

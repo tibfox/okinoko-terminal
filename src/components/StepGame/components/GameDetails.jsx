@@ -33,6 +33,24 @@ export default function GameDetails({
     game.bet > 0 ? `${game.bet * 2} ${game.asset}` : 'none'
   const hasOpponent = Boolean(game?.playerX && game?.playerY)
   const daysAgo = Math.floor(Number(game?.lastMoveMinutesAgo ?? 0) / (24 * 60))
+  const isGomokuVariant = (game?.type || '').toLowerCase().includes('gomoku')
+  const swapPhaseRaw = (game?.moveType || game?.state || '').toString().toLowerCase().trim()
+  const swapPhaseLabel = (() => {
+    switch (swapPhaseRaw) {
+      case 's_1':
+      case 'swap':
+      case 'swap1':
+        return 'Swap Opening: place 3 stones'
+      case 's_2':
+      case 'swap2':
+        return 'Swap Decision: stay / swap / place two more'
+      case 's_3':
+      case 'swap3':
+        return 'Swap Final Choice'
+      default:
+        return null
+    }
+  })()
 
   const handleResignClick = () => {
     if (!onResign) return
@@ -100,42 +118,30 @@ export default function GameDetails({
                   <td style={{ padding: '6px 10px' }}>{prizePool}</td>
                 </tr>
               )}
-            <tr>
-              <td style={{ padding: '6px 10px' }}>
-                <strong>Turn:</strong>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                {isMyTurn ? (
-                  <>
-                    <FontAwesomeIcon icon={faCirclePlay} style={{ marginRight: '10px' }} />
-                    <strong>your turn</strong>
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-                  {nextTurnPlayer ? formatHandle(nextTurnPlayer) : opponentName || ''}
-                  </>
-                )}
-              </td>
-            </tr>
             </tbody>
           </table>
         </div>
 
-        <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-          <NeonButton onClick={handleResignClick} style={{ minWidth: '120px' }}>
+        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <NeonButton onClick={handleResignClick} style={{ width: '200px' }}>
             <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
             Resign
           </NeonButton>
           <NeonButton
             disabled={!hasOpponent || isMyTurn || daysAgo < 7}
             onClick={handleTimeoutClick}
-            style={{ minWidth: '120px' }}
+            style={{ width: '200px' }}
           >
             <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
             Claim Timeout
           </NeonButton>
         </div>
+
+        {isGomokuVariant && swapPhaseLabel && (
+          <div style={{ marginTop: '10px', textAlign: 'center', color: 'var(--color-primary-lighter)' }}>
+            <strong>Swap Phase:</strong> {swapPhaseLabel}
+          </div>
+        )}
 
         {swapInfo?.active && (
           <div
@@ -264,7 +270,8 @@ function GameMovesTable({ game }) {
         coords = `R${row }C${col }`
       }
       let desc = coords
-      if ((game?.type || '').toLowerCase() === 'gomoku') {
+      const isGomokuVariant = (game?.type || '').toLowerCase().includes('gomoku')
+      if (isGomokuVariant) {
         const letter =
           move.by && game?.playerX && move.by === game.playerX
             ? '*'
@@ -284,7 +291,8 @@ function GameMovesTable({ game }) {
       })
     })
 
-    if ((game?.type || '').toLowerCase() === 'gomoku') {
+    const isGomokuVariant = (game?.type || '').toLowerCase().includes('gomoku')
+    if (isGomokuVariant) {
       swaps.forEach((swap) => {
         const op = (swap.operation || '').toLowerCase()
         const choice = (swap.choice || '').toLowerCase()

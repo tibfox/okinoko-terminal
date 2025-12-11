@@ -13,7 +13,7 @@ export default function AccountDataTerminal() {
       initialState={INITIAL_STATE}
       // backgroundColor="rgba(0, 0, 0, 0.7)"
       desktopBounds={{
-        minWidth: 150,
+        minWidth: 230,
         maxWidth: 1024,
         minHeight: 150,
         maxHeight: 1024,

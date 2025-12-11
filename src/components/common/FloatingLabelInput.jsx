@@ -19,9 +19,9 @@ const FloatingLabelInput = ({
   const hasValue = value !== "" && value !== undefined && value !== null
 
   const handleKeyDown = () => {
-    if (beep) {
-      playBeep(450, 25, "square")
-    }
+    if (!beep) return
+    const freq = 700 + Math.random() * 400 // 900–1100 Hz
+    playBeep(freq, 7, "sine")
   }
 
   return (
@@ -29,17 +29,10 @@ const FloatingLabelInput = ({
       className={`floating-label-input ${className}`}
       style={style}
     >
-      {/* ✅ Floating Label */}
+      {/* ✅ Label integrated into border */}
       {!hideLabel && label && (
         <label
-          className={`absolute left-4 px-2 bg-black text-cyan-300 text-sm font-medium tracking-wide transition-all duration-200 ${
-            hasValue ? "-top-3" : "-top-3"
-          } pointer-events-none`}
-          style={{
-            transform: "translateY(-50%)",
-            top: "0px",
-            lineHeight: "1",
-          }}
+          className="floating-label-input__label"
         >
           {label}
         </label>

@@ -31,6 +31,13 @@ export function useGameSelection({
         setFormattedAgo(null)
         setOpponentName(null)
         setIsMyTurn(null)
+        // Don't return early if mode is 'g_create' - we still need to process it
+        if (mode !== 'g_create') {
+          return
+        }
+        // For g_create mode, set the params and return
+        // Note: We don't set params here because GameSelect already set them
+        // Including __gameCreateType which is required for validation
         return
       }
 

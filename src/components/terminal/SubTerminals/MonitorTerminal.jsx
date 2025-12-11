@@ -13,7 +13,7 @@ export default function MonitorTerminal() {
       initialState={INITIAL_STATE}
       // backgroundColor="rgba(0, 0, 0, 0.7)"
       desktopBounds={{
-        minWidth: 240,
+        minWidth: 230,
         maxWidth: 1024,
         minHeight: 240,
         maxHeight: 1024,

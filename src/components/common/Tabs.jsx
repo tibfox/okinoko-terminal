@@ -1,4 +1,5 @@
 import { h } from 'preact'
+import { playBeep } from '../../lib/beep.js'
 
 export function Tabs({ tabs, activeTab, onChange }) {
   const tabButtonStyle = (active) => ({
@@ -18,6 +19,11 @@ export function Tabs({ tabs, activeTab, onChange }) {
     zIndex: 1,
   })
 
+  const handleClick = (id) => {
+    playBeep(800, 25, 'square')
+    onChange(id)
+  }
+
   return (
     <div style={{ display: 'flex', gap: '8px' }}>
       {tabs.map((tab) => (
@@ -26,7 +32,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
           type="button"
           className="tabs-button"
           style={tabButtonStyle(activeTab === tab.id)}
-          onClick={() => onChange(tab.id)}
+          onClick={() => handleClick(tab.id)}
         >
           {tab.label}
         </button>

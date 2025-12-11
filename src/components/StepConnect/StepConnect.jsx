@@ -84,7 +84,7 @@ export default function StepConnect({ setStep }) {
               <NeonButton
                 onClick={() => {
                   setStep(1) // 🚀 go to next step
-                  playBeep(800, 100)
+                  
                 }}
               >
                 <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">

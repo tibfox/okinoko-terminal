@@ -181,8 +181,10 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
 
   const [hasLobbyLoaded, setHasLobbyLoaded] = useState(false)
   const [hasActiveLoaded, setHasActiveLoaded] = useState(false)
+  const [hasAutoSwitched, setHasAutoSwitched] = useState(false)
   useEffect(() => {
     setHasLobbyLoaded(false)
+    setHasAutoSwitched(false)  // Reset auto-switch when game type changes
   }, [gameTypeId])
   useEffect(() => {
     setHasActiveLoaded(false)
@@ -201,6 +203,32 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   }, [hasActiveLoaded, activeData, activeFetching])
   const lobbyLoading = !hasLobbyLoaded && Boolean(gameTypeId && lobbyFetching)
   const activeLoading = !hasActiveLoaded && Boolean(gameTypeId && normalizedUser && activeFetching)
+
+  // Auto-switch tabs when user has no running games
+  // Only runs once when both lobby and active data have loaded
+  useEffect(() => {
+    if (hasAutoSwitched || !hasActiveLoaded || !hasLobbyLoaded) return
+    // Only auto-switch if we're on the default continue view
+    if (view !== 'continue') return
+    if (continueGames.length === 0) {
+      if (newGames.length > 0) {
+        setView('g_join')
+      } else {
+        setView('create')
+        // Set params and trigger onGameSelected when auto-switching to create
+        setParams((prev) => ({
+          __gameAction: 'g_create',
+          __gameId: null,
+          __gameCreateType:
+            gameTypeId != null
+              ? String(gameTypeId)
+              : prev?.__gameCreateType ?? '',
+        }))
+        onGameSelected?.(null, 'g_create')
+      }
+      setHasAutoSwitched(true)
+    }
+  }, [hasAutoSwitched, hasActiveLoaded, hasLobbyLoaded, continueGames.length, newGames.length, gameTypeId, setParams, onGameSelected, view])
 
   useEffect(() => {
     if (gameTypeId == null) {

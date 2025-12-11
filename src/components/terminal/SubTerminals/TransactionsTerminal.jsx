@@ -12,7 +12,7 @@ export default function TransactionsTerminal() {
       titleOnMinimize="Tx"
       initialState={INITIAL_STATE}
       desktopBounds={{
-        minWidth: 240,
+        minWidth: 230,
         maxWidth: 1024,
         minHeight: 240,
         maxHeight: 1024,

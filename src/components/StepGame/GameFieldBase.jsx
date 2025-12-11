@@ -4,11 +4,12 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHourglassStart, faFlag } from '@fortawesome/free-solid-svg-icons'
+import { faHourglassStart, faFlag, faCirclePlay } from '@fortawesome/free-solid-svg-icons'
 import { GAME_MOVES_QUERY } from '../../data/inarow_gql.js'
 import EmptyGamePanel from './components/EmptyGamePanel.jsx'
 import { getBoardDimensions } from './utils/boardDimensions.js'
 import { useGameSubscription } from './providers/GameSubscriptionProvider.jsx'
+import { playBeep } from '../../lib/beep.js'
 
 const BOARD_MAX_DIMENSION = 'min(90vmin, calc(100vh - 220px))'
 const toNumericVar = (value) =>
@@ -208,6 +209,11 @@ export default function GameField({
       onStateChange({ playerX, playerY, hasOpponent, isMyTurn, nextPlayer: resolvedNextPlayer })
     }
   }, [playerX, playerY, hasOpponent, isMyTurn, resolvedNextPlayer, onStateChange])
+  useEffect(() => {
+    if (game?.id) {
+      playBeep(800, 25, 'square')
+    }
+  }, [game?.id])
   let opponentName = ""
   if (game != null && fullUser != null) {
     opponentName = fullUser === playerX ? playerY : playerX
@@ -320,6 +326,7 @@ export default function GameField({
           // Final landing
           setFallingFrame(null)
           updateSelection([{ r: landingRow, c }])
+          playBeep(1000, 25, 'square')
           fallingTimerRef.current = null
         }
       }
@@ -339,6 +346,7 @@ export default function GameField({
     } else {
       updateSelection([{ r, c }])
     }
+    playBeep(1000, 25, 'square')
   }
   const stoneFillForG = (val) => {
     if (val !== '1' && val !== '2') return null
@@ -384,11 +392,42 @@ export default function GameField({
           </div>
         )
       })()}
+
+      {/* Turn indicator */}
+      {hasOpponent && !resultBanner && (
+        <div
+          style={{
+            textAlign: 'center',
+            color: 'var(--color-primary-lighter)',
+            marginBottom: '16px',
+            fontSize: isMobile ? '0.95rem' : '1.1rem',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            padding: isMobile ? '6px 12px' : '10px 16px',
+            alignSelf: 'center',
+            background: isMobile ? 'transparent' : 'rgba(0, 0, 0, 0.5)',
+            borderRadius: isMobile ? '0' : '6px',
+          }}
+        >
+          <strong>Turn:</strong> {isMyTurn ? (
+            <>
+              <FontAwesomeIcon icon={faCirclePlay} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              your turn
+            </>
+          ) : (
+            <>
+              <FontAwesomeIcon icon={faHourglassStart} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              {resolvedNextPlayer ? formatUserHandle(resolvedNextPlayer) : opponentName || 'opponent'}
+            </>
+          )}
+        </div>
+      )}
+
       {isMobile ? (
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
       <NeonButton
         onClick={() => handleResignClick([])}
-        style={{ marginBottom: '10px', flex: 1 }}
+        style={{ flex: 1 }}
       >
         <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
             Resign
@@ -397,7 +436,7 @@ export default function GameField({
           <NeonButton
             disabled={!hasOpponent || daysAgo < 7}
             onClick={() => handleTimeoutClick([])}
-            style={{ marginBottom: '10px', flex: 1 }}
+            style={{ flex: 1 }}
           >
         <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
         Claim Timeout
@@ -518,15 +557,18 @@ export default function GameField({
               // C4: frame-by-frame falling animation (soft glow while falling), selected uses ULTRA on landing
               if (game.type === 'Connect4') {
                 const isSelectedLanding = selectedCell
-                const owningPlayer = val === '1' ? playerX : val === '2' ? playerY : null
-                const isMyStone = owningPlayer && owningPlayer === fullUser
+                const isPlayerXStone = val === '1'
+                const isPlayerYStone = val === '2'
+                const isMyStone =
+                  (fullUser === playerX && isPlayerXStone) ||
+                  (fullUser === playerY && isPlayerYStone)
                 const bgBase =
                   isSelectedLanding
                     ? 'var(--color-primary)'   // final landed cell filled
                     : isUsed
                       ? isMyStone
                         ? 'var(--color-primary)'
-                        : 'var(--color-primary-darker)'
+                        : 'var(--color-primary-darkest)'
                       : 'transparent'   // empty or falling stays transparent-ish
                 const shadow =
                   isFalling
@@ -555,19 +597,10 @@ export default function GameField({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: isUsed
-                        ? isMyStone
-                          ? 'var(--color-primary)'
-                          : 'var(--color-primary-darker)'
-                        : (clickable ? 'var(--color-primary)' : '#555'),
-                      // fontSize: 'clamp(0.6rem, 1vw, 1rem)',
-                      // fontWeight: 'bold',
                       cursor: clickable ? 'pointer' : 'not-allowed',
                       transition: 'box-shadow 10ms linear, background 500ms linear'
                     }}
-                  >
-                    {val === '1' ? 'X' : val === '2' ? 'O' : ''}
-                  </div>
+                  />
                 )
               }
               if (game.type == 'Squava') {
@@ -581,7 +614,7 @@ export default function GameField({
                     style={{
                       aspectRatio: '1 / 1',
                       border: selectedCell && !isUsed ? '5px solid var(--color-primary-lightest)' : '1px solid var(--color-primary-darker)',
-                      borderRadius: '90px',
+                      borderRadius: '20px',
                       background: isUsed
                         ? cellLetter == myLetter ? 'var(--color-primary)' : 'var(--color-primary-darkest)'
                         : selectedCell
@@ -603,7 +636,7 @@ export default function GameField({
                       transition: 'box-shadow 120ms ease, background 120ms ease'
                     }}
                   >
-                    <span class="pixel-ttt-font">{!selectedCell ? "" : cellLetter == "X" ? "*" : "@"}</span>
+                    {/* <span class="pixel-ttt-font">{!selectedCell ? "" : cellLetter == "X" ? "*" : "@"}</span> */}
                   </div>
                 )
               }

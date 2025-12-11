@@ -2,6 +2,8 @@ import { h } from 'preact'
 import { useRef } from 'preact/hooks'
 import { playBeep } from '../../lib/beep.js'
 
+
+
 export default function NeonButton({
   children,
   variant,
@@ -34,7 +36,7 @@ export default function NeonButton({
 
   const handleClick = (e) => {
     if (disabled) return 
-    if (beep) playBeep(300, 50, 'square')
+    if (beep) playBeep(400, 25, 'square')
     if (onClick) onClick(e)
   }
 

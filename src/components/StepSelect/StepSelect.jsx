@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useState, useCallback, useRef } from 'p
 import contractsCfg from '../../data/contracts.json'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
+import SparkleButton from '../buttons/SparkleButton.jsx'
 import ContractList from './ContractList.jsx'
 import ContractDetails from './ContractDetails.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -341,11 +342,14 @@ export default function StepSelect({
           Back
         </NeonButton>
         <div className="next-button-glitter-wrapper">
+         
           <NeonButton
             disabled={!selectedContract || (!isMobile && !selectedFunction)}
             onClick={handleNext}
+            style={{ position: 'relative', overflow: 'hidden' }}
           >
-            <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
+            <SparkleButton>
+            {/* <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
               {Array.from({ length: 90 }).map((_, i) => (
                 <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>
               ))}
@@ -355,10 +359,11 @@ export default function StepSelect({
                 <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
               ))}
             </div>
-            <span style={{ position: 'relative', zIndex: 3 }}>
+            <span style={{ position: 'relative', zIndex: 3 }}> */}
               Next
               <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
-            </span>
+            {/* </span> */}
+            </SparkleButton>
           </NeonButton>
         </div>
       </div>

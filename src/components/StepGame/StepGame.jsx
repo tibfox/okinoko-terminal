@@ -115,6 +115,8 @@ export default function StepGame({
   }
 
   const handleCreate = async () => {
+    console.log('[StepGame] handleCreate called with params:', params)
+    console.log('[StepGame] displayMode:', displayMode)
     await handleSend()
   }
 
@@ -124,7 +126,11 @@ export default function StepGame({
   //   : allMandatoryFilled && !pending         // Original behavior for non-game flow
   const isSendEnabled = displayMode === 'g_join'
     ? allMandatoryFilled && !pending && !hasInsufficientBalance
-    : allMandatoryFilled && !pending
+    : displayMode === 'g_create'
+      ? !pending  // For create mode, button is always enabled (name and bet are optional)
+      : activeGame
+        ? selectedCells.length > 0 && !pending  // During active game, only need selected cells
+        : allMandatoryFilled && !pending
 
   // Debug logging for button state
   useEffect(() => {

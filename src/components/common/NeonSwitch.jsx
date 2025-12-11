@@ -9,7 +9,7 @@ export default function NeonSwitch({ name = '', checked, onChange, beep = true }
     onChange(newState)
 
     if (beep) {
-      playBeep(400, 50, 'square')
+      playBeep(700, 25, 'square')
     }
   }
 

@@ -7,6 +7,7 @@
   --color-primary-darkest: hsl(180, 100%, 10%);
   --color-primary-lighter: hsl(180, 100%, 60%);
   --color-primary-lightest: hsl(180, 100%, 70%);
+  --color-cyber-bg: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
 }
 
 @keyframes fadeToTransparent {

@@ -11,7 +11,7 @@ export default function ListButton({
 }) {
   const handleClick = (e) => {
     if (beep) {
-      playBeep(360, 50, 'square')
+      playBeep(500, 25, 'square')
     }
 
     // run user’s click handler too

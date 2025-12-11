@@ -181,6 +181,7 @@ export default function StepExecute({
             overflowY: 'auto',
             flex: 1,
             minWidth: 0,
+            paddingRight: isMobile ? '0' : '20px',
             pointerEvents: leftCollapsed ? 'none' : 'auto',
             visibility: leftCollapsed ? 'hidden' : 'visible',
           }}

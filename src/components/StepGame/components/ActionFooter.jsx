@@ -1,33 +1,10 @@
 import { useState } from 'preact/hooks'
 import NeonButton from '../../buttons/NeonButton.jsx'
+import SparkleButton from '../../buttons/SparkleButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 
-// Helper component to add sparkle effect to buttons
-const SparkleButton = ({ onClick, disabled, children }) => (
-  <>
-    {/* Bottom grid - continuous twinkle (always active) */}
-    <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
-      {Array.from({ length: 90 }).map((_, i) => (
-        <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>
-      ))}
-    </div>
-    {/* Top grid - black overlay that reveals sparkles on hover */}
-    <div className="pixel-sparkle-grid pixel-sparkle-grid-overlay">
-      {Array.from({ length: 90 }).map((_, i) => (
-        <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
-      ))}
-    </div>
-    {/* Button text - must be above all grids */}
-    <span style={{
-      position: 'relative',
-      zIndex: 3,
-      textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000'
-    }}>
-      {children}
-    </span>
-  </>
-)
+
 
 export default function ActionFooter({
   displayMode,
@@ -47,8 +24,8 @@ export default function ActionFooter({
 
     if (displayMode === 'g_create') {
       return (
-        <div className="next-button-glitter-wrapper" style={{ width: '100%' }}>
-          <NeonButton onClick={onCreate} disabled={!isSendEnabled} style={{ position: 'relative', overflow: 'hidden', width: '100%' }}>
+        <div className="next-button-glitter-wrapper">
+          <NeonButton onClick={onCreate} disabled={!isSendEnabled} style={{ position: 'relative', overflow: 'hidden' }}>
             <SparkleButton>
               {pending ? (
                 'Creating...'
@@ -84,8 +61,9 @@ export default function ActionFooter({
     }
 
     return (
-      <div className="next-button-glitter-wrapper" style={{ width: '100%' }}>
-        <NeonButton onClick={onMove} disabled={!isSendEnabled} style={{ position: 'relative', overflow: 'hidden', width: '100%' }}>
+      <div className="next-button-glitter-wrapper">
+        <NeonButton onClick={onMove} disabled={!isSendEnabled}
+        style={{ position: 'relative', overflow: 'hidden' }}>
           <SparkleButton>
             {pending ? (
               'Sending…'

@@ -8,6 +8,7 @@ import {
 } from '../../../data/inarow_gql.js'
 import { GAME_TYPE_OPTIONS } from '../gameTypes.js'
 import { Tabs } from '../../common/Tabs.jsx'
+import { playBeep } from '../../../lib/beep.js'
 
 const DEFAULT_LEADERBOARD_GAME_TYPE = GAME_TYPE_OPTIONS[0]?.id ?? 1
 
@@ -85,6 +86,11 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     []
 
   const historyRows = historyData?.okinoko_iarv2_completed_games ?? []
+
+  const handleScopeChange = (key) => {
+    playBeep(800, 25, 'square')
+    setLeaderboardScope(key)
+  }
 
   const handleSortChange = (nextKey) => {
     if (!LEADERBOARD_FIELD_MAP[nextKey]) return
@@ -376,7 +382,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
                 fontSize: '0.8rem',
                 letterSpacing: '0.04em',
               }}
-              onClick={() => setLeaderboardScope(key)}
+              onClick={() => handleScopeChange(key)}
             >
               {label}
             </button>

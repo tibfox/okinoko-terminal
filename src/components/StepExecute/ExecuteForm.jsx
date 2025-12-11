@@ -1769,13 +1769,12 @@ export default function ExecuteForm({
             inputMode="decimal"
             placeholder="Amount"
             label={labelText}
-            hideLabel
             value={current.amount}
             onChange={onAmountChange}
             onBlur={onAmountBlur}
             style={{
               flex: '0 0 50%',
-              borderColor: exceeds ? 'red' : 'var(--color-primary-lighter)',
+              borderColor: exceeds ? 'red' : 'var(--color-primary-darkest)',
               boxShadow: exceeds ? '0 0 8px red' : 'none',
             }}
           />
@@ -1801,6 +1800,7 @@ export default function ExecuteForm({
               backgroundSize: '5px 5px, 5px 5px',
               backgroundRepeat: 'no-repeat',
               color: 'var(--color-primary-lighter)',
+              border: '1px solid var(--color-primary-darkest)',
             }}
           >
             <option value="HIVE">HIVE</option>
@@ -1837,7 +1837,6 @@ export default function ExecuteForm({
           placeholder="hive:username"
           value={value}
           onChange={handleChange}
-          hideLabel
           style={{ marginTop: '4px' }}
         />
       )
@@ -1861,7 +1860,6 @@ export default function ExecuteForm({
           placeholder="https://example.com"
           value={value}
           onChange={(e) => setParams((prev) => ({ ...prev, [p.name]: e.target.value }))}
-          hideLabel
           style={{
             marginTop: '4px',
             borderColor: valid ? undefined : 'red',
@@ -1876,7 +1874,6 @@ export default function ExecuteForm({
         label={labelText}
         type={p.type === 'number' ? 'number' : 'text'}
         value={params[p.name] ?? ''}
-        hideLabel
         onChange={(e) => {
           const val = e.target.value
           setParams((prev) => ({
@@ -1922,52 +1919,42 @@ export default function ExecuteForm({
     const hint = (p.hintText || '').trim()
     const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
     return (
-      <div key={p.name} style={{ marginBottom: '12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '6px',
-          }}
-        >
-          <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
-            {labelText}
-          </span>
-          {hint ? (
-            <FontAwesomeIcon
-              icon={faCircleInfo}
-              title={hint}
-              style={{ color: 'var(--color-primary-lighter)', cursor: 'help' }}
-              onMouseEnter={(e) =>
-                setHintOverlay({
-                  text: hint,
-                  x: e.clientX - 60,
-                  y: e.clientY - 60,
-                })
-              }
-              onMouseMove={(e) =>
-                setHintOverlay((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        x: e.clientX - 60,
-                        y: e.clientY - 60,
-                      }
-                    : prev
-                )
-              }
-              onMouseLeave={() => setHintOverlay(null)}
-              onClick={() =>
-                openPopup?.({
-                  title: labelText || 'Hint',
-                  body: hint,
-                })
-              }
-            />
-          ) : null}
+      <div key={p.name} style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          {renderParamInput(p)}
         </div>
-        <div style={{ flex: 1 }}>{renderParamInput(p)}</div>
+        {hint && (
+          <FontAwesomeIcon
+            icon={faCircleInfo}
+            title={hint}
+            style={{ color: 'var(--color-primary-lighter)', cursor: 'help', fontSize: '0.9rem', marginTop: '0' }}
+            onMouseEnter={(e) =>
+              setHintOverlay({
+                text: hint,
+                x: e.clientX - 60,
+                y: e.clientY - 60,
+              })
+            }
+            onMouseMove={(e) =>
+              setHintOverlay((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      x: e.clientX - 60,
+                      y: e.clientY - 60,
+                    }
+                  : prev
+              )
+            }
+            onMouseLeave={() => setHintOverlay(null)}
+            onClick={() =>
+              openPopup?.({
+                title: labelText || 'Hint',
+                body: hint,
+              })
+            }
+          />
+        )}
       </div>
     )
   }
@@ -1999,10 +1986,14 @@ export default function ExecuteForm({
 
   const handleRcLimitChange = (val) => {
     if (!setParams) return
-    const cleaned = String(val).replace(/[^\d]/g, '')
+    const cleaned = String(val).replace(/[^\d.]/g, '')
+    // Allow up to 3 decimal places
+    if (cleaned !== '' && !/^\d*\.?\d{0,3}$/.test(cleaned)) return
+    // Store the value multiplied by 1000 in params
+    const numVal = cleaned === '' ? '' : Math.floor(Number(cleaned) * 1000)
     setParams((prev) => ({
       ...prev,
-      rcLimit: cleaned === '' ? '' : cleaned,
+      rcLimit: numVal,
     }))
   }
 
@@ -2012,7 +2003,9 @@ export default function ExecuteForm({
     if (!Number.isFinite(num) || num <= 0) {
       setParams((prev) => ({ ...prev, rcLimit: RC_LIMIT_DEFAULT }))
     } else {
-      setParams((prev) => ({ ...prev, rcLimit: Math.floor(num) }))
+      // Format to 3 decimal places
+      const formatted = (num / 1000).toFixed(3)
+      setParams((prev) => ({ ...prev, rcLimit: Math.floor(Number(formatted) * 1000) }))
     }
   }
 
@@ -2075,49 +2068,46 @@ export default function ExecuteForm({
               </CyberContainer>
             ) : null}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px', maxWidth: '180px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>Max RC</span>
-                <FontAwesomeIcon
-                  icon={faCircleInfo}
-                  title="Limits resources used for this call."
-                  style={{ color: 'var(--color-primary-lighter)', cursor: 'help' }}
-                  onClick={() =>
-                    openPopup?.({
-                      title: 'Max RC',
-                      body: 'Limits resources used for this call.',
-                    })
-                  }
-                  onMouseEnter={(e) =>
-                    setHintOverlay({
-                      text: 'Limits resources used for this call.',
-                      x: e.clientX - 60,
-                      y: e.clientY - 60,
-                    })
-                  }
-                  onMouseMove={(e) =>
-                    setHintOverlay((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            x: e.clientX - 60,
-                            y: e.clientY - 60,
-                          }
-                        : prev
-                    )
-                  }
-                  onMouseLeave={() => setHintOverlay(null)}
+            <div style={{ marginTop: '12px', maxWidth: '180px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <FloatingLabelInput
+                  label="Max RC"
+                  type="text"
+                  inputMode="decimal"
+                  value={(rcLimitValue / 1000).toFixed(3)}
+                  onChange={(e) => handleRcLimitChange(e.target.value)}
+                  onBlur={handleRcLimitBlur}
                 />
               </div>
-              <FloatingLabelInput
-                label="Max RC"
-                type="number"
-                min="1"
-                step="1"
-                hideLabel
-                value={rcLimitValue}
-                onChange={(e) => handleRcLimitChange(e.target.value)}
-                onBlur={handleRcLimitBlur}
+              <FontAwesomeIcon
+                icon={faCircleInfo}
+                title="Limits resources used for this call (in thousands)"
+                style={{ color: 'var(--color-primary-lighter)', cursor: 'help', fontSize: '0.9rem', marginTop: '0' }}
+                onClick={() =>
+                  openPopup?.({
+                    title: 'Max RC',
+                    body: 'Limits resources used for this call (in thousands)',
+                  })
+                }
+                onMouseEnter={(e) =>
+                  setHintOverlay({
+                    text: 'Limits resources used for this call (in thousands)',
+                    x: e.clientX - 60,
+                    y: e.clientY - 60,
+                  })
+                }
+                onMouseMove={(e) =>
+                  setHintOverlay((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          x: e.clientX - 60,
+                          y: e.clientY - 60,
+                        }
+                      : prev
+                  )
+                }
+                onMouseLeave={() => setHintOverlay(null)}
               />
             </div>
 
