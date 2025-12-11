@@ -57,7 +57,7 @@ export const BACKGROUND_EFFECTS = [
 const COOKIE_NAME = 'okinoko_terminal_background_effect'
 
 const getDefaultEffectId = () =>
-  BACKGROUND_EFFECTS.find((effect) => effect.id === 'color-bends')?.id ??
+  BACKGROUND_EFFECTS.find((effect) => effect.id === 'threads')?.id ??
   BACKGROUND_EFFECTS[0]?.id ??
   null
 
