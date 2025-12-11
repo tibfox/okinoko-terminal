@@ -427,7 +427,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
           tabs={[
             { id: 'continue', label: 'Continue' },
             { id: 'g_join', label: 'Lobby' },
-            { id: 'create', label: 'Create Game' },
+            { id: 'create', label: 'Create' },
           ]}
           activeTab={view}
           onChange={(tabId) => {

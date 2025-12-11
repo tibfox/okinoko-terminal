@@ -51,13 +51,15 @@ export default function GlitterEffect() {
         sparkleType = 'glitter-twinkle-rare'; // 15% rare sparkles
       }
 
-      // Random star shape - only * and +
+      // Random star shape - cycle between +, x, and *
       const shapeRoll = seededRandom();
       let shape;
-      if (shapeRoll < 0.5) {
-        shape = 'plus';
+      if (shapeRoll < 0.33) {
+        shape = 'plus'; // +
+      } else if (shapeRoll < 0.66) {
+        shape = 'cross'; // x
       } else {
-        shape = 'star';
+        shape = 'star'; // *
       }
 
       particles.push({
@@ -98,28 +100,57 @@ export default function GlitterEffect() {
 
     const shapeStyles = particles.map((p, idx) => {
       if (p.shape === 'plus') {
+        // + shape (vertical and horizontal bars)
         return `
           .glitter-particle--${idx}::before {
             width: 100%;
             height: 20%;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%);
           }
           .glitter-particle--${idx}::after {
             width: 20%;
             height: 100%;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%);
+          }
+        `;
+      } else if (p.shape === 'cross') {
+        // x shape (diagonal bars at 45deg)
+        return `
+          .glitter-particle--${idx}::before {
+            width: 100%;
+            height: 20%;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%) rotate(45deg);
+          }
+          .glitter-particle--${idx}::after {
+            width: 100%;
+            height: 20%;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%) rotate(-45deg);
           }
         `;
       } else {
-        // star shape (*) - rotated 45deg
+        // * shape (8-pointed star: + overlaid with x using clip-path)
         return `
           .glitter-particle--${idx}::before {
             width: 100%;
-            height: 20%;
-            transform: translate(-50%, -50%) rotate(45deg);
+            height: 100%;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%);
+            clip-path: polygon(
+              40% 0%, 60% 0%, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0% 60%, 0% 40%, 40% 40%
+            );
           }
           .glitter-particle--${idx}::after {
-            width: 20%;
+            width: 100%;
             height: 100%;
+            background: var(--color-primary);
             transform: translate(-50%, -50%) rotate(45deg);
+            clip-path: polygon(
+              40% 0%, 60% 0%, 60% 40%, 100% 40%, 100% 60%, 60% 60%, 60% 100%, 40% 100%, 40% 60%, 0% 60%, 0% 40%, 40% 40%
+            );
           }
         `;
       }

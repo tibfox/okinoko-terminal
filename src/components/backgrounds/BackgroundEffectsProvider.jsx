@@ -7,6 +7,7 @@ import ThreadsEffect from './ThreadsEffect.jsx'
 import DarkVeilEffect from './DarkVeilEffect.jsx'
 import FaultyTerminalEffect from './FaultyTerminalEffect.jsx'
 import GlitterEffect from './GlitterEffect.jsx'
+import TwinkleGridEffect from './TwinkleGridEffect.jsx'
 
 export const BACKGROUND_EFFECTS = [
   {
@@ -39,11 +40,17 @@ export const BACKGROUND_EFFECTS = [
     description: 'Just flickering scanlines.',
     component: FaultyTerminalEffect,
   },
+  // {
+  //   id: 'glitter',
+  //   label: 'Stars',
+  //   description: 'Sparkling stars drifting across the screen.',
+  //   component: GlitterEffect,
+  // },
   {
-    id: 'glitter',
-    label: 'Glitter',
-    description: 'Sparkling stars on color-primary background.',
-    component: GlitterEffect,
+    id: 'twinkle-grid',
+    label: 'Twinkle Grid',
+    description: 'Grid of twinkling pixels inspired by button effects.',
+    component: TwinkleGridEffect,
   },
 ]
 

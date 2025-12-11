@@ -78,9 +78,12 @@
               "boolFalse": "f",
               "boolTrue": "r",
               "asString": true,
-              "mandatory": false,
-              "hintText": "",
-              "sortIndex": 2
+              "mandatory": true,
+              "hintText": "Decide whether to release the funds to the receiver or refund the sender.",
+              "sortIndex": 2,
+              "displayTrue": "Release",
+              "displayFalse": "Refund"
+              
             }
           ],
           "hintText": "",
