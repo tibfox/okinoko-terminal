@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHourglassStart, faFlag, faCirclePlay } from '@fortawesome/free-solid-svg-icons'
+import { faHourglassStart, faFlag, faCirclePlay, faTrophy, faHandshake, faClock, faHandPeace } from '@fortawesome/free-solid-svg-icons'
 import {
   GAME_MOVES_QUERY,
 } from '../../data/inarow_gql.js'
@@ -135,7 +135,7 @@ export default function GameField({
   const applyTerminalEvent = useCallback(
     (entry) => {
       if (!entry || !fullUser) return
-      const updateBanner = (text, tone) => setResultBanner({ text, tone })
+      const updateBanner = (text, tone, icon) => setResultBanner({ text, tone, icon })
 
       switch (entry.event_type) {
         case 'won': {
@@ -146,6 +146,7 @@ export default function GameField({
               ? 'You won the game!'
               : `${formatUserHandle(entry.winner)} won the game.`,
             isMe ? 'positive' : 'negative',
+            faTrophy,
           )
           break
         }
@@ -157,6 +158,7 @@ export default function GameField({
               ? 'You resigned from this game.'
               : `${formatUserHandle(entry.resigner)} resigned. You win!`,
             isMe ? 'negative' : 'positive',
+            faHandPeace,
           )
           break
         }
@@ -168,11 +170,12 @@ export default function GameField({
               ? 'You lost on timeout.'
               : `${formatUserHandle(entry.timedout)} timed out. You win!`,
             isMe ? 'negative' : 'positive',
+            faClock,
           )
           break
         }
         case 'draw': {
-          updateBanner('Game ended in a draw.', 'neutral')
+          updateBanner('Game ended in a draw.', 'neutral', faHandshake)
           break
         }
         default:
@@ -858,23 +861,40 @@ export default function GameField({
           ? resultBanner
           : (!hasOpponent ? { text: 'Waiting for another player to join…' } : null)
         if (!banner) return null
+
+        const isGameEnd = banner.tone === 'positive' || banner.tone === 'negative' || banner.tone === 'neutral'
+
         return (
           <div
             style={{
               textAlign: 'center',
               color: 'var(--color-primary-lighter)',
               marginBottom: '16px',
-              fontSize: '1.05rem',
+              fontSize: isGameEnd ? (isMobile ? '0.91rem' : '1.4rem') : '1.05rem',
               fontWeight: 600,
               letterSpacing: '0.04em',
               background: 'rgba(0, 0, 0, 0.5)',
-              padding: '8px 12px',
-              borderRadius: '6px',
-              display: 'inline-block',
+              padding: isGameEnd ? (isMobile ? '12px 20px' : '20px 32px') : '8px 12px',
+              borderRadius: '12px',
+              display: isGameEnd ? 'flex' : 'inline-block',
+              alignItems: 'center',
+              gap: isGameEnd ? (isMobile ? '12px' : '20px') : '0',
               alignSelf: 'center',
+              border: isGameEnd ? '2px solid var(--color-primary)' : 'none',
+              boxShadow: isGameEnd ? '0 0 30px var(--color-primary)' : 'none',
             }}
           >
-            {banner.text}
+            {banner.icon && (
+              <FontAwesomeIcon
+                icon={banner.icon}
+                style={{
+                  fontSize: isMobile ? '2.5rem' : '4rem',
+                  filter: 'drop-shadow(0 0 10px var(--color-primary))',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            <span>{banner.text}</span>
           </div>
         )
       })()}
@@ -942,9 +962,11 @@ export default function GameField({
         {swapDecisionOverlay || swapFinalOverlay}
         {swapLockedOverlay}
         {(() => {
+          // Only show overlay for "waiting for player" (not for game end states)
           const overlayBanner =
-            resultBanner ?? (!hasOpponent ? { text: 'Waiting for another player to join…' } : null)
+            !hasOpponent ? { text: 'Waiting for another player to join…' } : null
           if (!overlayBanner) return null
+
           return (
             <div
               style={{

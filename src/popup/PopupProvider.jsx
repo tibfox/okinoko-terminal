@@ -5,6 +5,9 @@ import { PopupContext } from "./context.js";
 
 export function PopupProvider({ children }) {
   const [popup, setPopup] = useState(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const openPopup = ({ title, body }) => {
     setPopup({
@@ -12,6 +15,7 @@ export function PopupProvider({ children }) {
       body,
       showCloseButton: true,
     })
+    setPosition({ x: 0, y: 0 }); // Reset position when opening new popup
   }
   const closePopup = () => setPopup(null);
 // 🔁 Re-render the overlay every second while a popup is open
@@ -21,6 +25,37 @@ export function PopupProvider({ children }) {
     const id = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(id);
   }, [popup]);
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e) => {
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
 
   return (
     <PopupContext.Provider value={{ openPopup, closePopup }}>
@@ -46,10 +81,12 @@ export function PopupProvider({ children }) {
           <div
             style={{
               position: "relative",
-              width: "min(95vw, 720px)",
+              width: "min(95vw, 500px)",
               maxHeight: "90vh",
               display: "flex",
               flexDirection: "column",
+              transform: `translate(${position.x}px, ${position.y}px)`,
+              transition: isDragging ? "none" : "transform 0.1s ease-out",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -67,12 +104,15 @@ export function PopupProvider({ children }) {
               }}
             >
               <div
+                onMouseDown={handleMouseDown}
                 style={{
                   marginBottom: "18px",
                   color: "var(--color-primary-lightest)",
                   textTransform: "uppercase",
                   letterSpacing: "0.2em",
                   fontSize: "0.85rem",
+                  cursor: isDragging ? "grabbing" : "grab",
+                  userSelect: "none",
                 }}
               >
                 {popup.title}
