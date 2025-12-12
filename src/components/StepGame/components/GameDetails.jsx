@@ -98,6 +98,9 @@ export default function GameDetails({
           {game.id}: {game.name}
         </h2>
 
+        {/* Win/Loss Conditions */}
+        <WinConditions gameType={game.type} />
+
         {/* Game metadata */}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <table
@@ -216,6 +219,61 @@ export default function GameDetails({
 
         {/* Move history */}
         <GameMovesTable game={game} />
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- WinConditions ---------------- */
+
+function WinConditions({ gameType }) {
+  if (!gameType) return null
+
+  const normalized = String(gameType).trim().toLowerCase()
+
+  let winText = ''
+  let loseText = ''
+
+  if (normalized.includes('freestyle')) {
+    winText = '5 or more in a row'
+    loseText = 'Opponent gets 5 or more in a row'
+  } else if (normalized.includes('gomoku')) {
+    winText = 'Exactly 5 in a row (not more)'
+    loseText = 'Opponent gets exactly 5 in a row'
+  } else if (normalized === 'tictactoe') {
+    winText = '3 in a row'
+    loseText = 'Opponent gets 3 in a row'
+  } else if (normalized === 'squava') {
+    winText = '4 in a row'
+    loseText = 'You get 3 in a row OR opponent gets 4 in a row'
+  } else if (normalized === 'tictactoe5') {
+    winText = '4 in a row'
+    loseText = 'Opponent gets 4 in a row'
+  } else if (normalized === 'connect4') {
+    winText = '4 in a row'
+    loseText = 'Opponent gets 4 in a row'
+  } else {
+    return null
+  }
+
+  return (
+    <div style={{
+      fontSize: '0.8rem',
+      marginBottom: '16px',
+      padding: '8px 12px',
+      borderRadius: '4px',
+      background: 'rgba(0, 0, 0, 0.3)',
+      border: '1px solid var(--color-primary-darker, #004d5a)',
+      maxWidth: '400px',
+      margin: '0 auto 16px auto',
+    }}>
+      <div style={{ marginBottom: '4px' }}>
+        <span style={{ color: 'var(--color-primary-lighter, #9be8ff)', fontWeight: '600' }}>Win:</span>{' '}
+        <span style={{ opacity: 0.9 }}>{winText}</span>
+      </div>
+      <div>
+        <span style={{ color: 'var(--color-primary-lighter, #9be8ff)', fontWeight: '600' }}>Lose:</span>{' '}
+        <span style={{ opacity: 0.9 }}>{loseText}</span>
       </div>
     </div>
   )

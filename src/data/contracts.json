@@ -116,8 +116,8 @@
       "sortIndex": 2,
       "vscId": "vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n",
       "owner": "tibfox.vsc",
-      "deployedOn": "2025-11-06T14:53:27",
-      "verifiedOn": "2025-11-06T14:54:20",
+      "deployedOn": "2025-11-06 14:53:27",
+      "verifiedOn": "2025-12-11 20:42:13",
       "description": "Play games on-chain!",
       "functions": [
         {
@@ -178,7 +178,7 @@
       ]
     },
     {
-      "name": "Ōkinoko Shindao",
+      "name": "Ōkinoko ShinDAO",
       "id": 2,
       "sortIndex": 3,
       "vscId": "vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb",
