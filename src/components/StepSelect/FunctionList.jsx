@@ -1,5 +1,6 @@
-import { useMemo } from 'preact/hooks'
-import { useQuery, gql } from '@urql/preact'
+import { useMemo, useEffect, useRef, useContext, useState } from 'preact/hooks'
+import { createContext } from 'preact'
+import { useQuery, gql, useSubscription } from '@urql/preact'
 import ListButton from '../buttons/ListButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDice, faCirclePlay, faUser, faStore, faHourglassHalf } from '@fortawesome/free-solid-svg-icons'
@@ -7,6 +8,68 @@ import { useAioha } from '@aioha/react-ui'
 import { deriveGameTypeId } from '../StepGame/gameTypes.js'
 import { playBeep } from '../../lib/beep.js'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
+import { IAR_EVENTS_LIVE_SUBSCRIPTION, MAX_BLOCK_HEIGHT_QUERY } from '../../data/inarow_gql.js'
+import { TransactionContext } from '../../transactions/context.js'
+
+// Context for sharing IAR2 event subscription across all game buttons
+const IarEventsContext = createContext(null)
+
+// Provider component that manages a single subscription for all game buttons
+// First queries current block height, then subscribes from there to avoid historical replay
+function IarEventsProvider({ children }) {
+  const [updateCounter, setUpdateCounter] = useState(0)
+  const [startBlock, setStartBlock] = useState(null)
+  const lastEventRef = useRef(null)
+
+  // Query the current max block height
+  const [{ data: blockData }] = useQuery({
+    query: MAX_BLOCK_HEIGHT_QUERY,
+    requestPolicy: 'network-only',
+  })
+
+  // Set the starting block height once we have it
+  useEffect(() => {
+    if (blockData?.okinoko_iarv2_all_events?.[0]?.indexer_block_height) {
+      const currentBlock = blockData.okinoko_iarv2_all_events[0].indexer_block_height
+      console.log('[IarEventsProvider] Starting subscription from block:', currentBlock)
+      setStartBlock(currentBlock)
+    }
+  }, [blockData])
+
+  // Subscribe to events starting from the current block
+  const [iarResult] = useSubscription({
+    query: IAR_EVENTS_LIVE_SUBSCRIPTION,
+    variables: startBlock ? { fromBlock: startBlock } : undefined,
+    pause: !startBlock,
+  })
+
+  useEffect(() => {
+    if (iarResult.data) {
+      const events = iarResult.data?.okinoko_iarv2_all_events_stream
+      if (events && events.length > 0) {
+        const latestEvent = events[events.length - 1]
+        const eventKey = `${latestEvent.event_type}-${latestEvent.id}-${latestEvent.indexer_block_height}`
+
+        // Only trigger update if this is a new event we haven't processed yet
+        if (lastEventRef.current !== eventKey) {
+          lastEventRef.current = eventKey
+          console.log('[IarEventsProvider] New IAR2 event:', latestEvent)
+          setUpdateCounter((prev) => prev + 1)
+        }
+      }
+    }
+  }, [iarResult.data])
+
+  return (
+    <IarEventsContext.Provider value={updateCounter}>
+      {children}
+    </IarEventsContext.Provider>
+  )
+}
+
+function useIarEvents() {
+  return useContext(IarEventsContext)
+}
 
 // Game-specific button component with stats
 const GameListButton = ({ children, onClick, isActive, beep = true, isMobile = false, style = {}, ...props }) => {
@@ -64,21 +127,19 @@ const GAME_COUNTS_QUERY = gql`
         count
       }
     }
-    myTurn: okinoko_iarv2_active_with_turn_aggregate(
+    myTurn: okinoko_iarv2_active_with_turn(
       where: {
         type: { _eq: $gameType }
         next_turn_player: { _eq: $user }
         joiner: { _is_null: false }
       }
     ) {
-      aggregate {
-        count
-      }
+      id
     }
   }
 `
 
-export default function FunctionList({ selectedContract, fnName, setFnName }) {
+function FunctionListInner({ selectedContract, fnName, setFnName }) {
   const { user } = useAioha()
   const isMobile = useDeviceBreakpoint()
   const normalizedUser = useMemo(() => {
@@ -165,21 +226,70 @@ export default function FunctionList({ selectedContract, fnName, setFnName }) {
   )
 }
 
+// Wrap the component with the IAR2 events provider
+export default function FunctionList(props) {
+  return (
+    <IarEventsProvider>
+      <FunctionListInner {...props} />
+    </IarEventsProvider>
+  )
+}
+
 function GameButton({ fn, fnName, setFnName, gameTypeId, user }) {
   const isGame = fn.parse === 'game'
   const isActive = fnName === fn.name
   const isMobile = useDeviceBreakpoint()
 
-  const [{ data }] = useQuery({
+  // Subscribe to live IAR2 events
+  const iarEventCounter = useIarEvents()
+
+  // Access transaction context to check for pending moves
+  const { state: txState } = useContext(TransactionContext)
+
+  const [{ data }, reexecuteQuery] = useQuery({
     query: GAME_COUNTS_QUERY,
     variables: gameTypeId && user ? { gameType: gameTypeId.toString(), user } : undefined,
     pause: !isGame || !gameTypeId || !user,
     requestPolicy: 'cache-and-network',
   })
 
+  // Re-fetch counts when new events occur
+  useEffect(() => {
+    if (iarEventCounter > 0 && isGame && gameTypeId && user) {
+      reexecuteQuery({ requestPolicy: 'network-only' })
+    }
+  }, [iarEventCounter, isGame, gameTypeId, user, reexecuteQuery])
+
   const lobbyCount = data?.lobby?.aggregate?.count ?? 0
   const activeCount = data?.active?.aggregate?.count ?? 0
-  const myTurnCount = data?.myTurn?.aggregate?.count ?? 0
+
+  // Calculate myTurnCount excluding games with pending move transactions
+  const myTurnCount = useMemo(() => {
+    const myTurnGames = data?.myTurn || []
+    if (myTurnGames.length === 0) return 0
+
+    // Get all pending move transactions from the queue
+    const pendingMoveGameIds = new Set()
+    if (txState?.queue) {
+      txState.queue.forEach(tx => {
+        if (tx.status === 'pending' && tx.action && tx.action.toLowerCase().includes('move')) {
+          // Extract game ID from payload (format: "gameId" or "gameId|...")
+          const payload = tx.payload || ''
+          const gameId = payload.split('|')[0]
+          if (gameId) {
+            pendingMoveGameIds.add(Number(gameId))
+          }
+        }
+      })
+    }
+
+    // Filter out games that have pending move transactions
+    const gamesWithoutPendingMoves = myTurnGames.filter(game =>
+      !pendingMoveGameIds.has(game.id)
+    )
+
+    return gamesWithoutPendingMoves.length
+  }, [data?.myTurn, txState?.queue])
 
   // Use the custom GameListButton for games, regular ListButton for others
   const ButtonComponent = isGame ? GameListButton : ListButton

@@ -21,6 +21,7 @@ import ResizableDivider from '../common/ResizableDivider.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
 import { GameSubscriptionProvider } from './providers/GameSubscriptionProvider.jsx'
 import { LobbySubscriptionProvider } from './providers/LobbySubscriptionProvider.jsx'
+import { useGamePendingTransaction } from './hooks/useGamePendingTransaction.js'
 
 const DIVIDER_COOKIE = 'stepGameDivider'
 const SPLITTER_WIDTH_PX = 2
@@ -82,6 +83,9 @@ export default function StepGame({
     onMobilePageChange: setActivePage,
   })
 
+  // Check if current game has pending transaction
+  const { hasPendingTx } = useGamePendingTransaction(activeGame?.id)
+
   const contract = useMemo(
     () => contractsCfg.contracts.find((c) => c.vscId === contractId),
     [contractId]
@@ -138,12 +142,12 @@ export default function StepGame({
   //   ? selectedCells.length > 0 && !pending   // Only depend on selected cell
   //   : allMandatoryFilled && !pending         // Original behavior for non-game flow
   const isSendEnabled = displayMode === 'g_join'
-    ? allMandatoryFilled && !pending && !hasInsufficientBalance
+    ? allMandatoryFilled && !pending && !hasInsufficientBalance && !hasPendingTx
     : displayMode === 'g_create'
-      ? !pending  // For create mode, button is always enabled (name and bet are optional)
+      ? !pending && !hasPendingTx  // For create mode, button is always enabled (name and bet are optional)
       : activeGame
-        ? selectedCells.length > 0 && !pending  // During active game, only need selected cells
-        : allMandatoryFilled && !pending
+        ? selectedCells.length > 0 && !pending && !hasPendingTx  // During active game, only need selected cells
+        : allMandatoryFilled && !pending && !hasPendingTx
 
   // Debug logging for button state
   useEffect(() => {

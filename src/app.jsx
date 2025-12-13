@@ -12,6 +12,7 @@ import StepSelect from './components/StepSelect/StepSelect.jsx'
 import StepExecute from './components/StepExecute/StepExecute.jsx'
 import StepGame from './components/StepGame/StepGame.jsx'
 import { AccountBalanceProvider } from './components/terminal/providers/AccountBalanceProvider.jsx'
+import { GameMoveBeepProvider } from './components/providers/GameMoveBeepProvider.jsx'
 import MonitorTerminal from './components/terminal/SubTerminals/MonitorTerminal.jsx'
 import TransactionsTerminal from './components/terminal/SubTerminals/TransactionsTerminal.jsx'
 import AccountDataTerminal from './components/terminal/SubTerminals/AccountDataTerminal.jsx'
@@ -148,48 +149,50 @@ export function App() {
   return (
     <AiohaProvider aioha={aioha}>
       <AccountBalanceProvider>
-        <>
-          <div className="app-corner-logo" aria-hidden="true">
-            <span className="app-corner-logo__accent">ŌKIՈOKO</span>
-            <span className="app-corner-logo__muted">TERMINAL</span>
-          </div>
-          {showFooterCredit && (
-            <div className="app-footer-credit" aria-hidden="true">
-              <span className="app-footer-credit__accent">Created by</span>
-              <a
-                className="app-footer-credit__link app-footer-credit__muted"
-                href="https://ecency.com/@tibfox"
-                target="_blank"
-                rel="noreferrer"
-              >
-                @tibfox
-              </a>
-              <span className="app-footer-credit__separator">|</span>
-              <span className="app-footer-credit__accent">Powered by</span>
-                <a
-                className="app-footer-credit__link app-footer-credit__muted"
-                href="https://magi.eco"
-                target="_blank"
-                rel="noreferrer"
-              >Magi</a>
-              <span className="app-footer-credit__accent">and</span>
-              <a
-                className="app-footer-credit__link app-footer-credit__muted"
-                href="https://hive.io"
-                target="_blank"
-                rel="noreferrer"
-              >Hive</a>
+        <GameMoveBeepProvider>
+          <>
+            <div className="app-corner-logo" aria-hidden="true">
+              <span className="app-corner-logo__accent">ŌKIՈOKO</span>
+              <span className="app-corner-logo__muted">TERMINAL</span>
             </div>
-          )}
-          {renderPage()}
-          {showDesktopTerminals && (
-            <>
-              <MonitorTerminal />
-              <TransactionsTerminal />
-              <AccountDataTerminal />
-            </>
-          )}
-        </>
+            {showFooterCredit && (
+              <div className="app-footer-credit" aria-hidden="true">
+                <span className="app-footer-credit__accent">Created by</span>
+                <a
+                  className="app-footer-credit__link app-footer-credit__muted"
+                  href="https://ecency.com/@tibfox"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  @tibfox
+                </a>
+                <span className="app-footer-credit__separator">|</span>
+                <span className="app-footer-credit__accent">Powered by</span>
+                  <a
+                  className="app-footer-credit__link app-footer-credit__muted"
+                  href="https://magi.eco"
+                  target="_blank"
+                  rel="noreferrer"
+                >Magi</a>
+                <span className="app-footer-credit__accent">and</span>
+                <a
+                  className="app-footer-credit__link app-footer-credit__muted"
+                  href="https://hive.io"
+                  target="_blank"
+                  rel="noreferrer"
+                >Hive</a>
+              </div>
+            )}
+            {renderPage()}
+            {showDesktopTerminals && (
+              <>
+                <MonitorTerminal />
+                <TransactionsTerminal />
+                <AccountDataTerminal />
+              </>
+            )}
+          </>
+        </GameMoveBeepProvider>
       </AccountBalanceProvider>
     </AiohaProvider>
   )

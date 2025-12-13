@@ -144,6 +144,35 @@ export const IAR_EVENTS_SUBSCRIPTION = gql`
   }
 `;
 
+// Query to get the current maximum block height
+export const MAX_BLOCK_HEIGHT_QUERY = gql`
+  query GetMaxBlockHeight {
+    okinoko_iarv2_all_events(
+      order_by: { indexer_block_height: desc }
+      limit: 1
+    ) {
+      indexer_block_height
+    }
+  }
+`;
+
+// Subscription that only listens to NEW events (starts from provided block height)
+// This avoids replaying historical events
+export const IAR_EVENTS_LIVE_SUBSCRIPTION = gql`
+  subscription OnIarEventLive($fromBlock: bigint!) {
+    okinoko_iarv2_all_events_stream(
+      batch_size: 10
+      cursor: { initial_value: { indexer_block_height: $fromBlock }, ordering: ASC }
+    ) {
+      event_type
+      id
+      indexer_block_height
+      by
+      resigner
+    }
+  }
+`;
+
 export const GAME_EVENTS_SUBSCRIPTION = gql`
   subscription OnGameEvent($gameId: numeric!) {
     okinoko_iarv2_all_events_stream(

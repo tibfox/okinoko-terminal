@@ -4,12 +4,13 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHourglassStart, faFlag, faCirclePlay, faTrophy, faHandshake, faClock, faHandPeace } from '@fortawesome/free-solid-svg-icons'
+import { faHourglassStart, faFlag, faCirclePlay, faTrophy, faHandshake, faClock, faHandPeace, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { GAME_MOVES_QUERY } from '../../data/inarow_gql.js'
 import EmptyGamePanel from './components/EmptyGamePanel.jsx'
 import { getBoardDimensions } from './utils/boardDimensions.js'
 import { useGameSubscription } from './providers/GameSubscriptionProvider.jsx'
 import { playBeep } from '../../lib/beep.js'
+import { useGamePendingTransaction } from './hooks/useGamePendingTransaction.js'
 
 const BOARD_MAX_DIMENSION = 'min(90vmin, calc(100vh - 220px))'
 const toNumericVar = (value) =>
@@ -56,6 +57,7 @@ export default function GameField({
   const totalCells = size ? size.rows * size.cols : 0
   const defaultBoard = size ? '0'.repeat(totalCells) : ''
   const { updateCounter, lastEvent } = useGameSubscription()
+  const { hasPendingTx } = useGamePendingTransaction(game?.id)
   const [gameDetails, reexecuteGameDetails] = useQuery({
     query: GAME_MOVES_QUERY,
     pause: !numericGameId,
@@ -304,7 +306,7 @@ export default function GameField({
     return null
   }
   const toggleCell = (r, c) => {
-    if (!hasOpponent || !isMyTurn) return
+    if (!hasOpponent || !isMyTurn || hasPendingTx) return
     // C4: click only on top row; animate falling frame-by-frame
     if (game.type === 'Connect4') {
       // Cancel current animation if any
@@ -429,7 +431,12 @@ export default function GameField({
             borderRadius: isMobile ? '0' : '6px',
           }}
         >
-          <strong>Turn:</strong> {isMyTurn ? (
+          <strong>Turn:</strong> {hasPendingTx ? (
+            <>
+              <FontAwesomeIcon icon={faSpinner} spin style={{ marginLeft: '8px', marginRight: '6px' }} />
+              processing your move…
+            </>
+          ) : isMyTurn ? (
             <>
               <FontAwesomeIcon icon={faCirclePlay} style={{ marginLeft: '8px', marginRight: '6px' }} />
               your turn
@@ -538,7 +545,7 @@ export default function GameField({
               const selectedCell = isSelected(r, c)
               const isFalling = fallingFrame && fallingFrame.r === r && fallingFrame.c === c
               // Clickability: for C4 allow only top row; otherwise as before
-              const clickable = isMyTurn && !isUsed && (
+              const clickable = isMyTurn && !isUsed && !hasPendingTx && (
                 game.type !== 'Connect4' ? true : r === 0
               )
               // G-type: filled stones with glow; empty calm; selected empty = ultra

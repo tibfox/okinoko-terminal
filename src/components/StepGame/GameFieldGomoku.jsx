@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHourglassStart, faFlag, faCirclePlay, faTrophy, faHandshake, faClock, faHandPeace } from '@fortawesome/free-solid-svg-icons'
+import { faHourglassStart, faFlag, faCirclePlay, faTrophy, faHandshake, faClock, faHandPeace, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import {
   GAME_MOVES_QUERY,
 } from '../../data/inarow_gql.js'
@@ -12,6 +12,7 @@ import EmptyGamePanel from './components/EmptyGamePanel.jsx'
 import { getBoardDimensions } from './utils/boardDimensions.js'
 import { useGameSubscription } from './providers/GameSubscriptionProvider.jsx'
 import { playBeep } from '../../lib/beep.js'
+import { useGamePendingTransaction } from './hooks/useGamePendingTransaction.js'
 
 const BOARD_MAX_DIMENSION = 'min(90vmin, calc(100vh - 220px))'
 const isGomokuVariantType = (type) => {
@@ -78,6 +79,7 @@ export default function GameField({
   const totalCells = size ? size.rows * size.cols : 0
   const defaultBoard = size ? '0'.repeat(totalCells) : ''
   const { updateCounter } = useGameSubscription()
+  const { hasPendingTx } = useGamePendingTransaction(game?.id)
   const [gameDetails, reexecuteGameDetails] = useQuery({
     query: GAME_MOVES_QUERY,
     pause: !numericGameId,
@@ -645,6 +647,7 @@ export default function GameField({
     }))
 
   const toggleCell = (r, c) => {
+    if (hasPendingTx) return
     if (isSwapDecisionPhase && !isExtraModeActive) return
     const index = r * size.cols + c
     const cellVal = board.charAt(index)
@@ -926,7 +929,12 @@ export default function GameField({
             borderRadius: isMobile ? '0' : '6px',
           }}
         >
-          <strong>Turn:</strong> {isMyTurn ? (
+          <strong>Turn:</strong> {hasPendingTx ? (
+            <>
+              <FontAwesomeIcon icon={faSpinner} spin style={{ marginLeft: '8px', marginRight: '6px' }} />
+              processing your move…
+            </>
+          ) : isMyTurn ? (
             <>
               <FontAwesomeIcon icon={faCirclePlay} style={{ marginLeft: '8px', marginRight: '6px' }} />
               your turn
@@ -1034,7 +1042,7 @@ export default function GameField({
               const c = i % size.cols
               const val = board.charAt(i)
               const selectedCell = swapHighlightedCells.some((s) => s.r === r && s.c === c)
-              const clickable = isMyTurn && val === '0'
+              const clickable = isMyTurn && val === '0' && !hasPendingTx
               const draftPlacement =
                 (isAddingExtra &&
                   extraPlacements.find((entry) => entry.r === r && entry.c === c)) ||
