@@ -759,29 +759,40 @@ export default function GameField({
       <div
         style={{
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
+          flexDirection: 'column',
           gap: '10px',
           justifyContent: 'center',
         }}
       >
-        <NeonButton
-          disabled={pendingAction}
-          onClick={() => handleSwapDecision('stay')}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '10px',
+            justifyContent: 'center',
+          }}
         >
-          Stay
-        </NeonButton>
-        <NeonButton
-          disabled={pendingAction}
-          onClick={() => handleSwapDecision('swap')}
-        >
-          Swap
-        </NeonButton>
-        <NeonButton
-          disabled={pendingAction}
-          onClick={startSwapAdd}
-        >
-          Place Two More
-        </NeonButton>
+          <NeonButton
+            disabled={pendingAction}
+            onClick={() => handleSwapDecision('stay')}
+          >
+            Stay
+          </NeonButton>
+          <NeonButton
+            disabled={pendingAction}
+            onClick={() => handleSwapDecision('swap')}
+          >
+            Swap
+          </NeonButton>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <NeonButton
+            disabled={pendingAction}
+            onClick={startSwapAdd}
+          >
+            Place Two More
+          </NeonButton>
+        </div>
       </div>
     </div>
   ) : null
@@ -905,11 +916,11 @@ export default function GameField({
           style={{
             textAlign: 'center',
             color: 'var(--color-primary-lighter)',
-            marginBottom: '16px',
+            marginBottom: '0px',
             fontSize: isMobile ? '0.95rem' : '1.1rem',
             fontWeight: 600,
             letterSpacing: '0.04em',
-            padding: isMobile ? '6px 12px' : '10px 16px',
+            padding: isMobile ? '0px 0px' : '10px 16px',
             alignSelf: 'center',
             background: isMobile ? 'transparent' : 'rgba(0, 0, 0, 0.5)',
             borderRadius: isMobile ? '0' : '6px',
@@ -930,7 +941,7 @@ export default function GameField({
       )}
 
       {isMobile ? (
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '0px' }}>
           <NeonButton
             onClick={() => handleResignClick([])}
             style={{ marginBottom: '10px', flex: 1 }}

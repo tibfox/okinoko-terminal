@@ -82,11 +82,12 @@ export function PopupProvider({ children }) {
             style={{
               position: "relative",
               width: "min(95vw, 500px)",
-              maxHeight: "90vh",
+              maxHeight: "95vh",
               display: "flex",
               flexDirection: "column",
               transform: `translate(${position.x}px, ${position.y}px)`,
               transition: isDragging ? "none" : "transform 0.1s ease-out",
+              margin: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >

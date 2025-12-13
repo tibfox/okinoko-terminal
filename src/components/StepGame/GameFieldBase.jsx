@@ -419,11 +419,11 @@ export default function GameField({
           style={{
             textAlign: 'center',
             color: 'var(--color-primary-lighter)',
-            marginBottom: '16px',
+            marginBottom: '0px',
             fontSize: isMobile ? '0.95rem' : '1.1rem',
             fontWeight: 600,
             letterSpacing: '0.04em',
-            padding: isMobile ? '6px 12px' : '10px 16px',
+            padding: isMobile ? '0px 0px' : '10px 16px',
             alignSelf: 'center',
             background: isMobile ? 'transparent' : 'rgba(0, 0, 0, 0.5)',
             borderRadius: isMobile ? '0' : '6px',
@@ -444,7 +444,7 @@ export default function GameField({
       )}
 
       {isMobile ? (
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '0px', marginBottom: '10px', justifyContent: 'center' }}>
       <NeonButton
         onClick={() => handleResignClick([])}
         style={{ flex: 1 }}
