@@ -92,6 +92,19 @@ export default function StepGame({
     [contract, fnName]
   )
 
+  const handleTransactionSigned = (action, txid) => {
+    // Clear input fields after successful game creation transaction signing
+    if (action === 'g_create') {
+      setParams((prev) => ({
+        ...prev,
+        __gameCreateName: '',
+        __gameCreateBet: { amount: '', asset: 'HIVE' },
+        __gameCreateFmp: 0,
+        __gameFmpEnabled: false,
+      }))
+    }
+  }
+
   const {
     logs,
     pending,
@@ -99,7 +112,7 @@ export default function StepGame({
     jsonPreview,
     handleSend,
     allMandatoryFilled,
-  } = useExecuteHandler({ contract, fn, params, setParams, resumedTx })
+  } = useExecuteHandler({ contract, fn, params, setParams, resumedTx, onTransactionSigned: handleTransactionSigned })
 
 
   const handleMoveSelected = (cells) => {

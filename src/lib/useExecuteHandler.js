@@ -48,7 +48,7 @@ const attachRcLimit = (payload, rcLimit) => {
   return payload
 }
 
-export default function useExecuteHandler({ contract, fn, params, disablePreview = false }) {
+export default function useExecuteHandler({ contract, fn, params, disablePreview = false, onTransactionSigned }) {
   const { openPopup } = useContext(PopupContext)
 
   const { aioha, user } = useAioha()
@@ -621,6 +621,24 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         appendLog(`⬢ L1: Broadcast successful!`)
         appendLog(`🗒 L1: TXID: ${txid}`)
         setWaiting(true)
+
+        // Show feedback popup immediately after transaction is signed
+        if (action === 'g_create') {
+          openPopup({
+            title: "Game Creation Pending",
+            body: "Your game will be created with the next block."
+          })
+        } else if (action === 'g_move' || action === 'g_swap') {
+          openPopup({
+            title: "Move Submitted",
+            body: "Your move will be processed with the next block."
+          })
+        }
+
+        // Call the onTransactionSigned callback if provided
+        if (onTransactionSigned) {
+          onTransactionSigned(action, txid)
+        }
 
         let vscStarted = false
         addTransaction({

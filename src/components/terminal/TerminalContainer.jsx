@@ -23,6 +23,7 @@ import { getWindowDefaults } from './windowDefaults.js'
 import { useBackgroundEffects } from '../backgrounds/BackgroundEffectsProvider.jsx'
 import ColorPickerButton from './headers/ColorPickerButton.jsx'
 import SoundToggleButton from './components/SoundToggleButton.jsx'
+import { AboutPopupContent } from './components/SettingsMenu.jsx'
 
 const DESKTOP_MIN_WIDTH = 460
 const DESKTOP_MAX_WIDTH = 1400
@@ -698,12 +699,7 @@ export default function TerminalContainer({
   const handleAboutClick = () => {
     popup?.openPopup?.({
       title: 'About Ōkinoko',
-      body: () => (
-        <p style={{ lineHeight: 1.5 }}>
-          This terminal and the Ōkinoko smart contracts are created by <b>@tibfox</b>. If you want to support his
-          development work, feel free to send him a donation on Magi or Hive. Every bit of help is deeply appreciated.
-        </p>
-      ),
+      body: () => <AboutPopupContent isMobile={isMobile} />,
     })
   }
 

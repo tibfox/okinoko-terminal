@@ -95,7 +95,7 @@ export default function GameDetails({
     >
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h2 className="cyber-tile" style={{ marginBottom: '20px', display: 'inline-block' }}>
-          {game.id}: {game.name}
+          {game.name || `Game #${game.id}`}
         </h2>
 
         {/* Win/Loss Conditions */}
