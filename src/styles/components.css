@@ -231,7 +231,7 @@ select {
 .game-selection-table {
   background: black;
   border: 1px solid var(--color-primary-darkest);
-  
+
   /* margin-top: 20px; */
   width: 100%;
   padding: 0;
@@ -241,14 +241,36 @@ select {
   flex-direction: column;
 }
 
-/* Header stays fixed */
+/* Wrapper for table with scroll */
+.game-table-wrapper {
+  overflow-y: auto;
+  flex: 1; /* takes remaining height */
+}
+
+/* Table with sticky header */
 .game-selection-table table {
   width: 100%;
-  table-layout: fixed;
   border-collapse: collapse;
 }
 
-/* Scrollable body only */
+.game-selection-table thead {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--color-primary-darkest) 50%, transparent);
+  z-index: 1;
+  border-bottom: 1px solid var(--color-primary-darkest);
+}
+
+/* Alternating row colors */
+.game-selection-table tbody tr:nth-child(odd) {
+  background: black;
+}
+
+.game-selection-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-primary-darkest) 50%, transparent);
+}
+
+/* Old class for backwards compatibility - no longer used */
 .game-table-body {
   overflow-y: auto;
   flex: 1; /* takes remaining height */
@@ -274,7 +296,7 @@ select {
 }
 
 .game-row:hover {
-  background-color: var(--color-primary-darkest);
+  background-color: var(--color-primary-darkest) !important;
 }
 
 .tx-indicator.active {

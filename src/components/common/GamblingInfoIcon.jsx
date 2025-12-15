@@ -3,13 +3,7 @@ import { PopupContext } from '../../popup/context.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faShieldHeart } from '@fortawesome/free-solid-svg-icons'
 
-const defaultMessage = [
-  '@tibfox does not endorse gambling and encourages responsible play.',
-  'Bets are 100% optional and if you want to place a bet: only stake what you can lose.',
-  'Gambling can become addictive — seek help if you need it.',
-].join(' ')
-
-export default function GamblingInfoIcon({ message = defaultMessage, size = 18, style }) {
+export default function GamblingInfoIcon({ size = 18, style }) {
   const popup = useContext(PopupContext)
 
   return (

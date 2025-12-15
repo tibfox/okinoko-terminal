@@ -14,6 +14,7 @@ import { CyberContainer } from '../../common/CyberContainer.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
 import NeonButton from '../../buttons/NeonButton.jsx'
 import { useGameSubscription } from '../providers/GameSubscriptionProvider.jsx'
+import InfoIcon from '../../common/InfoIcon.jsx'
 
 /* ---------------- GameDetails ---------------- */
 
@@ -54,9 +55,10 @@ export default function GameDetails({
 
   const handleResignClick = () => {
     if (!onResign) return
-    const confirmResign = window.confirm(
-      'Are you sure you want to resign from this game? This action cannot be undone.'
-    )
+    const confirmMessage = hasOpponent
+      ? 'Are you sure you want to resign from this game? This action cannot be undone.'
+      : 'Are you sure you want to cancel this game? This action cannot be undone.'
+    const confirmResign = window.confirm(confirmMessage)
     if (!confirmResign) return
     onResign({
       __gameId: game?.id ?? null,
@@ -94,9 +96,20 @@ export default function GameDetails({
       }}
     >
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h2 className="cyber-tile" style={{ marginBottom: '20px', display: 'inline-block' }}>
+        <h2 className="cyber-tile" style={{ marginBottom: '8px', display: 'inline-block' }}>
           {game.name || `Game #${game.id}`}
         </h2>
+
+        {opponentName && (
+          <div style={{
+            fontSize: '0.9rem',
+            color: 'var(--color-primary-lighter)',
+            marginBottom: '12px',
+            opacity: 0.85
+          }}>
+            vs {opponentName}
+          </div>
+        )}
 
         {/* Win/Loss Conditions */}
         <WinConditions gameType={game.type} />
@@ -126,18 +139,38 @@ export default function GameDetails({
         </div>
 
         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-          <NeonButton onClick={handleResignClick} style={{ width: '200px' }}>
-            <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
-            Resign
-          </NeonButton>
-          <NeonButton
-            disabled={!hasOpponent || isMyTurn || daysAgo < 7}
-            onClick={handleTimeoutClick}
-            style={{ width: '200px' }}
-          >
-            <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
-            Claim Timeout
-          </NeonButton>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <NeonButton onClick={handleResignClick} style={{ width: '200px' }}>
+              <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
+              {hasOpponent ? 'Resign' : 'Cancel Game'}
+            </NeonButton>
+            <InfoIcon
+              size={16}
+              tooltip={
+                hasOpponent
+                  ? 'Resigning will forfeit the game and award the win to your opponent. This action cannot be undone.'
+                  : 'Canceling will remove this game from the lobby. Since no one has joined yet, there is no penalty.'
+              }
+              style={{ marginLeft: 0 }}
+            />
+          </div>
+          {hasOpponent && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <NeonButton
+                disabled={isMyTurn || daysAgo < 7}
+                onClick={handleTimeoutClick}
+                style={{ width: '200px' }}
+              >
+                <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+                Claim Timeout
+              </NeonButton>
+              <InfoIcon
+                size={16}
+                tooltip="You can claim a timeout victory if your opponent has not moved in 7 days and it is their turn. This will award you the win and end the game."
+                style={{ marginLeft: 0 }}
+              />
+            </div>
+          )}
         </div>
 
         {isGomokuVariant && swapPhaseLabel && (
@@ -411,36 +444,33 @@ function GameMovesTable({ game }) {
       )}
 
       {!fetching && !error && entries.length > 0 && (
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            marginTop: '12px',
-            fontSize: '0.85rem',
-          }}
-        >
-          <thead>
-            <tr>
-              {/* <th style={{ textAlign: 'left', paddingRight: '12px' }}>#</th> */}
-              <th style={{ textAlign: 'left', paddingRight: '12px' }}>Player</th>
-              <th style={{ textAlign: 'left', paddingRight: '12px' }}>Move</th>
-              <th style={{ textAlign: 'left' }}>Time</th>
-            </tr>
-          </thead>
+        <div class="game-selection-table" style={{ marginTop: '12px' }}>
+          <div class="game-table-wrapper">
+            <table style={{ width: '100%', tableLayout: 'auto' }}>
+              <thead>
+                <tr>
+                  {/* <th style={{ textAlign: 'left', padding: '4px 6px' }}>#</th> */}
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>Player</th>
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>Move</th>
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>Time</th>
+                </tr>
+              </thead>
 
-          <tbody>
-            {entries.map(entry => (
-              <tr key={entry.renderKey}>
-                {/* <td style={{ paddingRight: '12px' }}>{entry.turn}</td> */}
-                <td style={{ paddingRight: '12px' }}>{entry.player}</td>
-                <td style={{ textAlign: 'left', paddingRight: '12px' }}>{entry.description}</td>
-                <td style={{ textAlign: 'left' }}>
-                  {entry.timestamp ? formatUTC(entry.timestamp) : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              <tbody>
+                {entries.map(entry => (
+                  <tr key={entry.renderKey}>
+                    {/* <td style={{ padding: '4px 6px' }}>{entry.turn}</td> */}
+                    <td style={{ padding: '4px 6px' }}>{entry.player}</td>
+                    <td style={{ textAlign: 'left', padding: '4px 6px' }}>{entry.description}</td>
+                    <td style={{ textAlign: 'left', padding: '4px 6px' }}>
+                      {entry.timestamp ? formatUTC(entry.timestamp) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </CyberContainer>
   )

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useContext, useRef } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCheck,
-  faCircleInfo,
   faPlusCircle,
   faTimes,
 } from '@fortawesome/free-solid-svg-icons'
@@ -15,6 +14,7 @@ import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider
 import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
+import InfoIcon from '../common/InfoIcon.jsx'
 
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
@@ -53,7 +53,6 @@ export default function ExecuteForm({
 }) {
   const [isMobile, setIsMobile] = useState(false)
   const [insufficient, setInsufficient] = useState(false)
-  const [hintOverlay, setHintOverlay] = useState(null)
   const { openPopup } = useContext(PopupContext)
   const { balances: accountBalances } = useAccountBalances()
   const [daoProjects, setDaoProjects] = useState([])
@@ -1924,35 +1923,10 @@ export default function ExecuteForm({
           {renderParamInput(p)}
         </div>
         {hint && (
-          <FontAwesomeIcon
-            icon={faCircleInfo}
-            title={hint}
-            style={{ color: 'var(--color-primary-lighter)', cursor: 'help', fontSize: '0.9rem', marginTop: '0' }}
-            onMouseEnter={(e) =>
-              setHintOverlay({
-                text: hint,
-                x: e.clientX - 60,
-                y: e.clientY - 60,
-              })
-            }
-            onMouseMove={(e) =>
-              setHintOverlay((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      x: e.clientX - 60,
-                      y: e.clientY - 60,
-                    }
-                  : prev
-              )
-            }
-            onMouseLeave={() => setHintOverlay(null)}
-            onClick={() =>
-              openPopup?.({
-                title: labelText || 'Hint',
-                body: hint,
-              })
-            }
+          <InfoIcon
+            tooltip={hint}
+            size={16}
+            style={{ marginTop: '0' }}
           />
         )}
       </div>
@@ -2079,60 +2053,12 @@ export default function ExecuteForm({
                   onBlur={handleRcLimitBlur}
                 />
               </div>
-              <FontAwesomeIcon
-                icon={faCircleInfo}
-                title="Limits resources used for this call (in thousands)"
-                style={{ color: 'var(--color-primary-lighter)', cursor: 'help', fontSize: '0.9rem', marginTop: '0' }}
-                onClick={() =>
-                  openPopup?.({
-                    title: 'Max RC',
-                    body: 'Limits resources used for this call (in thousands)',
-                  })
-                }
-                onMouseEnter={(e) =>
-                  setHintOverlay({
-                    text: 'Limits resources used for this call (in thousands)',
-                    x: e.clientX - 60,
-                    y: e.clientY - 60,
-                  })
-                }
-                onMouseMove={(e) =>
-                  setHintOverlay((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          x: e.clientX - 60,
-                          y: e.clientY - 60,
-                        }
-                      : prev
-                  )
-                }
-                onMouseLeave={() => setHintOverlay(null)}
+              <InfoIcon
+                tooltip="Limits resources used for this call (in thousands)"
+                size={16}
+                style={{ marginTop: '0' }}
               />
             </div>
-
-            {hintOverlay ? (
-              <div
-                style={{
-                  position: 'fixed',
-                  top: hintOverlay.y,
-                  left: hintOverlay.x,
-                  zIndex: 9999,
-                  background: 'rgba(0, 0, 0, 0.9)',
-                  border: '1px solid var(--color-primary-darker)',
-                  padding: '8px 10px',
-                 
-                  maxWidth: '280px',
-                  color: 'var(--color-primary-lighter)',
-                  fontSize: '0.85rem',
-                  pointerEvents: 'none',
-                  boxShadow: '0 0 8px rgba(0,0,0,0.5)',
-                  backdropFilter: 'blur(3px)',
-                }}
-              >
-                {hintOverlay.text}
-              </div>
-            ) : null}
           </>
         ) : (
           <p>No parameters for this function.</p>

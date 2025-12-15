@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks'
+import { useMemo, useState, useEffect } from 'preact/hooks'
 import { useAioha } from '@aioha/react-ui'
 import { useQuery } from '@urql/preact'
 import {
@@ -9,10 +9,12 @@ import {
 import { GAME_TYPE_OPTIONS } from '../gameTypes.js'
 import { Tabs } from '../../common/Tabs.jsx'
 import { playBeep } from '../../../lib/beep.js'
+import { getCookie, setCookie } from '../../../lib/cookies.js'
 
 const DEFAULT_LEADERBOARD_GAME_TYPE = GAME_TYPE_OPTIONS[0]?.id ?? 1
 
 const LEADERBOARD_FIELD_MAP = {
+  player: 'player',
   ratio: 'win_ratio',
   wins: 'wins',
   games: 'games_played',
@@ -24,8 +26,10 @@ const LEADERBOARD_FIELD_MAP = {
 export default function EmptyGamePanel({ defaultGameTypeId, description }) {
   const [activeTab, setActiveTab] = useState('leaderboard')
   const [leaderboardScope, setLeaderboardScope] = useState('season')
-  const [sortKey, setSortKey] = useState('ratio')
-  const [sortDirection, setSortDirection] = useState('desc')
+  const [sortKey, setSortKey] = useState(() => getCookie('leaderboardSortKey') || 'ratio')
+  const [sortDirection, setSortDirection] = useState(() => getCookie('leaderboardSortDir') || 'desc')
+  const [historySortKey, setHistorySortKey] = useState(() => getCookie('historySortKey') || 'id')
+  const [historySortDirection, setHistorySortDirection] = useState(() => getCookie('historySortDir') || 'desc')
   const { user } = useAioha()
   const normalizedUser = useMemo(() => {
     if (!user) return ''
@@ -40,12 +44,16 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
         ? sortDirection === 'asc'
           ? 'asc_nulls_last'
           : 'desc_nulls_last'
+        : field === 'player'
+        ? sortDirection
         : sortDirection
     const base = [{ [field]: primaryDirection }]
-    if (field !== 'win_ratio') {
+    if (field !== 'win_ratio' && field !== 'player') {
       base.push({ win_ratio: 'desc_nulls_last' })
     }
-    base.push({ wins: 'desc' }, { games_played: 'desc' })
+    if (field !== 'player') {
+      base.push({ wins: 'desc' }, { games_played: 'desc' })
+    }
     return base
   }, [sortKey, sortDirection])
 
@@ -85,33 +93,9 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     data?.okinoko_iarv2_player_stats_by_type_current_season ??
     []
 
-  const historyRows = historyData?.okinoko_iarv2_completed_games ?? []
+  const rawHistoryRows = historyData?.okinoko_iarv2_completed_games ?? []
 
-  const handleScopeChange = (key) => {
-    playBeep(800, 25, 'square')
-    setLeaderboardScope(key)
-  }
-
-  const handleSortChange = (nextKey) => {
-    if (!LEADERBOARD_FIELD_MAP[nextKey]) return
-    if (sortKey === nextKey) {
-      setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'))
-    } else {
-      setSortKey(nextKey)
-      setSortDirection('desc')
-    }
-  }
-
-  const columnHeaders = [
-    { key: 'player', label: 'Player', sortable: false },
-    { key: 'win_ratio', label: 'Win Ratio', sortable: true, sortKey: 'ratio' },
-    { key: 'wins', label: 'Wins', sortable: true, sortKey: 'wins' },
-    { key: 'games_played', label: 'Joined', sortable: true, sortKey: 'games' },
-    { key: 'active_games', label: 'Active', sortable: true, sortKey: 'active' },
-    { key: 'draws', label: 'Draws', sortable: true, sortKey: 'draws' },
-    { key: 'losses', label: 'Losses', sortable: true, sortKey: 'losses' },
-  ]
-
+  // Helper functions for formatting
   const formatRatio = (value) => {
     if (value === null || value === undefined) return '–'
     const num = Number(value)
@@ -129,11 +113,29 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     const winner = normalizeId(row.winner)
     const resigner = normalizeId(row.resigner)
     const timedout = normalizeId(row.timedout)
-    if (winner) return winner === normalizedUser ? 'Win' : 'Loss'
-    if (resigner)
+    const joiner = normalizeId(row.joined_by)
+
+    // If someone won
+    if (winner) {
+      return winner === normalizedUser ? 'Win' : 'Loss'
+    }
+
+    // If someone resigned
+    if (resigner) {
+      // If no one joined and the creator resigned, it's cancelled
+      if (!joiner) {
+        return 'Cancelled'
+      }
       return resigner === normalizedUser ? 'Loss (resigned)' : 'Win (opponent resigned)'
-    if (timedout) return timedout === normalizedUser ? 'Loss (timeout)' : 'Win (timeout)'
-    return 'Completed'
+    }
+
+    // If someone timed out
+    if (timedout) {
+      return timedout === normalizedUser ? 'Loss (timeout)' : 'Win (timeout)'
+    }
+
+    // Otherwise it's a draw
+    return 'Draw'
   }
 
   const formatOpponent = (row) => {
@@ -142,15 +144,108 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     if (!normalizedUser) return formatId(joiner) || formatId(creator)
     if (creator === normalizedUser) return formatId(joiner)
     if (joiner === normalizedUser) return formatId(creator)
-    return formatId(joiner || creator)
+    return formatId(creator)
   }
 
-  const formatCompletedAt = (value) => {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+  const formatCompletedAt = (timestamp) => {
+    if (!timestamp) return '—'
+    try {
+      const date = new Date(timestamp)
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    } catch {
+      return '—'
+    }
   }
+
+  // Client-side sorting for history
+  const historyRows = useMemo(() => {
+    const sorted = [...rawHistoryRows]
+    sorted.sort((a, b) => {
+      let aVal, bVal
+
+      switch (historySortKey) {
+        case 'id':
+          aVal = Number(a.id) || 0
+          bVal = Number(b.id) || 0
+          break
+        case 'name':
+          aVal = (a.name || `Game #${a.id}`).toLowerCase()
+          bVal = (b.name || `Game #${b.id}`).toLowerCase()
+          break
+        case 'opponent':
+          aVal = formatOpponent(a).toLowerCase()
+          bVal = formatOpponent(b).toLowerCase()
+          break
+        case 'outcome':
+          aVal = formatOutcome(a).toLowerCase()
+          bVal = formatOutcome(b).toLowerCase()
+          break
+        case 'bet':
+          aVal = Number(a.betamount) || 0
+          bVal = Number(b.betamount) || 0
+          break
+        case 'completed':
+          aVal = a.indexer_ts ? new Date(a.indexer_ts).getTime() : 0
+          bVal = b.indexer_ts ? new Date(b.indexer_ts).getTime() : 0
+          break
+        default:
+          return 0
+      }
+
+      if (aVal < bVal) return historySortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return historySortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [rawHistoryRows, historySortKey, historySortDirection])
+
+  const handleScopeChange = (key) => {
+    playBeep(800, 25, 'square')
+    setLeaderboardScope(key)
+  }
+
+  const handleSortChange = (nextKey) => {
+    if (!LEADERBOARD_FIELD_MAP[nextKey]) return
+    if (sortKey === nextKey) {
+      const newDir = sortDirection === 'desc' ? 'asc' : 'desc'
+      setSortDirection(newDir)
+      setCookie('leaderboardSortDir', newDir, 30)
+    } else {
+      setSortKey(nextKey)
+      setSortDirection('desc')
+      setCookie('leaderboardSortKey', nextKey, 30)
+      setCookie('leaderboardSortDir', 'desc', 30)
+    }
+  }
+
+  const handleHistorySortChange = (nextKey) => {
+    if (historySortKey === nextKey) {
+      const newDir = historySortDirection === 'desc' ? 'asc' : 'desc'
+      setHistorySortDirection(newDir)
+      setCookie('historySortDir', newDir, 30)
+    } else {
+      setHistorySortKey(nextKey)
+      setHistorySortDirection('desc')
+      setCookie('historySortKey', nextKey, 30)
+      setCookie('historySortDir', 'desc', 30)
+    }
+  }
+
+  const columnHeaders = [
+    { key: 'player', label: 'Player', sortable: true, sortKey: 'player' },
+    { key: 'win_ratio', label: 'Win Ratio', sortable: true, sortKey: 'ratio' },
+    { key: 'wins', label: 'Wins', sortable: true, sortKey: 'wins' },
+    { key: 'games_played', label: 'Joined', sortable: true, sortKey: 'games' },
+    { key: 'active_games', label: 'Active', sortable: true, sortKey: 'active' },
+    { key: 'draws', label: 'Draws', sortable: true, sortKey: 'draws' },
+    { key: 'losses', label: 'Losses', sortable: true, sortKey: 'losses' },
+  ]
 
   const tabButtonStyle = (active) => ({
     flex: 1,
@@ -200,73 +295,73 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
       )}
 
       {hasSelectedType && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px', fontSize: '0.85rem' }}>
-            <thead>
-              <tr>
-                {columnHeaders.map((col) => {
-                  const isActiveSort = col.sortable && sortKey === col.sortKey
-                  const arrow = isActiveSort ? (sortDirection === 'desc' ? '▼' : '▲') : ''
-                  return (
-                    <th
-                      key={col.key}
-                      style={{
-                        textAlign: col.key === 'player' ? 'left' : 'right',
-                        padding: '8px 10px',
-                        cursor: col.sortable ? 'pointer' : 'default',
-                        color: isActiveSort ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
-                        borderBottom: '1px solid var(--color-primary-darkest)',
-                        whiteSpace: 'nowrap',
-                        fontSize: '0.8rem',
-                      }}
-                      onClick={() => col.sortable && handleSortChange(col.sortKey)}
-                    >
-                      {col.label} {arrow}
-                    </th>
-                  )
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {fetching && (
+        <div class="game-selection-table">
+          <div class="game-table-wrapper">
+            <table style={{ width: '100%', tableLayout: 'auto', minWidth: '640px' }}>
+              <thead>
                 <tr>
-                  <td colSpan={columnHeaders.length} style={{ padding: '18px', textAlign: 'center' }}>
-                    Loading leaderboard…
-                  </td>
+                  {columnHeaders.map((col) => {
+                    const isActiveSort = col.sortable && sortKey === col.sortKey
+                    const arrow = isActiveSort ? (sortDirection === 'desc' ? '▼' : '▲') : ''
+                    return (
+                      <th
+                        key={col.key}
+                        style={{
+                          textAlign: col.key === 'player' ? 'left' : 'right',
+                          padding: '4px 6px',
+                          cursor: col.sortable ? 'pointer' : 'default',
+                          color: isActiveSort ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onClick={() => col.sortable && handleSortChange(col.sortKey)}
+                      >
+                        {col.label} {arrow}
+                      </th>
+                    )
+                  })}
                 </tr>
-              )}
-              {error && !fetching && (
-                <tr>
-                  <td
-                    colSpan={columnHeaders.length}
-                    style={{ padding: '18px', textAlign: 'center', color: 'var(--color-error, #ff5c8d)' }}
-                  >
-                    Failed to load leaderboard. Please try again.
-                  </td>
-                </tr>
-              )}
-              {!fetching && !error && rows.length === 0 && (
-                <tr>
-                  <td colSpan={columnHeaders.length} style={{ padding: '18px', textAlign: 'center' }}>
-                    No stats recorded yet for this game type.
-                  </td>
-                </tr>
-              )}
-              {!fetching &&
-                !error &&
-                rows.map((row) => (
-                  <tr key={`${row.player}-${row.type}`}>
-                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{row.player?.replace('hive:', '') ?? '—'}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{formatRatio(row.win_ratio)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{Number(row.wins ?? 0)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{Number(row.games_played ?? 0)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{Number(row.active_games ?? 0)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{Number(row.draws ?? 0)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>{Number(row.losses ?? 0)}</td>
+              </thead>
+              <tbody>
+                {fetching && (
+                  <tr>
+                    <td colSpan={columnHeaders.length} style={{ padding: '18px', textAlign: 'center' }}>
+                      Loading leaderboard…
+                    </td>
                   </tr>
-                ))}
-            </tbody>
-          </table>
+                )}
+                {error && !fetching && (
+                  <tr>
+                    <td
+                      colSpan={columnHeaders.length}
+                      style={{ padding: '18px', textAlign: 'center', color: 'var(--color-error, #ff5c8d)' }}
+                    >
+                      Failed to load leaderboard. Please try again.
+                    </td>
+                  </tr>
+                )}
+                {!fetching && !error && rows.length === 0 && (
+                  <tr>
+                    <td colSpan={columnHeaders.length} style={{ padding: '18px', textAlign: 'center' }}>
+                      No stats recorded yet for this game type.
+                    </td>
+                  </tr>
+                )}
+                {!fetching &&
+                  !error &&
+                  rows.map((row) => (
+                    <tr key={`${row.player}-${row.type}`}>
+                      <td style={{ padding: '4px 6px', textAlign: 'left' }}>{row.player?.replace('hive:', '') ?? '—'}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{formatRatio(row.win_ratio)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{Number(row.wins ?? 0)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{Number(row.games_played ?? 0)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{Number(row.active_games ?? 0)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{Number(row.draws ?? 0)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{Number(row.losses ?? 0)}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -285,67 +380,83 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
         </div>
       )}
       {user && hasSelectedType && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '640px', fontSize: '0.85rem' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                  Game
-                </th>
-                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                  Opponent
-                </th>
-                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                  Outcome
-                </th>
-                <th style={{ textAlign: 'right', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                  Bet
-                </th>
-                <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid var(--color-primary-darkest)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                  Completed
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {historyFetching && (
+        <div class="game-selection-table">
+          <div class="game-table-wrapper">
+            <table style={{ width: '100%', tableLayout: 'auto', minWidth: '640px' }}>
+              <thead>
                 <tr>
-                  <td colSpan={5} style={{ padding: '18px', textAlign: 'center' }}>
-                    Loading history…
-                  </td>
+                  {[
+                    { key: 'name', label: 'Game', align: 'left' },
+                    { key: 'opponent', label: 'Opponent', align: 'left' },
+                    { key: 'outcome', label: 'Outcome', align: 'left' },
+                    { key: 'bet', label: 'Bet', align: 'right' },
+                    { key: 'completed', label: 'Completed', align: 'left' },
+                  ].map((col) => {
+                    const isActive = historySortKey === col.key
+                    const arrow = isActive ? (historySortDirection === 'desc' ? '▼' : '▲') : ''
+                    return (
+                      <th
+                        key={col.key}
+                        style={{
+                          textAlign: col.align,
+                          padding: '4px 6px',
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                          color: isActive ? 'var(--color-primary-lightest)' : 'var(--color-primary-lighter)',
+                        }}
+                        onClick={() => handleHistorySortChange(col.key)}
+                      >
+                        {col.label} {arrow}
+                      </th>
+                    )
+                  })}
                 </tr>
-              )}
-              {historyError && !historyFetching && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    style={{ padding: '18px', textAlign: 'center', color: 'var(--color-error, #ff5c8d)' }}
-                  >
-                    Failed to load history. Please try again.
-                  </td>
-                </tr>
-              )}
-              {!historyFetching && !historyError && historyRows.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ padding: '18px', textAlign: 'center' }}>
-                    No completed games found.
-                  </td>
-                </tr>
-              )}
-              {!historyFetching &&
-                !historyError &&
-                historyRows.map((row) => (
-                  <tr key={row.id}>
-                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{row.name || `Game #${row.id}`}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{formatOpponent(row)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{formatOutcome(row)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>
-                      {row.betamount ? `${row.betamount} ${row.betasset || ''}`.trim() : '—'}
+              </thead>
+              <tbody>
+                {historyFetching && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '18px', textAlign: 'center' }}>
+                      Loading history…
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'left' }}>{formatCompletedAt(row.indexer_ts)}</td>
                   </tr>
-                ))}
-            </tbody>
-          </table>
+                )}
+                {historyError && !historyFetching && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      style={{ padding: '18px', textAlign: 'center', color: 'var(--color-error, #ff5c8d)' }}
+                    >
+                      Failed to load history. Please try again.
+                    </td>
+                  </tr>
+                )}
+                {!historyFetching && !historyError && historyRows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '18px', textAlign: 'center' }}>
+                      No completed games found.
+                    </td>
+                  </tr>
+                )}
+                {!historyFetching &&
+                  !historyError &&
+                  historyRows.map((row) => {
+                    const betAmount = row.betamount ? (Number(row.betamount) / 1000).toFixed(3) : null
+                    const betAsset = row.betasset ? String(row.betasset).toUpperCase() : ''
+                    const betDisplay = betAmount ? `${betAmount} ${betAsset}`.trim() : '—'
+
+                    return (
+                      <tr key={row.id}>
+                        <td style={{ padding: '4px 6px', textAlign: 'left' }}>{row.name || `Game #${row.id}`}</td>
+                        <td style={{ padding: '4px 6px', textAlign: 'left' }}>{formatOpponent(row)}</td>
+                        <td style={{ padding: '4px 6px', textAlign: 'left' }}>{formatOutcome(row)}</td>
+                        <td style={{ padding: '4px 6px', textAlign: 'right' }}>{betDisplay}</td>
+                        <td style={{ padding: '4px 6px', textAlign: 'left' }}>{formatCompletedAt(row.indexer_ts)}</td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 
 // GameSelect.jsx
-import { useState, useEffect, useMemo, useRef } from 'preact/hooks'
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import NeonButton from '../buttons/NeonButton.jsx'
 import NeonSwitch from '../common/NeonSwitch.jsx'
@@ -13,6 +13,9 @@ import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import { GAME_TYPE_IDS, typeNameFromId, deriveGameTypeId } from './gameTypes.js'
 import { Tabs } from '../common/Tabs.jsx'
 import { useLobbySubscription } from './providers/LobbySubscriptionProvider.jsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { getCookie, setCookie } from '../../lib/cookies.js'
 
 const ensureHiveAddress = (value) =>
   !value ? null : value.startsWith('hive:') ? value : `hive:${value}`
@@ -29,6 +32,12 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const [newGames, setNewGames] = useState([])
   const [continueGames, setContinueGames] = useState([])
   const [fmpActive, setPfmActive] = useState(false)
+
+  // Sort state for lobby and continue tables with cookie persistence
+  const [lobbySortKey, setLobbySortKey] = useState(() => getCookie('lobbySortKey') || 'creator')
+  const [lobbySortDir, setLobbySortDir] = useState(() => getCookie('lobbySortDir') || 'asc')
+  const [continueSortKey, setContinueSortKey] = useState(() => getCookie('continueSortKey') || 'nextTurn')
+  const [continueSortDir, setContinueSortDir] = useState(() => getCookie('continueSortDir') || 'asc')
   const normalizedUser = useMemo(() => ensureHiveAddress(user), [user])
   const gameTypeId = useMemo(() => deriveGameTypeId(fn?.name), [fn])
   const normalizedGameType = gameTypeId != null ? Number(gameTypeId) : null
@@ -249,12 +258,116 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
   const formatAmount = (val) => {
     if (val === null || val === undefined) return '-'
     const num = typeof val === 'number' ? val : Number(val)
-    return Number.isNaN(num) ? '-' : num.toFixed(3)
+    if (Number.isNaN(num) || num === 0) return '-'
+    return num.toFixed(3)
   }
   const formatAsset = (asset) => (asset ? String(asset).toUpperCase() : '-')
 
+  const stripHivePrefix = (username) => {
+    if (!username) return username
+    return username.startsWith('hive:') ? username.slice(5) : username
+  }
+
+  // Sort handlers for lobby and continue tables
+  const handleLobbySortChange = (nextKey) => {
+    if (lobbySortKey === nextKey) {
+      const newDir = lobbySortDir === 'desc' ? 'asc' : 'desc'
+      setLobbySortDir(newDir)
+      setCookie('lobbySortDir', newDir, 30)
+    } else {
+      setLobbySortKey(nextKey)
+      setLobbySortDir('desc')
+      setCookie('lobbySortKey', nextKey, 30)
+      setCookie('lobbySortDir', 'desc', 30)
+    }
+  }
+
+  const handleContinueSortChange = (nextKey) => {
+    if (continueSortKey === nextKey) {
+      const newDir = continueSortDir === 'desc' ? 'asc' : 'desc'
+      setContinueSortDir(newDir)
+      setCookie('continueSortDir', newDir, 30)
+    } else {
+      setContinueSortKey(nextKey)
+      setContinueSortDir('desc')
+      setCookie('continueSortKey', nextKey, 30)
+      setCookie('continueSortDir', 'desc', 30)
+    }
+  }
+
   // Reusable Game Table Component
-  const GameTable = ({ type, games, onClick, loading, error }) => {
+  const GameTable = ({ type, games, onClick, loading, error, sortKey, sortDir, onSortChange }) => {
+    const scrollContainerRef = useRef(null)
+    const scrollPositionRef = useRef(0)
+
+    // Save scroll position on every scroll event
+    useEffect(() => {
+      const container = scrollContainerRef.current
+      if (!container) return
+
+      const handleScroll = () => {
+        scrollPositionRef.current = container.scrollTop
+      }
+
+      container.addEventListener('scroll', handleScroll, { passive: true })
+      return () => container.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    // Restore scroll position after games update, using useLayoutEffect for synchronous execution
+    useLayoutEffect(() => {
+      const container = scrollContainerRef.current
+      if (container && scrollPositionRef.current > 0) {
+        container.scrollTop = scrollPositionRef.current
+      }
+    }, [games])
+
+    // Client-side sorting
+    const sortedGames = useMemo(() => {
+      if (!games || games.length === 0) return games
+
+      const sorted = [...games]
+      sorted.sort((a, b) => {
+        let aVal, bVal
+
+        switch (sortKey) {
+          case 'creator':
+            aVal = stripHivePrefix(a.creator || '').toLowerCase()
+            bVal = stripHivePrefix(b.creator || '').toLowerCase()
+            break
+          case 'nextTurn':
+            // For continue games: prioritize "my turn" first
+            const aIsMyTurn = type === 'continue' && normalizedUser && a.nextTurnPlayer === normalizedUser
+            const bIsMyTurn = type === 'continue' && normalizedUser && b.nextTurnPlayer === normalizedUser
+            if (aIsMyTurn && !bIsMyTurn) return sortDir === 'asc' ? -1 : 1
+            if (!aIsMyTurn && bIsMyTurn) return sortDir === 'asc' ? 1 : -1
+            // Otherwise sort alphabetically by next turn player
+            aVal = stripHivePrefix(a.nextTurnPlayer || '').toLowerCase()
+            bVal = stripHivePrefix(b.nextTurnPlayer || '').toLowerCase()
+            break
+          case 'opponent':
+            aVal = stripHivePrefix(a.opponent || '').toLowerCase()
+            bVal = stripHivePrefix(b.opponent || '').toLowerCase()
+            break
+          case 'bet':
+            aVal = Number(a.bet) || 0
+            bVal = Number(b.bet) || 0
+            break
+          default:
+            return 0
+        }
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          if (aVal < bVal) return sortDir === 'asc' ? -1 : 1
+          if (aVal > bVal) return sortDir === 'asc' ? 1 : -1
+        } else {
+          if (aVal < bVal) return sortDir === 'asc' ? -1 : 1
+          if (aVal > bVal) return sortDir === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+      return sorted
+    }, [games, sortKey, sortDir, type, normalizedUser])
+
     if (loading) {
       return <p>Loading {type === 'join' ? 'lobby' : 'active'} games…</p>
     }
@@ -275,63 +388,85 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       )
     }
 
-    const opponentHeader = type === 'join' ? 'Creator' : 'Next Turn'
+    const creatorHeader = type === 'join' ? 'Creator' : 'Next Turn'
+    const opponentHeader = type === 'join' ? null : 'Opponent'
+
+    const renderSortArrow = (columnKey) => {
+      if (sortKey !== columnKey) return null
+      return sortDir === 'asc' ? ' ▲' : ' ▼'
+    }
 
     return (
       <>
         {/* {type == 'join'?'Join a New Game':'Continue a Game'}: */}
         <div class="game-selection-table">
-          <table style={{ width: '100%', tableLayout: 'fixed' }}>
-            <thead>
-              <tr>
-                <th style={{ width: '10%' }}>ID</th>
-                <th style={{ width: '35%' }}>{opponentHeader}</th>
-                <th style={{ width: '15%' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    Bet
-                    <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
-                  </span>
-                </th>
-                <th style={{ width: '13%' }}>Asset</th>
-                <th style={{ width: '15%' }}>FMP</th>
-              </tr>
-            </thead>
-          </table>
-
-          <div class="game-table-body">
-            <table style={{ width: '100%', tableLayout: 'fixed' }}>
-              <colgroup>
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '35%' }} />
-                <col style={{ width: '15%' }} />
-                <col style={{ width: '13%' }} />
-                <col style={{ width: '15%' }} />
-              </colgroup>
+          <div class="game-table-wrapper" ref={scrollContainerRef}>
+            <table style={{ width: '100%', tableLayout: 'auto' }}>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th
+                    onClick={() => onSortChange(type === 'join' ? 'creator' : 'nextTurn')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    {creatorHeader}{renderSortArrow(type === 'join' ? 'creator' : 'nextTurn')}
+                  </th>
+                  {type === 'continue' && (
+                    <th
+                      onClick={() => onSortChange('opponent')}
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      {opponentHeader}{renderSortArrow('opponent')}
+                    </th>
+                  )}
+                  <th
+                    onClick={() => onSortChange('bet')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      Bet
+                      <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+                    </span>
+                    {renderSortArrow('bet')}
+                  </th>
+                </tr>
+              </thead>
               <tbody>
-  {games.map(g => (
-    <tr
-      key={g.id}
-      onClick={() => onClick(g)}
-      style={{ cursor: 'pointer', background: params.__gameId == g.id ? 'var(--color-primary-darkest)' : 'transparent' }}
-      class="game-row"
-    >
-      <td>{g.id}</td>
-      <td>
-        {type === 'join'
-          ? g.creator
-          : g.opponent
-            ? (normalizedUser && g.nextTurnPlayer === normalizedUser
-                ? '▸ your turn'
-                : (g.nextTurnPlayer || g.opponent))
-            : '⋯ waiting'}
-      </td>
-      <td>{formatAmount(g.bet)}</td>
-      <td>{formatAsset(g.asset)}</td>
-      <td>{formatAmount(g.firstMovePurchase)}</td>
-    </tr>
-  ))}
-</tbody>
+  {sortedGames.map(g => {
+    const isMyTurn = type === 'continue' && normalizedUser && g.nextTurnPlayer === normalizedUser && g.opponent
+    const betDisplay = formatAmount(g.bet)
+    const betWithAsset = betDisplay === '-' ? '-' : `${betDisplay} ${formatAsset(g.asset)}`
 
+    return (
+      <tr
+        key={g.id}
+        onClick={() => onClick(g)}
+        style={{
+          cursor: 'pointer',
+          ...(params.__gameId == g.id && { background: 'var(--color-primary-darkest)' })
+        }}
+        class="game-row"
+      >
+        <td style={{ textAlign: 'center', fontSize: '0.8em' }}>
+          {isMyTurn && <FontAwesomeIcon icon={faPlay} style={{ color: 'var(--color-primary-lighter)' }} />}
+        </td>
+        <td>
+          {type === 'join'
+            ? stripHivePrefix(g.creator)
+            : (!g.opponent
+                ? '-'
+                : (isMyTurn
+                    ? 'your turn'
+                    : 'opponent'))}
+        </td>
+        {type === 'continue' && (
+          <td>{g.opponent ? stripHivePrefix(g.opponent) : 'no one joined yet'}</td>
+        )}
+        <td>{betWithAsset}</td>
+      </tr>
+    )
+  })}
+</tbody>
             </table>
           </div>
         </div>
@@ -626,6 +761,9 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
           onClick={handleLoad}
           loading={activeLoading}
           error={activeError}
+          sortKey={continueSortKey}
+          sortDir={continueSortDir}
+          onSortChange={handleContinueSortChange}
         />
       )}
 
@@ -637,6 +775,9 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
           onClick={handleJoin}
           loading={lobbyLoading}
           error={lobbyError}
+          sortKey={lobbySortKey}
+          sortDir={lobbySortDir}
+          onSortChange={handleLobbySortChange}
         />
       )}
     </div>
