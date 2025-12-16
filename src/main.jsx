@@ -67,6 +67,8 @@ import { TransactionProvider } from './transactions/provider';
 import { PopupProvider } from "./popup/PopupProvider.jsx";
 import { TerminalWindowProvider } from './components/terminal/providers/TerminalWindowProvider.jsx';
 import { BackgroundEffectsProvider } from './components/backgrounds/BackgroundEffectsProvider.jsx';
+import { MaintenanceOverlay } from './components/MaintenanceOverlay.jsx';
+import { MAINTENANCE_MODE, MAINTENANCE_MESSAGE } from './lib/maintenanceConfig.js';
 
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -193,6 +195,7 @@ const client = createClient({
 
 render(
   <BackgroundEffectsProvider>
+    {MAINTENANCE_MODE && <MaintenanceOverlay message={MAINTENANCE_MESSAGE} />}
     <TerminalWindowProvider>
       <Provider value={client}>
         <TransactionProvider>
