@@ -26,6 +26,7 @@ const clampPosition = (value, fallback = 0.33) => {
 }
 const IN_A_ROW_VSC_ID = 'vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n'
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
+const LOTTERY_VSC_ID = 'vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 // const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 
@@ -125,6 +126,7 @@ export default function StepSelect({
     [selectedContract, fnName]
   )
   const isDaoContract = selectedContract?.vscId === DAO_VSC_ID
+  const isLotteryContract = selectedContract?.vscId === LOTTERY_VSC_ID
 
   const handleCreateDao = useCallback(() => {
     setContractId(DAO_VSC_ID)
@@ -163,9 +165,11 @@ export default function StepSelect({
   const mobileTabs = useMemo(() => {
     const detailsLabel = isDaoContract
       ? 'DAO'
-      : selectedContract?.functions?.[0]?.parse === 'game'
-        ? 'Games'
-        : 'Functions'
+      : isLotteryContract
+        ? 'Lottery'
+        : selectedContract?.functions?.[0]?.parse === 'game'
+          ? 'Games'
+          : 'Functions'
 
     return [
       { id: 'list', label: 'Contracts' },
@@ -174,7 +178,7 @@ export default function StepSelect({
         label: detailsLabel,
       },
     ]
-  }, [isDaoContract, selectedContract])
+  }, [isDaoContract, isLotteryContract, selectedContract])
 
   const leftCollapsed = !isMobile && dividerPosition <= 0.05
   const rightCollapsed = !isMobile && dividerPosition >= 0.95

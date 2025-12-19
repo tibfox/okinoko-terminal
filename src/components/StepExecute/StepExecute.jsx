@@ -107,6 +107,78 @@ export default function StepExecute({
     [contract, fnName]
   )
 
+  const winnerSharesSum = useMemo(() => {
+    if (fn?.name !== 'create_lottery') return null
+    const shareParam =
+      fn?.parameters?.find((p) => (p.payloadName || '').toLowerCase() === 'winnershares') ||
+      fn?.parameters?.find((p) => String(p.name || '').toLowerCase().includes('winner shares'))
+    if (!shareParam) return null
+    const rawVal = params?.[shareParam.name] ?? params?.[shareParam.payloadName || shareParam.name] ?? ''
+    const list = String(rawVal)
+      .split(/[;,]/)
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isFinite(n) && n > 0)
+    if (!list.length) return { sum: 0, hasShares: false }
+    return { sum: list.reduce((acc, n) => acc + n, 0), hasShares: true }
+  }, [fn, params])
+
+  const donationStatus = useMemo(() => {
+    if (fn?.name !== 'create_lottery') return null
+    const donationAccountParam =
+      fn?.parameters?.find((p) => (p.payloadName || '').toLowerCase() === 'donationaccount') ||
+      fn?.parameters?.find((p) => String(p.name || '').toLowerCase().includes('donation account'))
+    const donationPercentParam =
+      fn?.parameters?.find((p) => (p.payloadName || '').toLowerCase() === 'donationpercent') ||
+      fn?.parameters?.find((p) => String(p.name || '').toLowerCase().includes('donation percent'))
+    const accountVal =
+      params?.[donationAccountParam?.name] ??
+      params?.[donationAccountParam?.payloadName || donationAccountParam?.name] ??
+      ''
+    const percentVal =
+      params?.[donationPercentParam?.name] ??
+      params?.[donationPercentParam?.payloadName || donationPercentParam?.name] ??
+      ''
+    const hasAccount = String(accountVal || '').trim() !== ''
+    const percentNum = parseFloat(String(percentVal).replace(',', '.'))
+    const hasPercent = Number.isFinite(percentNum) && percentNum > 0
+    return { hasAccount, hasPercent }
+  }, [fn, params])
+
+  const lotteryRangeStatus = useMemo(() => {
+    if (fn?.name !== 'create_lottery') return null
+    const burnParam =
+      fn?.parameters?.find((p) => (p.payloadName || '').toLowerCase() === 'burnpercent') ||
+      fn?.parameters?.find((p) => String(p.name || '').toLowerCase().includes('burn percent'))
+    const donationParam =
+      fn?.parameters?.find((p) => (p.payloadName || '').toLowerCase() === 'donationpercent') ||
+      fn?.parameters?.find((p) => String(p.name || '').toLowerCase().includes('donation percent'))
+    const burnVal =
+      params?.[burnParam?.name] ??
+      params?.[burnParam?.payloadName || burnParam?.name] ??
+      ''
+    const donationVal =
+      params?.[donationParam?.name] ??
+      params?.[donationParam?.payloadName || donationParam?.name] ??
+      ''
+    const burnNum = parseFloat(String(burnVal).replace(',', '.'))
+    const donationNum = parseFloat(String(donationVal).replace(',', '.'))
+    const burnMax = burnParam?.max
+    const burnMin = burnParam?.min
+    const donationMax = donationParam?.max
+    const donationMin = donationParam?.min
+    const burnValid =
+      burnNum === '' ||
+      (!Number.isNaN(burnNum) &&
+        (burnMin === undefined || burnNum >= burnMin) &&
+        (burnMax === undefined || burnNum <= burnMax))
+    const donationValid =
+      donationNum === '' ||
+      (!Number.isNaN(donationNum) &&
+        (donationMin === undefined || donationNum >= donationMin) &&
+        (donationMax === undefined || donationNum <= donationMax))
+    return { burnValid, donationValid }
+  }, [fn, params])
+
   const {
     logs,
     pending,
@@ -116,10 +188,23 @@ export default function StepExecute({
     allMandatoryFilled,
   } = useExecuteHandler({ contract, fn, params, setParams, resumedTx })
 
+  const sharesValid =
+    winnerSharesSum === null ||
+    (winnerSharesSum.hasShares && winnerSharesSum.sum <= 100)
+  const donationValid =
+    donationStatus === null ||
+    (donationStatus.hasAccount && donationStatus.hasPercent) ||
+    (!donationStatus.hasAccount && !donationStatus.hasPercent)
+  const rangesValid =
+    lotteryRangeStatus === null ||
+    (lotteryRangeStatus.burnValid && lotteryRangeStatus.donationValid)
+  const isSendEnabled = allMandatoryFilled && !pending && sharesValid && donationValid && rangesValid
+
   const handleSendAndForward = async () => {
     if (isMobile && activePage !== 'preview') {
       setActivePage('preview')
     }
+    if (!isSendEnabled) return
     await handleSend()
   }
 
@@ -239,7 +324,7 @@ export default function StepExecute({
           Back
         </NeonButton>
         <div className="next-button-glitter-wrapper">
-          <NeonButton onClick={handleSendAndForward}>
+          <NeonButton onClick={handleSendAndForward} disabled={!isSendEnabled}>
             <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
               {Array.from({ length: 90 }).map((_, i) => (
                 <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>

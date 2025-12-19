@@ -14,6 +14,7 @@ import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider
 import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
+import LotteryDropdown from '../common/LotteryDropdown.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
 
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
@@ -60,6 +61,10 @@ export default function ExecuteForm({
   const [newOptionText, setNewOptionText] = useState('')
   const [editingOptionIndex, setEditingOptionIndex] = useState(null)
   const [editingText, setEditingText] = useState('')
+  const [showNewShareInput, setShowNewShareInput] = useState(false)
+  const [newShareText, setNewShareText] = useState('')
+  const [editingShareIndex, setEditingShareIndex] = useState(null)
+  const [editingShareText, setEditingShareText] = useState('')
   const [payoutReceiver, setPayoutReceiver] = useState('')
   const [payoutAmount, setPayoutAmount] = useState('')
   const [editingPayoutIndex, setEditingPayoutIndex] = useState(null)
@@ -76,6 +81,8 @@ export default function ExecuteForm({
   const lowerHive = hiveUser.toLowerCase()
   const newOptionInputRef = useRef(null)
   const editingInputRef = useRef(null)
+  const newShareInputRef = useRef(null)
+  const editingShareInputRef = useRef(null)
   const parseOptionList = (str) =>
     (str || '')
       .split(';')
@@ -126,6 +133,23 @@ export default function ExecuteForm({
   const isDaoContract = contract?.vscId === DAO_VSC_ID
   const isDaoProjectCreate = isDaoContract && fn?.name === 'project_create'
   const isProposalCreate = isDaoContract && fn?.name === 'proposal_create'
+  const isCreateLottery = fn?.name === 'create_lottery'
+
+  useEffect(() => {
+    if (!isCreateLottery || !fn?.parameters?.length || !setParams) return
+    const burnParam =
+      fn.parameters.find((p) => (p.payloadName || '').toLowerCase() === 'burnpercent') ||
+      fn.parameters.find((p) => String(p.name || '').toLowerCase().includes('burn percent'))
+    if (!burnParam) return
+    const current = params?.[burnParam.name] ?? params?.[burnParam.payloadName || burnParam.name]
+    if (current === undefined || current === null || current === '') {
+      setParams((prev) => ({
+        ...prev,
+        [burnParam.name]: '5',
+        [burnParam.payloadName || burnParam.name]: '5',
+      }))
+    }
+  }, [isCreateLottery, fn, params, setParams])
 
   // Fetch DAO projects for dropdowns (via Hasura/urql provider)
   const [{ data: daoData, error: daoError }] = useQuery({
@@ -526,6 +550,258 @@ export default function ExecuteForm({
       (isMetaField && 'Meta') ||
       p.name
     const labelText = `${customLabel}${(p.mandatory || isCoreProposalField) ? ' *' : ''}`
+    const isWinnerSharesField =
+      fn?.name === 'create_lottery' &&
+      (((p.payloadName || '').toLowerCase() === 'winnershares') ||
+        (p.name || '').toLowerCase().includes('winner shares'))
+
+    if (isWinnerSharesField) {
+      const rawVal = params[p.name] ?? params[p.payloadName || p.name] ?? ''
+      const shareList = String(rawVal)
+        .split(/[;,]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => parseInt(s, 10))
+        .filter((n) => Number.isFinite(n) && n > 0)
+        .sort((a, b) => b - a)
+      const total = shareList.reduce((sum, n) => sum + n, 0)
+      const remaining = 100 - total
+      const shareInputStyle = {
+        background: 'transparent',
+        border: '1px solid var(--color-primary-darkest)',
+        color: 'var(--color-primary-lighter)',
+        padding: '6px 8px',
+      }
+
+      const updateShares = (nextList) => {
+        const sanitized = nextList
+          .map((n) => parseInt(n, 10))
+          .filter((n) => Number.isFinite(n) && n > 0)
+          .sort((a, b) => b - a)
+        const serialized = sanitized.join(',')
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      const confirmNewShare = () => {
+        const nextVal = parseInt(String(newShareText).trim(), 10)
+        if (!Number.isFinite(nextVal) || nextVal <= 0) return
+        updateShares([...shareList, nextVal])
+        setNewShareText('')
+        setShowNewShareInput(false)
+      }
+
+      const confirmEditShare = () => {
+        if (editingShareIndex === null) return
+        const nextVal = parseInt(String(editingShareText).trim(), 10)
+        if (!Number.isFinite(nextVal) || nextVal <= 0) return
+        const next = [...shareList]
+        next[editingShareIndex] = nextVal
+        updateShares(next)
+        setEditingShareIndex(null)
+        setEditingShareText('')
+      }
+
+      const removeShare = (idx) => {
+        const next = shareList.filter((_, i) => i !== idx)
+        updateShares(next)
+        if (editingShareIndex === idx) {
+          setEditingShareIndex(null)
+          setEditingShareText('')
+        }
+      }
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+            {labelText}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}
+          >
+            {shareList.length === 0 ? (
+              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.8, fontSize: '0.9rem' }}>
+                No shares yet.
+              </span>
+            ) : (
+              shareList.map((share, idx) =>
+                editingShareIndex === idx ? (
+                  <div
+                    key={`share-edit-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(0,0,0,0.4)',
+                      border: '1px solid var(--color-primary-darkest)',
+                      padding: '6px 8px',
+                    }}
+                  >
+                    <input
+                      ref={(el) => {
+                        if (idx === editingShareIndex) editingShareInputRef.current = el
+                      }}
+                      type="number"
+                      inputMode="numeric"
+                      value={editingShareText}
+                      onChange={(e) => setEditingShareText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          confirmEditShare()
+                        }
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: '1px solid var(--color-primary-darkest)',
+                        color: 'var(--color-primary-lighter)',
+                        padding: '4px 6px',
+                        width: '80px',
+                      }}
+                    />
+                    <span style={{ color: 'var(--color-primary-lighter)' }}>%</span>
+                    <button
+                      onClick={confirmEditShare}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary)',
+                        cursor: 'pointer',
+                      }}
+                      title="Confirm share"
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                    <button
+                      onClick={() => removeShare(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete share"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    key={`share-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 8px',
+                      border: '1px solid var(--color-primary-darkest)',
+                      background: 'rgba(0,0,0,0.35)',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      setEditingShareIndex(idx)
+                      setEditingShareText(String(share))
+                    }}
+                    title="Click to edit"
+                  >
+                    <span style={{ color: 'var(--color-primary-lighter)' }}>{share}%</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeShare(idx)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--color-primary-lighter)',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete share"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                )
+              )
+            )}
+          </div>
+          <div style={{ color: total === 100 ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontSize: '0.85rem', opacity: total === 100 ? 1 : 0.8 }}>
+            Total: {total}% {total === 100 ? '' : `(${remaining}% remaining)`}
+          </div>
+          {showNewShareInput ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                ref={newShareInputRef}
+                type="number"
+                inputMode="numeric"
+                placeholder="Share %"
+                value={newShareText}
+                onChange={(e) => setNewShareText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    confirmNewShare()
+                  }
+                }}
+                style={{
+                  ...shareInputStyle,
+                  width: '120px',
+                }}
+              />
+              <button
+                onClick={confirmNewShare}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'transparent',
+                  border: '1px solid var(--color-primary-darkest)',
+                  color: newShareText.trim() ? 'var(--color-primary)' : 'gray',
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                }}
+                title="Add share"
+              >
+                <FontAwesomeIcon icon={faPlusCircle} />
+                <span>Add</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewShareInput(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color: 'var(--color-primary-lighter)',
+                padding: '6px 10px',
+                cursor: 'pointer',
+              }}
+              title="Add share"
+            >
+              <FontAwesomeIcon icon={faPlusCircle} />
+              <span>Add share</span>
+            </button>
+          )}
+        </div>
+      )
+    }
 
     if (isDaoProjectCreate && p.payloadName === 'votingSystem') {
       return renderDaoSwitch(p, 'Democratic', 'Stake-based')
@@ -533,6 +809,53 @@ export default function ExecuteForm({
 
     if (isDaoProjectCreate && p.payloadName === 'creatorRestriction') {
       return renderDaoSwitch(p, 'Members', 'Public')
+    }
+
+    const isLotteryTicketPrice =
+      fn?.name === 'create_lottery' &&
+      (p.payloadName || '').toLowerCase() === 'ticketprice'
+
+    if (isLotteryTicketPrice) {
+      const formatTicketPrice = (val) => {
+        const num = parseFloat(String(val).replace(',', '.'))
+        if (!Number.isFinite(num)) return ''
+        return num.toFixed(3)
+      }
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FloatingLabelInput
+            label={labelText}
+            type="number"
+            value={params[p.name] ?? ''}
+            onChange={(e) => {
+              const val = e.target.value
+              setParams((prev) => ({
+                ...prev,
+                [p.name]: val,
+              }))
+            }}
+            onBlur={
+              p.type === 'number' || p.min !== undefined || p.max !== undefined
+                ? (e) => {
+                    const clamped = clampNumber(e.target.value, p.min, p.max)
+                    const formatted = formatTicketPrice(clamped)
+                    if (formatted && formatted !== e.target.value) {
+                      setParams((prev) => ({
+                        ...prev,
+                        [p.name]: formatted,
+                      }))
+                    }
+                  }
+                : undefined
+            }
+            min={p.min}
+            max={p.max}
+            step="0.001"
+            style={{ marginTop: '4px' }}
+          />
+          <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.9, marginTop: '4px' }}>HIVE</span>
+        </div>
+      )
     }
 
     // DAO project selector
@@ -615,6 +938,31 @@ export default function ExecuteForm({
             subtitle: optionSubtitle(proj),
           }))}
           showCheck
+        />
+      )
+    }
+
+    // Lottery dropdown selector
+    if (p.type === 'lotteryDropdown') {
+      const rawVal = params[p.name] ?? params[p.payloadName] ?? ''
+      const value =
+        rawVal === null || rawVal === undefined || rawVal === ''
+          ? ''
+          : String(rawVal)
+
+      return (
+        <LotteryDropdown
+          value={value}
+          onChange={(val) => {
+            const numericVal = Number(val)
+            setParams((prev) => ({
+              ...prev,
+              [p.name]: numericVal,
+              [p.payloadName || p.name]: numericVal,
+            }))
+          }}
+          param={p}
+          placeholder={p.hintText || 'Select an active lottery'}
         />
       )
     }

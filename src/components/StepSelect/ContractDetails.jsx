@@ -5,9 +5,11 @@ import DescriptionBox from '../common/DescriptionBox.jsx'
 import FunctionList from './FunctionList.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
 import DaoUserLists from './DaoUserLists.jsx'
+import LotteryUserLists from './LotteryUserLists.jsx'
 
 const METADATA_COLLAPSE_COOKIE = 'contractMetadataCollapsed'
 const FUNCTIONS_COLLAPSE_COOKIE = 'functionsListCollapsed'
+const LOTTERY_VSC_ID = 'vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2'
 
 export default function ContractDetails({
   isMobile,
@@ -28,6 +30,7 @@ export default function ContractDetails({
   }
 
   const isGameContract = selectedContract?.functions?.[0]?.parse === 'game'
+  const isLotteryContract = selectedContract?.vscId === LOTTERY_VSC_ID
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false)
   const [isFunctionsCollapsed, setIsFunctionsCollapsed] = useState(false)
 
@@ -196,7 +199,7 @@ export default function ContractDetails({
       )}
 
       {/* --- Functions Section --- */}
-      {!isDaoContract && !isMobile && (
+      {!isDaoContract && !isLotteryContract && !isMobile && (
         <>
           <h3
             className="cyber-tile"
@@ -223,7 +226,7 @@ export default function ContractDetails({
           </h3>
         </>
       )}
-      {!isDaoContract && (isMobile || !isFunctionsCollapsed) && (
+      {!isDaoContract && !isLotteryContract && (isMobile || !isFunctionsCollapsed) && (
         <>
           <FunctionList
             selectedContract={selectedContract}
@@ -243,6 +246,22 @@ export default function ContractDetails({
           isMobile={isMobile}
           onCreateDao={onCreateDao}
           onCreateProposal={onCreateProposal}
+          setParams={setParams}
+          setFnName={setFnName}
+          setStep={setStep}
+          setContractId={setContractId}
+        />
+      )}
+
+      {isLotteryContract && (
+        <LotteryUserLists
+          user={user}
+          isMobile={isMobile}
+          onCreateLottery={() => {
+            setContractId?.(LOTTERY_VSC_ID)
+            setFnName?.('create_lottery')
+            setStep?.(2)
+          }}
           setParams={setParams}
           setFnName={setFnName}
           setStep={setStep}

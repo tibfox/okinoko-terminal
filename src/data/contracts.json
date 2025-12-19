@@ -180,7 +180,7 @@
     {
       "name": "Ōkinoko ShinDAO [beta]",
       "id": 2,
-      "sortIndex": 3,
+      "sortIndex": 4,
       "vscId": "vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-11-28T22:20:57",
@@ -712,7 +712,7 @@
     {
       "name": "SDK Function Debug Tests",
       "id": 3,
-      "sortIndex": 4,
+      "sortIndex": 999,
       "vscId": "vsc1BdaaUWkeEoCkHrFDt9uVMq7LXKSxcSFoPK",
       "owner": "tibfox.vsc",
       "deployedOn": "2025-10-31T15:12:33",
@@ -980,6 +980,178 @@
           ],
           "hintText": "",
           "groupHeader": "Contracts"
+        }
+      ]
+    },
+    {
+      "name": "Ōkinoko Takara [alpha]",
+      "id": 5,
+      "sortIndex": 3,
+      "vscId": "vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-12-18T16:53:57",
+      "verifiedOn": "unverified",
+      "description": "Create and participate in on-chain lotteries with customizable prize distributions, burn rates, and optional donations.",
+      "functions": [
+        {
+          "name": "create_lottery",
+          "friendlyName": "Create Lottery",
+          "description": "Create a new lottery with custom parameters including name, deadline, burn percentage, winner prize distribution, and ticket price. You can optionally configure a donation to a specific account.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Lottery Name",
+              "payloadName": "name",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "Give your lottery a descriptive name (max 100 characters, no pipe characters)",
+              "sortIndex": 1
+            },
+            {
+              "name": "Deadline (hours)",
+              "payloadName": "deadlineHours",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Number of hours until the lottery ends: 1 - 2160 hours (90 days)",
+              "min": 1,
+              "max": 2160,
+              "sortIndex": 2
+            },
+            {
+              "name": "Burn Percent",
+              "payloadName": "burnPercent",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Percentage of the pool to burn (5-75%)",
+              "min": 5,
+              "max": 75,
+              "sortIndex": 3
+            },
+            {
+              "name": "Winner Shares (comma-separated)",
+              "payloadName": "winnerShares",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "Prize distribution percentages that must sum to 100. Example: 50,30,20 for 3 winners",
+              "sortIndex": 4
+            },
+            {
+              "name": "Ticket Price",
+              "payloadName": "ticketPrice",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Price per ticket (minimum 0.001)",
+              "min": 0.001,
+              "sortIndex": 5
+            },
+            {
+              "name": "Donation Account (optional)",
+              "payloadName": "donationAccount",
+              "type": "address",
+              "mandatory": false,
+              "hintText": "Optional account to receive donations from the pool",
+              "sortIndex": 6
+            },
+            {
+              "name": "Donation Percent (optional)",
+              "payloadName": "donationPercent",
+              "type": "number",
+              "asString": false,
+              "mandatory": false,
+              "hintText": "Percentage to donate (0-50%). Burn + donation cannot exceed 90%",
+              "min": 0,
+              "max": 50,
+              "sortIndex": 7
+            }
+          ],
+          "hintText": "Note: After creation, you'll receive a lottery ID. Keep it to manage your lottery.",
+          "groupHeader": "Lottery Management"
+        },
+        {
+          "name": "join_lottery",
+          "friendlyName": "Buy Tickets",
+          "description": "Join an existing lottery by purchasing tickets. The number of tickets is determined by your transfer.allow intent divided by the ticket price. You can buy multiple tickets at once.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Lottery",
+              "payloadName": "lotteryId",
+              "type": "lotteryDropdown",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Select an active lottery to join",
+              "sortIndex": 1,
+              "graphqlQuery": "okinoko_lottery_active",
+              "valueField": "id",
+              "labelTemplate": "#{id}: {name}",
+              "subtitleTemplate": "Ticket: {ticket_price} {asset} | Burn: {burn_percent}% | Deadline: {deadline}",
+              "orderBy": "deadline"
+            },
+            {
+              "name": "Payment (tickets = amount / ticket price)",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "Amount to spend on tickets. Must match the lottery's asset and be a multiple of ticket price.",
+              "sortIndex": 2
+            }
+          ],
+          "hintText": "You can join the same lottery multiple times to buy more tickets.",
+          "groupHeader": "Lottery Management"
+        },
+        {
+          "name": "execute_lottery",
+          "friendlyName": "Execute Lottery",
+          "description": "Execute the lottery after the deadline has passed. This selects the winners randomly, distributes prizes, burns tokens, and sends donations if configured. Anyone can execute a lottery once its deadline is reached.",
+          "parse": "raw",
+          "parameters": [
+            {
+              "name": "Lottery ID",
+              "payloadName": "lotteryId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "The ID of the lottery to execute",
+              "sortIndex": 1
+            }
+          ],
+          "hintText": "The lottery must have passed its deadline and have at least one participant.",
+          "groupHeader": "Lottery Management"
+        },
+        {
+          "name": "verify_lottery",
+          "friendlyName": "Verify Lottery Results",
+          "description": "Verify that a lottery's winners were fairly selected by re-running the winner selection algorithm with the lottery's random seed. This allows anyone to independently verify the results.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Lottery ID",
+              "payloadName": "lotteryId",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "The ID of the executed lottery to verify",
+              "sortIndex": 1
+            },
+            {
+              "name": "Random Seed",
+              "payloadName": "seed",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "The random seed used in the lottery (found in lottery execution event)",
+              "sortIndex": 2
+            }
+          ],
+          "hintText": "This is a read-only verification function that outputs the winner selection process.",
+          "groupHeader": "Verification"
         }
       ]
     }

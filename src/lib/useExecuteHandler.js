@@ -295,7 +295,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
           return p && (p.type === 'bool' || p.type === 'boolean')
         }
 
-        const str = ps
+        const parts = ps
           .filter((p) => p.type !== 'vscIntent')
           .map((p) => {
             let val = params?.[p.name]
@@ -319,14 +319,27 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
               val = String(val)
             }
 
+            // Return object with value and whether it's optional and empty
+            const isEmpty = !p.mandatory && (val === '' || val === null || val === undefined)
+
             // Return value-only if excludeKeys is true
             if (excludeKeys) {
-              return val
+              return { val, isEmpty }
             }
 
             // Normal key:value format
-            return `${p.payloadName || p.name}${keyDelimiter}${val}`
+            return { val: `${p.payloadName || p.name}${keyDelimiter}${val}`, isEmpty }
           })
+
+        // Remove trailing empty optional parameters
+        let lastNonEmptyIndex = parts.length - 1
+        while (lastNonEmptyIndex >= 0 && parts[lastNonEmptyIndex].isEmpty) {
+          lastNonEmptyIndex--
+        }
+
+        const str = parts
+          .slice(0, lastNonEmptyIndex + 1)
+          .map(p => p.val)
           .join(delimiter)
 
         return { payload: str, intents, action }
