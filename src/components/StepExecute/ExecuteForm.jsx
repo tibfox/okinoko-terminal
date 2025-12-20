@@ -16,6 +16,7 @@ import { useQuery } from '@urql/preact'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
 import LotteryDropdown from '../common/LotteryDropdown.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
+import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
@@ -151,6 +152,17 @@ export default function ExecuteForm({
   const isProposalCreate = isDaoContract && fn?.name === 'proposal_create'
   const isCreateLottery = fn?.name === 'create_lottery'
   const isJoinLottery = fn?.name === 'join_lottery'
+  useEffect(() => {
+    if (!isJoinLottery || !setParams) return
+    const intent = fn?.parameters?.find((p) => p.type === 'vscIntent')
+    if (!intent) return
+    const current = params?.[intent.name]
+    if (!current || current.asset === 'HIVE') return
+    setParams((prev) => ({
+      ...prev,
+      [intent.name]: { ...current, asset: 'HIVE' },
+    }))
+  }, [fn, isJoinLottery, params, setParams])
   const lotteryMetaParam = useMemo(
     () => fn?.parameters?.find((p) => p.type === 'lottery_meta') || null,
     [fn]
@@ -2326,33 +2338,49 @@ export default function ExecuteForm({
               }}
             />
 
-            <select
-              className="vsc-input"
-              value={current.asset}
-              onChange={(e) =>
-                setParams((prev) => ({
-                  ...prev,
-                  [p.name]: { ...current, asset: e.target.value },
-                }))
-              }
-              style={{
-                flex: '0 0 20%',
-                appearance: 'none',
-                backgroundColor: 'black',
-                padding: '0 20px 0 8px',
-                backgroundImage:
-                  'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
-                backgroundPosition:
-                  'calc(100% - 12px) center, calc(100% - 7px) center',
-                backgroundSize: '5px 5px, 5px 5px',
-                backgroundRepeat: 'no-repeat',
-                color: 'var(--color-primary-lighter)',
-                border: '1px solid var(--color-primary-darkest)',
-              }}
-            >
-              <option value="HIVE">HIVE</option>
-              <option value="HBD">HBD</option>
-            </select>
+            {isJoinLottery ? (
+              <div
+                style={{
+                  flex: '0 0 20%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: 'var(--color-primary-lighter)',
+                  fontSize: '0.9rem',
+                }}
+              >
+                <span>HIVE</span>
+                <GamblingInfoIcon size={16} />
+              </div>
+            ) : (
+              <select
+                className="vsc-input"
+                value={current.asset}
+                onChange={(e) =>
+                  setParams((prev) => ({
+                    ...prev,
+                    [p.name]: { ...current, asset: e.target.value },
+                  }))
+                }
+                style={{
+                  flex: '0 0 20%',
+                  appearance: 'none',
+                  backgroundColor: 'black',
+                  padding: '0 20px 0 8px',
+                  backgroundImage:
+                    'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
+                  backgroundPosition:
+                    'calc(100% - 12px) center, calc(100% - 7px) center',
+                  backgroundSize: '5px 5px, 5px 5px',
+                  backgroundRepeat: 'no-repeat',
+                  color: 'var(--color-primary-lighter)',
+                  border: '1px solid var(--color-primary-darkest)',
+                }}
+              >
+                <option value="HIVE">HIVE</option>
+                <option value="HBD">HBD</option>
+              </select>
+            )}
 
             <span
               style={{

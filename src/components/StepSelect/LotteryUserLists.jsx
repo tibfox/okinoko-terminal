@@ -417,7 +417,6 @@ export default function LotteryUserLists({
         style={{
           border: '1px solid var(--color-primary-darkest)',
           padding: '10px',
-          marginRight: '15px',
           background: 'rgba(0, 0, 0, 0.35)',
         }}
       >
