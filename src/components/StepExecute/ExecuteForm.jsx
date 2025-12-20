@@ -2393,7 +2393,7 @@ export default function ExecuteForm({
             </span>
           </div>
           {isJoinLottery && selectedLotteryTicket?.ticketPrice && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-primary-lighter)' }}>
+            <div style={{ fontSize: '1.2rem', color: 'var(--color-primary-lighter)' }}>
               Tickets: {ticketEstimateLabel ?? '—'} for {selectedLotteryTicket.ticketPrice} {ticketAsset} each
             </div>
           )}
