@@ -18,6 +18,7 @@ import contractsCfg from '../../data/contracts.json'
 import { PopupContext } from '../../popup/context.js'
 import LotteryDetailPopup from './LotteryDetailPopup.jsx'
 import PollPie from './PollPie.jsx'
+import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
@@ -555,14 +556,6 @@ export default function LotteryUserLists({
                     {burnPercent}%
                   </td>
                 </tr>
-                <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                    Ticket Price:
-                  </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                    {lottery.ticket_price} {formatAsset(lottery.asset)}
-                  </td>
-                </tr>
                 {isMobile && (
                   <tr>
                     <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
@@ -635,8 +628,9 @@ export default function LotteryUserLists({
                 <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center', lineHeight: 1.2 }}>
                   <span style={{ fontSize: '0.85rem', opacity: 0.85 }}>Ticket Price</span>
                   <br />
-                  <span style={{ fontSize: '1rem', color: 'var(--color-primary-lighter)' }}>
+                  <span style={{ fontSize: '1rem', color: 'var(--color-primary-lighter)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     {lottery.ticket_price} {formatAsset(lottery.asset)}
+                    <GamblingInfoIcon size={14} context="lottery" />
                   </span>
                 </span>
                 <PollPie parts={ticketParts} size={120} />

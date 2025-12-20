@@ -3,8 +3,9 @@ import { PopupContext } from '../../popup/context.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faShieldHeart } from '@fortawesome/free-solid-svg-icons'
 
-export default function GamblingInfoIcon({ size = 18, style }) {
+export default function GamblingInfoIcon({ size = 18, style, context = 'lottery' }) {
   const popup = useContext(PopupContext)
+  const isGameContext = context === 'game'
 
   return (
     <button
@@ -47,7 +48,15 @@ export default function GamblingInfoIcon({ size = 18, style }) {
                   <strong>@tibfox does not endorse gambling</strong> and encourages responsible play.
                 </p>
                 <p style={{ marginBottom: '16px' }}>
-                  Bets are <strong>100% optional</strong> and if you want to place a bet: <strong>only stake what you can lose.</strong> Gambling can become addictive — seek help if you need it.
+                  {isGameContext ? (
+                    <>
+                      Playing is <strong>100% optional</strong> and if you want to join: <strong>only stake what you can lose.</strong> Gambling can become addictive — seek help if you need it.
+                    </>
+                  ) : (
+                    <>
+                      Gambling can become addictive — seek help if you need it.
+                    </>
+                  )}
                 </p>
               </div>
 

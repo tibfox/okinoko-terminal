@@ -107,7 +107,7 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
       <td>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
           <strong>Bet:</strong>
-          <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+          <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} context="game" />
         </span>
       </td>
       <td style={{ paddingLeft: 24 }}>
@@ -134,7 +134,7 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
       <td style={{ verticalAlign: 'top' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
           <strong>Total to Join:</strong>
-          <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+          <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} context="game" />
         </span>
       </td>
       <td style={{ paddingLeft: 24 }}>

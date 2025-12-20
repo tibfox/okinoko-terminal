@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowUpRightFromSquare, faTicket, faTrophy } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import PollPie from './PollPie.jsx'
+import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
@@ -174,7 +175,10 @@ export default function LotteryDetailPopup({
               Ticket Price
             </td>
             <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-              {lottery.ticket_price} {formatAsset(lottery.asset)}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                {lottery.ticket_price} {formatAsset(lottery.asset)}
+                <GamblingInfoIcon size={14} context="lottery" />
+              </span>
             </td>
           </tr>
           <tr>

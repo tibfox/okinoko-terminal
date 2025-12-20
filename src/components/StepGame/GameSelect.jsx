@@ -425,7 +425,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       Bet
-                      <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} />
+                      <GamblingInfoIcon size={14} style={{ marginLeft: 0 }} context="game" />
                     </span>
                     {renderSortArrow('bet')}
                   </th>
@@ -639,7 +639,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
                   boxShadow: exceeds ? '0 0 8px red' : 'none',
                 }}
               />
-              <GamblingInfoIcon size={16} style={{ marginLeft: 0 }} />
+              <GamblingInfoIcon size={16} style={{ marginLeft: 0 }} context="game" />
             </div>
 
             <select

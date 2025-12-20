@@ -2350,7 +2350,7 @@ export default function ExecuteForm({
                 }}
               >
                 <span>HIVE</span>
-                <GamblingInfoIcon size={16} />
+                <GamblingInfoIcon size={16} context="lottery" />
               </div>
             ) : (
               <select
