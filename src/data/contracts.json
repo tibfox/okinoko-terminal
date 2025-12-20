@@ -1,7 +1,7 @@
 {
   "contracts": [
     {
-      "name": "Ōkinoko Esukurō",
+      "name": "Ōkinoko Esukurō (Escrow)",
       "id": 1,
       "sortIndex": 1,
       "vscId": "vsc1BgfucQVHwYBHuK2yMEv4AhYua9rtQ45Uoe",
@@ -110,7 +110,7 @@
       ]
     },
     {
-      "name": "Ōkinoko Ināro",
+      "name": "Ōkinoko Ināro (Games)",
       "id": 2,
       "sortIndex": 2,
       "vscId": "vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n",
@@ -1035,7 +1035,7 @@
       ]
     },
     {
-      "name": "Ōkinoko Takara",
+      "name": "Ōkinoko Takara (Lottery)",
       "id": 5,
       "sortIndex": 3,
       "vscId": "vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7",
