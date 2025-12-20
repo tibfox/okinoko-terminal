@@ -14,9 +14,19 @@ import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import ResizableDivider from '../common/ResizableDivider.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
+import { gql, useQuery } from '@urql/preact'
 
 const DIVIDER_COOKIE = 'stepExecuteDivider'
 const SPLITTER_WIDTH_PX = 2
+const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
+const LOTTERY_TICKET_QUERY = gql`
+  query LotteryTicketEstimate($id: numeric!) {
+    oki_lottery_v2_active(where: { id: { _eq: $id } }) {
+      id
+      ticket_price
+    }
+  }
+`
 
 const clampPosition = (value, fallback = 0.5) => {
   if (value === null || value === undefined || value === '') return fallback
@@ -106,6 +116,33 @@ export default function StepExecute({
     () => contract?.functions?.find((f) => f.name === fnName),
     [contract, fnName]
   )
+  const isJoinLottery = fn?.name === 'join_lottery'
+  const lotteryIdParam = useMemo(
+    () =>
+      fn?.parameters?.find(
+        (p) => (p.payloadName || '').toLowerCase() === 'lotteryid'
+      ) || null,
+    [fn]
+  )
+  const lotteryIdValue =
+    params?.[lotteryIdParam?.name] ??
+    params?.[lotteryIdParam?.payloadName || lotteryIdParam?.name]
+  const lotteryIdNumber =
+    lotteryIdValue === '' || lotteryIdValue === null || lotteryIdValue === undefined
+      ? null
+      : Number(lotteryIdValue)
+  const [{ data: ticketData }] = useQuery({
+    query: LOTTERY_TICKET_QUERY,
+    variables:
+      isJoinLottery && Number.isFinite(lotteryIdNumber) ? { id: lotteryIdNumber } : undefined,
+    pause: !isJoinLottery || !Number.isFinite(lotteryIdNumber),
+    requestPolicy: 'cache-and-network',
+  })
+  const ticketPrice = useMemo(() => {
+    const entry = ticketData?.oki_lottery_v2_active?.[0]
+    const price = Number(entry?.ticket_price)
+    return Number.isFinite(price) ? price : null
+  }, [ticketData])
 
   const winnerSharesSum = useMemo(() => {
     if (fn?.name !== 'create_lottery') return null
@@ -138,7 +175,12 @@ export default function StepExecute({
       params?.[donationPercentParam?.name] ??
       params?.[donationPercentParam?.payloadName || donationPercentParam?.name] ??
       ''
-    const hasAccount = String(accountVal || '').trim() !== ''
+    const normalizedAccount = String(accountVal || '')
+      .trim()
+      .replace(/^hive:/i, '')
+      .replace(/^:+/, '')
+      .trim()
+    const hasAccount = normalizedAccount !== ''
     const percentNum = parseFloat(String(percentVal).replace(',', '.'))
     const hasPercent = Number.isFinite(percentNum) && percentNum > 0
     return { hasAccount, hasPercent }
@@ -160,19 +202,21 @@ export default function StepExecute({
       params?.[donationParam?.name] ??
       params?.[donationParam?.payloadName || donationParam?.name] ??
       ''
-    const burnNum = parseFloat(String(burnVal).replace(',', '.'))
-    const donationNum = parseFloat(String(donationVal).replace(',', '.'))
+    const burnStr = String(burnVal ?? '').trim()
+    const donationStr = String(donationVal ?? '').trim()
+    const burnNum = parseFloat(burnStr.replace(',', '.'))
+    const donationNum = parseFloat(donationStr.replace(',', '.'))
     const burnMax = burnParam?.max
     const burnMin = burnParam?.min
     const donationMax = donationParam?.max
     const donationMin = donationParam?.min
     const burnValid =
-      burnNum === '' ||
+      burnStr === '' ||
       (!Number.isNaN(burnNum) &&
         (burnMin === undefined || burnNum >= burnMin) &&
         (burnMax === undefined || burnNum <= burnMax))
     const donationValid =
-      donationNum === '' ||
+      donationStr === '' ||
       (!Number.isNaN(donationNum) &&
         (donationMin === undefined || donationNum >= donationMin) &&
         (donationMax === undefined || donationNum <= donationMax))
@@ -198,14 +242,41 @@ export default function StepExecute({
   const rangesValid =
     lotteryRangeStatus === null ||
     (lotteryRangeStatus.burnValid && lotteryRangeStatus.donationValid)
-  const isSendEnabled = allMandatoryFilled && !pending && sharesValid && donationValid && rangesValid
+  const intentAmountValid = useMemo(() => {
+    const intentParam = fn?.parameters?.find((p) => p.type === 'vscIntent')
+    if (!intentParam) return true
+    const intentVal = params?.[intentParam.name]
+    const amount = parseFloat(String(intentVal?.amount ?? '').replace(',', '.'))
+    return Number.isFinite(amount) && amount > 0
+  }, [fn, params])
+  const ticketEstimateValid = useMemo(() => {
+    if (!isJoinLottery) return true
+    if (!ticketPrice || !Number.isFinite(ticketPrice)) return false
+    const intentParam = fn?.parameters?.find((p) => p.type === 'vscIntent')
+    if (!intentParam) return false
+    const intentVal = params?.[intentParam.name]
+    const amount = parseFloat(String(intentVal?.amount ?? '').replace(',', '.'))
+    if (!Number.isFinite(amount) || amount <= 0) return false
+    return Math.floor(amount / ticketPrice) > 0
+  }, [fn, params, isJoinLottery, ticketPrice])
+  const isSendEnabled =
+    allMandatoryFilled &&
+    !pending &&
+    sharesValid &&
+    donationValid &&
+    rangesValid &&
+    intentAmountValid &&
+    ticketEstimateValid
 
   const handleSendAndForward = async () => {
     if (isMobile && activePage !== 'preview') {
       setActivePage('preview')
     }
     if (!isSendEnabled) return
-    await handleSend()
+    const sent = await handleSend()
+    if (sent && contract?.vscId === LOTTERY_VSC_ID) {
+      setParams({})
+    }
   }
 
   const mobileTabs = useMemo(

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTicket, faTrophy } from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpRightFromSquare, faTicket, faTrophy } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import PollPie from './PollPie.jsx'
 
@@ -60,11 +60,21 @@ const formatAsset = (asset) => {
   return (asset || 'HIVE').toUpperCase()
 }
 
+const parseLotteryMeta = (raw) => {
+  const parts = String(raw || '').split('###')
+  return {
+    lotteryPostUrl: parts[0] || '',
+    donationPostUrl: parts[1] || '',
+    additionalDescription: parts.slice(2).join('###') || '',
+  }
+}
+
 const baseButtonStyle = {
   backgroundColor: 'transparent',
   color: 'var(--color-primary-lighter)',
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
+  fontStyle: 'normal',
   fontSize: '0.85rem',
   padding: '0.5em 1em',
   cursor: 'pointer',
@@ -98,6 +108,10 @@ export default function LotteryDetailPopup({
   const donationName = String(lottery.donation_account || '').replace(/^hive:/i, '')
   const creatorUrl = creatorName ? `https://ecency.com/@${creatorName}` : ''
   const donationUrl = donationName ? `https://ecency.com/@${donationName}` : ''
+  const metaParts = parseLotteryMeta(lottery.metadata)
+  const lotteryPostUrl = metaParts.lotteryPostUrl
+  const donationPostUrl = metaParts.donationPostUrl
+  const description = metaParts.additionalDescription
 
   // Parse winner shares
   const shares = (lottery.winner_shares || '')
@@ -138,6 +152,11 @@ export default function LotteryDetailPopup({
             ''
           )}
         </div>
+        {description && (
+          <div style={{ fontSize: '0.9rem', lineHeight: 1.4, color: 'var(--color-primary-lighter)' }}>
+            {description}
+          </div>
+        )}
       </div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -212,13 +231,31 @@ export default function LotteryDetailPopup({
                 Donation
               </td>
               <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                {donationAmount.toFixed(3)} {formatAsset(lottery.asset)} ({donationPercent}%) to{' '}
-                {donationName ? (
-                  <a href={donationUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
-                    @{donationName}
+                <span style={{ marginRight: '8px' }}>
+                  {donationAmount.toFixed(3)} {formatAsset(lottery.asset)} ({donationPercent}%) to{' '}
+                  {donationName ? (
+                    <a href={donationUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
+                      @{donationName}
+                    </a>
+                  ) : (
+                    ''
+                  )}
+                </span>
+                {donationPostUrl && (
+                  <a
+                    href={donationPostUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      ...baseButtonStyle,
+                      fontSize: '0.75rem',
+                      padding: '0.2em 0.6em',
+                    }}
+                    title="Open donation post"
+                  >
+                    <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                    <span>Open Post</span>
                   </a>
-                ) : (
-                  ''
                 )}
               </td>
             </tr>
@@ -273,10 +310,23 @@ export default function LotteryDetailPopup({
       
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        {!canExecute && onBuyTickets && (
+        {!lottery.is_executed && !canExecute && onBuyTickets && (
           <NeonButton onClick={onBuyTickets} style={baseButtonStyle}>
             <FontAwesomeIcon icon={faTicket} />
             <span>Buy Tickets</span>
+          </NeonButton>
+        )}
+        {lotteryPostUrl && (
+          <NeonButton
+            as="a"
+            href={lotteryPostUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={baseButtonStyle}
+            title="Open lottery post"
+          >
+            <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+            <span>Open Post</span>
           </NeonButton>
         )}
         {canExecute && onExecute && (

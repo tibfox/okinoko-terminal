@@ -9,7 +9,7 @@ import LotteryUserLists from './LotteryUserLists.jsx'
 
 const METADATA_COLLAPSE_COOKIE = 'contractMetadataCollapsed'
 const FUNCTIONS_COLLAPSE_COOKIE = 'functionsListCollapsed'
-const LOTTERY_VSC_ID = 'vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2'
+const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 
 export default function ContractDetails({
   isMobile,

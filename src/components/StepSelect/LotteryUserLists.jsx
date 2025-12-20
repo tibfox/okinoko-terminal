@@ -7,7 +7,9 @@ import {
   faChevronUp,
   faCircleInfo,
   faFilter,
+  faArrowUpRightFromSquare,
   faPlusCircle,
+  faPen,
   faTicket,
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons'
@@ -17,7 +19,7 @@ import { PopupContext } from '../../popup/context.js'
 import LotteryDetailPopup from './LotteryDetailPopup.jsx'
 import PollPie from './PollPie.jsx'
 
-const LOTTERY_VSC_ID = 'vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2'
+const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
 const baseButtonStyle = (active = false) => ({
@@ -25,6 +27,7 @@ const baseButtonStyle = (active = false) => ({
   color: active ? 'black' : 'var(--color-primary-lighter)',
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
+  fontStyle: 'normal',
   fontSize: '0.85rem',
   padding: '0.5em 1em',
   cursor: 'pointer',
@@ -38,7 +41,11 @@ const baseButtonStyle = (active = false) => ({
 
 const LOTTERY_USER_QUERY = gql`
   query LotteryUserLists($user: String!) {
-    activeLotteries: okinoko_lottery_current_state(
+    metadata: oki_lottery_v2_current_metadata {
+      id
+      metadata
+    }
+    activeLotteries: oki_lottery_v2_current_state(
       where: { is_executed: { _eq: false } }
       order_by: { deadline: asc }
     ) {
@@ -60,7 +67,7 @@ const LOTTERY_USER_QUERY = gql`
       winners
       winner_amounts
     }
-    closedLotteries: okinoko_lottery_current_state(
+    closedLotteries: oki_lottery_v2_current_state(
       where: { is_executed: { _eq: true } }
       order_by: { deadline: desc }
     ) {
@@ -82,7 +89,7 @@ const LOTTERY_USER_QUERY = gql`
       winners
       winner_amounts
     }
-    userParticipations: okinoko_lottery_participant_summary(
+    userParticipations: oki_lottery_v2_participant_summary(
       where: { participant: { _eq: $user } }
       order_by: { indexer_block_height: desc }
     ) {
@@ -141,6 +148,15 @@ const formatAsset = (asset) => {
   return (asset || 'HIVE').toUpperCase()
 }
 
+const parseLotteryMeta = (raw) => {
+  const parts = String(raw || '').split('###')
+  return {
+    lotteryPostUrl: parts[0] || '',
+    donationPostUrl: parts[1] || '',
+    additionalDescription: parts.slice(2).join('###') || '',
+  }
+}
+
 export default function LotteryUserLists({
   user,
   isMobile,
@@ -167,6 +183,32 @@ export default function LotteryUserLists({
   const activeLotteries = data?.activeLotteries ?? []
   const closedLotteries = data?.closedLotteries ?? []
   const userParticipations = data?.userParticipations ?? []
+  const metadataByLotteryId = useMemo(() => {
+    const map = new Map()
+    ;(data?.metadata ?? []).forEach((entry) => {
+      if (entry?.id === undefined || entry?.id === null) return
+      map.set(Number(entry.id), entry?.metadata ?? '')
+    })
+    return map
+  }, [data?.metadata])
+
+  const activeLotteriesWithMetadata = useMemo(
+    () =>
+      activeLotteries.map((lottery) => ({
+        ...lottery,
+        metadata: metadataByLotteryId.get(Number(lottery.id)) || '',
+      })),
+    [activeLotteries, metadataByLotteryId]
+  )
+
+  const closedLotteriesWithMetadata = useMemo(
+    () =>
+      closedLotteries.map((lottery) => ({
+        ...lottery,
+        metadata: metadataByLotteryId.get(Number(lottery.id)) || '',
+      })),
+    [closedLotteries, metadataByLotteryId]
+  )
 
   const userTicketsByLottery = useMemo(() => {
     const map = new Map()
@@ -212,7 +254,7 @@ export default function LotteryUserLists({
               }))
               setStep?.(2)
             }}
-            canExecute={isDeadlinePassed(lottery.deadline)}
+            canExecute={!lottery.is_executed && isDeadlinePassed(lottery.deadline)}
           />
         ),
       })
@@ -242,6 +284,23 @@ export default function LotteryUserLists({
         ...prev,
         'Lottery ID': lotteryId,
         lotteryId: lotteryId,
+      }))
+      setStep?.(2)
+    },
+    [setContractId, setFnName, setParams, setStep]
+  )
+
+  const handleEditMetadata = useCallback(
+    (lottery) => {
+      if (!lottery) return
+      setContractId?.(LOTTERY_VSC_ID)
+      setFnName?.('change_lottery_metadata')
+      setParams?.((prev) => ({
+        ...prev,
+        'Lottery ID': lottery.id,
+        lotteryId: lottery.id,
+        Metdata: lottery.metadata || '',
+        metadata: lottery.metadata || '',
       }))
       setStep?.(2)
     },
@@ -332,7 +391,11 @@ export default function LotteryUserLists({
     const winnerAmounts = Array.isArray(lottery.winner_amounts) ? lottery.winner_amounts : []
     const hasWinnerPayouts = isClosed && winners.length > 0
     const creatorName = String(lottery.creator || '').replace(/^hive:/i, '')
+    const isCreator = creatorName && creatorName.toLowerCase() === normalizedUser
     const donationName = String(lottery.donation_account || '').replace(/^hive:/i, '')
+    const metaParts = parseLotteryMeta(lottery.metadata)
+    const lotteryPostUrl = metaParts.lotteryPostUrl
+    const donationPostUrl = metaParts.donationPostUrl
     const creatorUrl = creatorName ? `https://ecency.com/@${creatorName}` : ''
     const donationUrl = donationName ? `https://ecency.com/@${donationName}` : ''
     const ticketParts = [
@@ -387,6 +450,28 @@ export default function LotteryUserLists({
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {lotteryPostUrl && (
+              <a
+                href={lotteryPostUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={baseButtonStyle(false)}
+                title="Open lottery post"
+              >
+                <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                {!isMobile && <span>Open Post</span>}
+              </a>
+            )}
+            {isCreator && (
+              <button
+                onClick={() => handleEditMetadata(lottery)}
+                style={baseButtonStyle(false)}
+                title="Edit metadata"
+              >
+                <FontAwesomeIcon icon={faPen} />
+                {!isMobile && <span>Metadata</span>}
+              </button>
+            )}
             {!isClosed && !deadlinePassed && (
               <button
                 onClick={() => handleBuyTickets(lottery.id)}
@@ -429,11 +514,12 @@ export default function LotteryUserLists({
                   </td>
                 </tr>
                 {lottery.donation_account && lottery.donation_percent > 0 && (
-                  <tr>
-                    <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                      Donation to:
-                    </td>
-                    <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                <tr>
+                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                    Donation to:
+                  </td>
+                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                    <span style={{ marginRight: '8px' }}>
                       {lottery.donation_percent}%{' '}
                       {donationName ? (
                         <a href={donationUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
@@ -442,9 +528,26 @@ export default function LotteryUserLists({
                       ) : (
                         ''
                       )}
-                    </td>
-                  </tr>
-                )}
+                    </span>
+                    {donationPostUrl && (
+                      <a
+                        href={donationPostUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          ...baseButtonStyle(false),
+                          fontSize: '0.75rem',
+                          padding: '0.2em 0.6em',
+                        }}
+                        title="Open donation post"
+                      >
+                        <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                        {!isMobile && <span>Open Post</span>}
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              )}
                 <tr>
                   <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Burn:
@@ -559,7 +662,10 @@ export default function LotteryUserLists({
   const renderLotteryList = () => {
     if (fetching) return renderEmptyState('Loading active lotteries…')
     if (error) return renderEmptyState('Could not load lotteries right now.')
-    const filteredLotteries = lotteryStatusFilter === 'closed' ? closedLotteries : activeLotteries
+    const filteredLotteries =
+      lotteryStatusFilter === 'closed'
+        ? closedLotteriesWithMetadata
+        : activeLotteriesWithMetadata
     if (!filteredLotteries.length) {
       return renderEmptyState(lotteryStatusFilter === 'closed' ? 'No closed lotteries yet.' : 'No active lotteries. Create one!')
     }

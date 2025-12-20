@@ -65,7 +65,7 @@
             {
               "name": "Escrow Id",
               "payloadName": "id",
-              "type": "number",
+              "type": "lotteryDropdown",
               "asString": false,
               "mandatory": true,
               "hintText": "",
@@ -83,7 +83,6 @@
               "sortIndex": 2,
               "displayTrue": "Release",
               "displayFalse": "Refund"
-              
             }
           ],
           "hintText": "",
@@ -98,7 +97,7 @@
             {
               "name": "Escrow Id",
               "payloadName": "id",
-              "type": "number",
+              "type": "lotteryDropdown",
               "asString": false,
               "mandatory": true,
               "hintText": "",
@@ -147,7 +146,6 @@
           "hintText": "",
           "groupHeader": ""
         },
-        
         {
           "name": "6",
           "friendlyName": "Gomoku Freestyle",
@@ -226,7 +224,7 @@
             {
               "name": "Threshold Percent",
               "payloadName": "threshold",
-              "type": "number",
+              "type": "lotteryDropdown",
               "mandatory": false,
               "hintText": "This is the percentage where a proposal is considered passed. Defaults to 50.01%",
               "min": 0.1,
@@ -577,19 +575,72 @@
               "mandatory": false,
               "hintText": "These are the meta actions for the proposal, specified as key-value pairs. Separate multiple actions with semicolons.",
               "metaOptions": [
-                { "key": "pause", "type": "none", "hint": "Toggle project pause state (true pauses, false unpauses)", "staticValue": "1" },
-                { "key": "owner", "type": "account", "hint": "Address of the project owner" },
-                { "key": "threshold", "type": "float", "hint": "Required approval threshold percentage" },
-                { "key": "quorum", "type": "float", "hint": "Minimum quorum percentage" },
-                { "key": "proposalDuration", "type": "int", "hint": "Duration for proposals in hours" },
-                { "key": "executionDelay", "type": "int", "hint": "Delay before execution in hours" },
-                { "key": "leaveCooldown", "type": "int", "hint": "Cooldown before members can leave, in hours" },
-                { "key": "proposalCost", "type": "float", "hint": "Cost for new proposals" },
-                { "key": "proposalCreatorRestriction", "type": "bool", "hint": "Restrict proposal creation to only members" },
-                { "key": "membershipNFT", "type": "int", "hint": "membership NFTs" },
-                { "key": "membershipNFTContract", "type": "string", "hint": "contract we should lookup for the membershi NFTs" },
-                { "key": "membershipNFTContractFunction", "type": "string", "hint": "function we should call on the membership NFT contract" },
-                { "key": "membershipNFTPayload", "type": "string", "hint": "payload we should send to the membership NFT contract (must contain `{nft}` and `{caller}`) " }
+                {
+                  "key": "pause",
+                  "type": "none",
+                  "hint": "Toggle project pause state (true pauses, false unpauses)",
+                  "staticValue": "1"
+                },
+                {
+                  "key": "owner",
+                  "type": "account",
+                  "hint": "Address of the project owner"
+                },
+                {
+                  "key": "threshold",
+                  "type": "float",
+                  "hint": "Required approval threshold percentage"
+                },
+                {
+                  "key": "quorum",
+                  "type": "float",
+                  "hint": "Minimum quorum percentage"
+                },
+                {
+                  "key": "proposalDuration",
+                  "type": "int",
+                  "hint": "Duration for proposals in hours"
+                },
+                {
+                  "key": "executionDelay",
+                  "type": "int",
+                  "hint": "Delay before execution in hours"
+                },
+                {
+                  "key": "leaveCooldown",
+                  "type": "int",
+                  "hint": "Cooldown before members can leave, in hours"
+                },
+                {
+                  "key": "proposalCost",
+                  "type": "float",
+                  "hint": "Cost for new proposals"
+                },
+                {
+                  "key": "proposalCreatorRestriction",
+                  "type": "bool",
+                  "hint": "Restrict proposal creation to only members"
+                },
+                {
+                  "key": "membershipNFT",
+                  "type": "int",
+                  "hint": "membership NFTs"
+                },
+                {
+                  "key": "membershipNFTContract",
+                  "type": "string",
+                  "hint": "contract we should lookup for the membershi NFTs"
+                },
+                {
+                  "key": "membershipNFTContractFunction",
+                  "type": "string",
+                  "hint": "function we should call on the membership NFT contract"
+                },
+                {
+                  "key": "membershipNFTPayload",
+                  "type": "string",
+                  "hint": "payload we should send to the membership NFT contract (must contain `{nft}` and `{caller}`) "
+                }
               ],
               "sortIndex": 8
             },
@@ -984,13 +1035,13 @@
       ]
     },
     {
-      "name": "Ōkinoko Takara [alpha]",
+      "name": "Ōkinoko Takara",
       "id": 5,
       "sortIndex": 3,
-      "vscId": "vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2",
+      "vscId": "vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7",
       "owner": "tibfox.vsc",
-      "deployedOn": "2025-12-18T16:53:57",
-      "verifiedOn": "unverified",
+      "deployedOn": "2025-12-20T13:11:27",
+      "verifiedOn": "2025-12-20T13:12:30",
       "description": "Create and participate in on-chain lotteries with customizable prize distributions, burn rates, and optional donations.",
       "functions": [
         {
@@ -1012,7 +1063,7 @@
             {
               "name": "Deadline (hours)",
               "payloadName": "deadlineHours",
-              "type": "number",
+              "type": "int",
               "asString": false,
               "mandatory": true,
               "hintText": "Number of hours until the lottery ends: 1 - 2160 hours (90 days)",
@@ -1023,7 +1074,7 @@
             {
               "name": "Burn Percent",
               "payloadName": "burnPercent",
-              "type": "number",
+              "type": "int",
               "asString": false,
               "mandatory": true,
               "hintText": "Percentage of the pool to burn (5-75%)",
@@ -1060,13 +1111,22 @@
             {
               "name": "Donation Percent (optional)",
               "payloadName": "donationPercent",
-              "type": "number",
+              "type": "int",
               "asString": false,
               "mandatory": false,
               "hintText": "Percentage to donate (0-50%). Burn + donation cannot exceed 90%",
               "min": 0,
               "max": 50,
               "sortIndex": 7
+            },
+            {
+              "name": "Metadata (optional)",
+              "payloadName": "metadata",
+              "type": "lottery_meta",
+              "asString": false,
+              "mandatory": false,
+              "hintText": "Metadata for the lottery (will not be used by contract but can be useful for frontends)",
+              "sortIndex": 9
             }
           ],
           "hintText": "Note: After creation, you'll receive a lottery ID. Keep it to manage your lottery.",
@@ -1086,7 +1146,7 @@
               "mandatory": true,
               "hintText": "Select an active lottery to join",
               "sortIndex": 1,
-              "graphqlQuery": "okinoko_lottery_active",
+              "graphqlQuery": "oki_lottery_v2_active",
               "valueField": "id",
               "labelTemplate": "#{id}: {name}",
               "subtitleTemplate": "Ticket: {ticket_price} {asset} | Burn: {burn_percent}% | Deadline: {deadline}",
@@ -1113,11 +1173,16 @@
             {
               "name": "Lottery ID",
               "payloadName": "lotteryId",
-              "type": "number",
+              "type": "lotteryDropdown",
               "asString": false,
               "mandatory": true,
               "hintText": "The ID of the lottery to execute",
-              "sortIndex": 1
+              "sortIndex": 1,
+              "graphqlQuery": "oki_lottery_v2_current_state",
+              "valueField": "id",
+              "labelTemplate": "#{id}: {name}",
+              "subtitleTemplate": "Ticket: {ticket_price} {asset} | Burn: {burn_percent}% | Deadline: {deadline}",
+              "orderBy": "deadline"
             }
           ],
           "hintText": "The lottery must have passed its deadline and have at least one participant.",
@@ -1134,11 +1199,16 @@
             {
               "name": "Lottery ID",
               "payloadName": "lotteryId",
-              "type": "number",
+              "type": "lotteryDropdown",
               "asString": false,
               "mandatory": true,
               "hintText": "The ID of the executed lottery to verify",
-              "sortIndex": 1
+              "sortIndex": 1,
+              "graphqlQuery": "oki_lottery_v2_current_state",
+              "valueField": "id",
+              "labelTemplate": "#{id}: {name}",
+              "subtitleTemplate": "Ticket: {ticket_price} {asset} | Burn: {burn_percent}% | Deadline: {deadline}",
+              "orderBy": "deadline"
             },
             {
               "name": "Random Seed",
@@ -1152,6 +1222,41 @@
           ],
           "hintText": "This is a read-only verification function that outputs the winner selection process.",
           "groupHeader": "Verification"
+        },
+        {
+          "name": "change_lottery_metadata",
+          "friendlyName": "Change Lottery Metadata",
+          "description": "The owner of the lottery can change the lottery metadata.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Lottery ID",
+              "payloadName": "lotteryId",
+              "type": "lotteryDropdown",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "The ID of the executed lottery to verify",
+              "sortIndex": 1,
+              "graphqlQuery": "oki_lottery_v2_current_state",
+              "valueField": "id",
+              "labelTemplate": "#{id}: {name}",
+              "subtitleTemplate": "Ticket: {ticket_price} {asset} | Burn: {burn_percent}% | Deadline: {deadline}",
+              "orderBy": "deadline"
+            },
+            {
+              "name": "Metdata",
+              "payloadName": "metadata",
+              "type": "lottery_meta",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "The new metadata for the lottery",
+              "sortIndex": 2
+            }
+          ],
+          "hintText": "Only the lottery owner can change the metadata like description or post urls.",
+          "groupHeader": "Lottery Management"
         }
       ]
     }

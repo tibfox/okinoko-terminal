@@ -2,22 +2,25 @@ import { useMemo } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import NeonListDropdown from './NeonListDropdown.jsx'
 
-const ACTIVE_LOTTERIES_QUERY = gql`
-  query ActiveLotteries {
-    okinoko_lottery_active(order_by: { deadline: asc }) {
-      id
-      name
-      creator
-      ticket_price
-      asset
-      burn_percent
-      donation_percent
-      deadline
-      total_tickets_sold
-      unique_participants
+const buildLotteryQuery = (viewName, orderBy) => {
+  const orderClause = orderBy ? `(order_by: { ${orderBy}: asc })` : ''
+  return gql`
+    query LotteryDropdown {
+      ${viewName}${orderClause} {
+        id
+        name
+        creator
+        ticket_price
+        asset
+        burn_percent
+        donation_percent
+        deadline
+        total_tickets_sold
+        unique_participants
+      }
     }
-  }
-`
+  `
+}
 
 // Helper to format Unix timestamp to readable date
 const formatDeadline = (unixTimestamp) => {
@@ -48,15 +51,21 @@ export default function LotteryDropdown({
   param,
   placeholder = 'Select a lottery…'
 }) {
+  const viewName = param?.graphqlQuery || 'oki_lottery_v2_active'
+  const query = useMemo(
+    () => buildLotteryQuery(viewName, param?.orderBy),
+    [viewName, param?.orderBy]
+  )
   const [{ data, fetching, error }] = useQuery({
-    query: ACTIVE_LOTTERIES_QUERY,
+    query,
     requestPolicy: 'cache-and-network',
   })
 
   const options = useMemo(() => {
-    if (!data?.okinoko_lottery_active) return []
+    const rows = data?.[viewName]
+    if (!rows) return []
 
-    return data.okinoko_lottery_active.map((lottery) => ({
+    return rows.map((lottery) => ({
       value: String(lottery[param.valueField || 'id']),
       label: fillTemplate(param.labelTemplate || '#{id}: {name}', lottery),
       subtitle: param.subtitleTemplate
@@ -64,7 +73,7 @@ export default function LotteryDropdown({
         : undefined,
       title: lottery.name,
     }))
-  }, [data, param])
+  }, [data, param, viewName])
 
   if (fetching && !data) {
     return (

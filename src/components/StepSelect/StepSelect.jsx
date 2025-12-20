@@ -26,7 +26,7 @@ const clampPosition = (value, fallback = 0.33) => {
 }
 const IN_A_ROW_VSC_ID = 'vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n'
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
-const LOTTERY_VSC_ID = 'vsc1BkMXD6vq1f3mScCeZQZKY3tLEZshfP4ZX2'
+const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
 // const ALLOWED_GAMER_HANDLES = ['tibfox', 'tibfox.vsc', 'diyhub', 'diyhub.funds']
 

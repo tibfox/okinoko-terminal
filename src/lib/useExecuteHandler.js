@@ -295,7 +295,37 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
           return p && (p.type === 'bool' || p.type === 'boolean')
         }
 
-        const parts = ps
+        let paramList = ps
+        if (fn.name === 'create_lottery') {
+          const donationAccountParam = ps.find(
+            (p) => (p.payloadName || '').toLowerCase() === 'donationaccount'
+          )
+          const donationPercentParam = ps.find(
+            (p) => (p.payloadName || '').toLowerCase() === 'donationpercent'
+          )
+          const donationAccountVal =
+            (donationAccountParam &&
+              (params?.[donationAccountParam.name] ??
+                params?.[donationAccountParam.payloadName || donationAccountParam.name])) ||
+            ''
+          const donationPercentVal =
+            (donationPercentParam &&
+              (params?.[donationPercentParam.name] ??
+                params?.[donationPercentParam.payloadName || donationPercentParam.name])) ||
+            ''
+          const hasDonationAccount = String(donationAccountVal || '').trim() !== ''
+          const donationPercentNum = parseFloat(String(donationPercentVal || '').replace(',', '.'))
+          const hasDonationPercent = Number.isFinite(donationPercentNum) && donationPercentNum > 0
+          if (!hasDonationAccount && !hasDonationPercent) {
+            paramList = ps.filter(
+              (p) =>
+                p !== donationAccountParam &&
+                p !== donationPercentParam
+            )
+          }
+        }
+
+        const parts = paramList
           .filter((p) => p.type !== 'vscIntent')
           .map((p) => {
             let val = params?.[p.name]
@@ -572,12 +602,12 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     if (!contract || !fn || !mandatoryOk) {
       if (!contract) {
         console.warn('[useExecuteHandler] ❌ send aborted — missing contract')
-        return
+        return false
       }
 
       if (!fn) {
         console.warn('[useExecuteHandler] ❌ send aborted — missing function definition (fn)')
-        return
+        return false
       }
 
       if (!mandatoryOk) {
@@ -590,13 +620,14 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         console.warn('params:', effectiveParams)
         console.warn('fn.parameters:', fn.parameters)
         console.warn('balances:', balances)
-        return
+        return false
       }
 
-      return
+      return false
     }
 
     setPending(true)
+    let success = false
 
     let startingMessages = ['▶ Signing and broadcasting L1…']
     if (aioha.getCurrentProvider() == 'hiveauth') {
@@ -634,6 +665,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         appendLog(`⬢ L1: Broadcast successful!`)
         appendLog(`🗒 L1: TXID: ${txid}`)
         setWaiting(true)
+        success = true
 
         // Show feedback popup immediately after transaction is signed
         if (action === 'g_create') {
@@ -686,6 +718,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     } finally {
       setPending(false)
     }
+    return success
   }
 
   const jsonPreview = useMemo(() => {

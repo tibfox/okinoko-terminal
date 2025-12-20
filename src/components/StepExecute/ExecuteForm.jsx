@@ -41,6 +41,15 @@ const DAO_PROJECTS_QUERY = `
     }
   }
 `
+const LOTTERY_TICKET_QUERY = `
+  query LotteryTicket($id: numeric!) {
+    oki_lottery_v2_active(where: { id: { _eq: $id } }) {
+      id
+      ticket_price
+      asset
+    }
+  }
+`
 
 export default function ExecuteForm({
   user,
@@ -75,6 +84,13 @@ export default function ExecuteForm({
   const [editingMetaIndex, setEditingMetaIndex] = useState(null)
   const [editingMetaKey, setEditingMetaKey] = useState('')
   const [editingMetaValue, setEditingMetaValue] = useState('')
+  const [lotteryMetaFields, setLotteryMetaFields] = useState({
+    lotteryPostUrl: '',
+    donationPostUrl: '',
+    additionalDescription: '',
+  })
+  const lotteryMetaInitializedRef = useRef(false)
+  const lotteryMetaDirtyRef = useRef(false)
   const rawUser = user || ''
   const hiveUser = rawUser?.startsWith('hive:') ? rawUser : rawUser ? `hive:${rawUser}` : ''
   const lowerRaw = rawUser.toLowerCase()
@@ -134,6 +150,118 @@ export default function ExecuteForm({
   const isDaoProjectCreate = isDaoContract && fn?.name === 'project_create'
   const isProposalCreate = isDaoContract && fn?.name === 'proposal_create'
   const isCreateLottery = fn?.name === 'create_lottery'
+  const isJoinLottery = fn?.name === 'join_lottery'
+  const lotteryMetaParam = useMemo(
+    () => fn?.parameters?.find((p) => p.type === 'lottery_meta') || null,
+    [fn]
+  )
+  const lotteryIdParam = useMemo(
+    () =>
+      fn?.parameters?.find(
+        (p) => (p.payloadName || '').toLowerCase() === 'lotteryid'
+      ) || null,
+    [fn]
+  )
+  const lotteryIdValue =
+    params?.[lotteryIdParam?.name] ??
+    params?.[lotteryIdParam?.payloadName || lotteryIdParam?.name]
+  const lotteryIdNumber =
+    lotteryIdValue === '' || lotteryIdValue === null || lotteryIdValue === undefined
+      ? null
+      : Number(lotteryIdValue)
+  const donationAccountParam = useMemo(
+    () =>
+      fn?.parameters?.find(
+        (p) => (p.payloadName || '').toLowerCase() === 'donationaccount'
+      ) || null,
+    [fn]
+  )
+  const donationPercentParam = useMemo(
+    () =>
+      fn?.parameters?.find(
+        (p) => (p.payloadName || '').toLowerCase() === 'donationpercent'
+      ) || null,
+    [fn]
+  )
+  const donationAccountValue =
+    (donationAccountParam &&
+      (params?.[donationAccountParam.name] ??
+        params?.[donationAccountParam.payloadName || donationAccountParam.name])) ||
+    ''
+  const donationPercentValue =
+    (donationPercentParam &&
+      (params?.[donationPercentParam.name] ??
+        params?.[donationPercentParam.payloadName || donationPercentParam.name])) ||
+    ''
+
+  const sanitizeNoHash = (val) => String(val || '').replace(/#/g, '')
+  const parseLotteryMeta = (raw) => {
+    const rawStr = String(raw || '')
+    const parts = rawStr.split('###')
+    return {
+      lotteryPostUrl: parts[0] || '',
+      donationPostUrl: parts[1] || '',
+      additionalDescription: parts.slice(2).join('###') || '',
+    }
+  }
+  const isSameLotteryMeta = (a, b) =>
+    a.lotteryPostUrl === b.lotteryPostUrl &&
+    a.donationPostUrl === b.donationPostUrl &&
+    a.additionalDescription === b.additionalDescription
+
+  const lotteryMetaFromParams = useMemo(() => {
+    if (!lotteryMetaParam) return parseLotteryMeta('')
+    const key = lotteryMetaParam.name
+    const payloadKey = lotteryMetaParam.payloadName || key
+    const raw = params?.[key] ?? params?.[payloadKey] ?? ''
+    return parseLotteryMeta(raw)
+  }, [lotteryMetaParam, params])
+
+  const hasLotteryDonation =
+    (String(donationAccountValue || '').trim().length > 0 &&
+      Number(donationPercentValue) > 0) ||
+    String(lotteryMetaFromParams.donationPostUrl || '').trim().length > 0
+  const showDonationField = hasLotteryDonation
+
+  useEffect(() => {
+    if (!lotteryMetaParam) return
+    const parsed = lotteryMetaFromParams
+    const cleaned = {
+      lotteryPostUrl: sanitizeNoHash(parsed.lotteryPostUrl),
+      donationPostUrl: sanitizeNoHash(parsed.donationPostUrl),
+      additionalDescription: sanitizeNoHash(parsed.additionalDescription),
+    }
+    setLotteryMetaFields((prev) => (isSameLotteryMeta(prev, cleaned) ? prev : cleaned))
+    lotteryMetaInitializedRef.current = true
+    lotteryMetaDirtyRef.current = false
+  }, [lotteryMetaFromParams, lotteryMetaParam])
+
+  useEffect(() => {
+    if (!lotteryMetaParam || !setParams) return
+    if (!lotteryMetaInitializedRef.current) return
+    if (!lotteryMetaDirtyRef.current) return
+    const key = lotteryMetaParam.name
+    const payloadKey = lotteryMetaParam.payloadName || key
+    const cleaned = {
+      lotteryPostUrl: sanitizeNoHash(lotteryMetaFields.lotteryPostUrl),
+      donationPostUrl: sanitizeNoHash(lotteryMetaFields.donationPostUrl),
+      additionalDescription: sanitizeNoHash(lotteryMetaFields.additionalDescription),
+    }
+    const effectiveDonation = showDonationField ? cleaned.donationPostUrl : ''
+    const combined = [
+      cleaned.lotteryPostUrl,
+      effectiveDonation,
+      cleaned.additionalDescription,
+    ].join('###')
+    const current = params?.[key] ?? params?.[payloadKey] ?? ''
+    if (current === combined) return
+    setParams((prev) => ({
+      ...prev,
+      [key]: combined,
+      [payloadKey]: combined,
+    }))
+    lotteryMetaDirtyRef.current = false
+  }, [hasLotteryDonation, lotteryMetaFields, lotteryMetaParam, params, setParams])
 
   useEffect(() => {
     if (!isCreateLottery || !fn?.parameters?.length || !setParams) return
@@ -157,6 +285,24 @@ export default function ExecuteForm({
     pause: !isDaoContract,
     requestPolicy: 'network-only',
   })
+
+  const [{ data: lotteryTicketData }] = useQuery({
+    query: LOTTERY_TICKET_QUERY,
+    variables:
+      isJoinLottery && Number.isFinite(lotteryIdNumber) ? { id: lotteryIdNumber } : undefined,
+    pause: !isJoinLottery || !Number.isFinite(lotteryIdNumber),
+    requestPolicy: 'cache-and-network',
+  })
+
+  const selectedLotteryTicket = useMemo(() => {
+    const entry = lotteryTicketData?.oki_lottery_v2_active?.[0]
+    if (!entry) return null
+    const priceNum = Number(entry.ticket_price)
+    return {
+      ticketPrice: Number.isFinite(priceNum) ? priceNum : null,
+      asset: entry.asset || 'HIVE',
+    }
+  }, [lotteryTicketData])
 
   useEffect(() => {
     if (!isDaoContract) return
@@ -854,6 +1000,44 @@ export default function ExecuteForm({
             style={{ marginTop: '4px' }}
           />
           <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.9, marginTop: '4px' }}>HIVE</span>
+        </div>
+      )
+    }
+
+    if (p.type === 'lottery_meta') {
+      const updateField = (field) => (e) => {
+        const nextVal = sanitizeNoHash(e.target.value)
+        lotteryMetaDirtyRef.current = true
+        setLotteryMetaFields((prev) => ({ ...prev, [field]: nextVal }))
+      }
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <FloatingLabelInput
+            label="Lottery Post URL"
+            type="text"
+            placeholder="https://example.com"
+            value={lotteryMetaFields.lotteryPostUrl}
+            onChange={updateField('lotteryPostUrl')}
+            style={{ marginTop: '4px' }}
+          />
+          {showDonationField && (
+            <FloatingLabelInput
+              label="Donation Post URL"
+              type="text"
+              placeholder="https://example.com"
+              value={lotteryMetaFields.donationPostUrl}
+              onChange={updateField('donationPostUrl')}
+              style={{ marginTop: '4px' }}
+            />
+          )}
+          <FloatingLabelInput
+            label="Additional Description"
+            type="text"
+            placeholder="Optional details"
+            value={lotteryMetaFields.additionalDescription}
+            onChange={updateField('additionalDescription')}
+            style={{ marginTop: '4px' }}
+          />
         </div>
       )
     }
@@ -2081,6 +2265,21 @@ export default function ExecuteForm({
 
       const parsed = parseFloat(String(current.amount || '').replace(',', '.'))
       const exceeds = !isNaN(parsed) && parsed > available
+      const ticketEstimate =
+        isJoinLottery &&
+        selectedLotteryTicket?.ticketPrice &&
+        Number.isFinite(parsed) &&
+        parsed > 0
+          ? Math.floor(parsed / selectedLotteryTicket.ticketPrice)
+          : null
+      const ticketEstimateLabel =
+        ticketEstimate !== null && Number.isFinite(ticketEstimate)
+          ? String(ticketEstimate)
+          : null
+      const ticketAsset =
+        selectedLotteryTicket?.asset
+          ? String(selectedLotteryTicket.asset).toUpperCase()
+          : 'HIVE'
 
       const onAmountChange = (e) => {
         let val = e.target.value.replace(',', '.')
@@ -2103,66 +2302,73 @@ export default function ExecuteForm({
       }
 
       return (
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <FloatingLabelInput
-            type="text"
-            inputMode="decimal"
-            placeholder="Amount"
-            label={labelText}
-            value={current.amount}
-            onChange={onAmountChange}
-            onBlur={onAmountBlur}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div
             style={{
-              flex: '0 0 50%',
-              borderColor: exceeds ? 'red' : 'var(--color-primary-darkest)',
-              boxShadow: exceeds ? '0 0 8px red' : 'none',
-            }}
-          />
-
-          <select
-            className="vsc-input"
-            value={current.asset}
-            onChange={(e) =>
-              setParams((prev) => ({
-                ...prev,
-                [p.name]: { ...current, asset: e.target.value },
-              }))
-            }
-            style={{
-              flex: '0 0 20%',
-              appearance: 'none',
-              backgroundColor: 'black',
-              padding: '0 20px 0 8px',
-              backgroundImage:
-                'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
-              backgroundPosition:
-                'calc(100% - 12px) center, calc(100% - 7px) center',
-              backgroundSize: '5px 5px, 5px 5px',
-              backgroundRepeat: 'no-repeat',
-              color: 'var(--color-primary-lighter)',
-              border: '1px solid var(--color-primary-darkest)',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
-            <option value="HIVE">HIVE</option>
-            <option value="HBD">HBD</option>
-          </select>
+            <FloatingLabelInput
+              type="text"
+              inputMode="decimal"
+              placeholder="Amount"
+              label={labelText}
+              value={current.amount}
+              onChange={onAmountChange}
+              onBlur={onAmountBlur}
+              style={{
+                flex: '0 0 50%',
+                borderColor: exceeds ? 'red' : 'var(--color-primary-darkest)',
+                boxShadow: exceeds ? '0 0 8px red' : 'none',
+              }}
+            />
 
-          <span
-            style={{
-              flex: '0 0 auto',
-              fontSize: '0.8rem',
-              color: exceeds ? 'red' : 'var(--color-primary-lighter)',
-            }}
-          >
-            {available.toFixed(3)} {current.asset}
-          </span>
+            <select
+              className="vsc-input"
+              value={current.asset}
+              onChange={(e) =>
+                setParams((prev) => ({
+                  ...prev,
+                  [p.name]: { ...current, asset: e.target.value },
+                }))
+              }
+              style={{
+                flex: '0 0 20%',
+                appearance: 'none',
+                backgroundColor: 'black',
+                padding: '0 20px 0 8px',
+                backgroundImage:
+                  'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
+                backgroundPosition:
+                  'calc(100% - 12px) center, calc(100% - 7px) center',
+                backgroundSize: '5px 5px, 5px 5px',
+                backgroundRepeat: 'no-repeat',
+                color: 'var(--color-primary-lighter)',
+                border: '1px solid var(--color-primary-darkest)',
+              }}
+            >
+              <option value="HIVE">HIVE</option>
+              <option value="HBD">HBD</option>
+            </select>
+
+            <span
+              style={{
+                flex: '0 0 auto',
+                fontSize: '0.8rem',
+                color: exceeds ? 'red' : 'var(--color-primary-lighter)',
+              }}
+            >
+              {available.toFixed(3)} {current.asset}
+            </span>
+          </div>
+          {isJoinLottery && selectedLotteryTicket?.ticketPrice && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-primary-lighter)' }}>
+              Tickets: {ticketEstimateLabel ?? '—'} for {selectedLotteryTicket.ticketPrice} {ticketAsset} each
+            </div>
+          )}
         </div>
       )
     }
@@ -2184,6 +2390,44 @@ export default function ExecuteForm({
           placeholder="hive:username"
           value={value}
           onChange={handleChange}
+          style={{ marginTop: '4px' }}
+        />
+      )
+    }
+
+    if (p.type === 'int') {
+      const value = params[p.name] ?? ''
+      const handleChange = (e) => {
+        const raw = e.target.value
+        let sanitized = raw.replace(/[^\d-]/g, '')
+        if (sanitized.includes('-')) {
+          sanitized = (sanitized.startsWith('-') ? '-' : '') + sanitized.replace(/-/g, '')
+        }
+        if (sanitized === '' || /^-?\d+$/.test(sanitized)) {
+          setParams((prev) => ({ ...prev, [p.name]: sanitized }))
+        }
+      }
+      const handleBlur = (e) => {
+        if (e.target.value === '') return
+        const clamped = clampNumber(e.target.value, p.min, p.max)
+        if (Number.isFinite(clamped)) {
+          const normalized = Math.trunc(clamped).toString()
+          if (normalized !== e.target.value) {
+            setParams((prev) => ({ ...prev, [p.name]: normalized }))
+          }
+        }
+      }
+      return (
+        <FloatingLabelInput
+          label={labelText}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={value}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          min={p.min}
+          max={p.max}
           style={{ marginTop: '4px' }}
         />
       )
