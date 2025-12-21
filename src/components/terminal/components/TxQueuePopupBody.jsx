@@ -144,7 +144,27 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
             }}
           >
-            <span>{`TXs (${txs.length})`}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {txs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFilters((prev) => !prev)}
+                  style={{
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    padding: "2px 6px",
+                    background: "transparent",
+                    color: "inherit",
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                  }}
+                  title="Toggle filters"
+                  aria-label="Toggle filters"
+                >
+                  <FontAwesomeIcon icon={faFilter} />
+                </button>
+              )}
+              {`TXs (${txs.length})`}
+            </span>
             <button
               type="button"
               onClick={handleDeleteAll}
@@ -171,87 +191,65 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
             <div style={{ fontStyle: "italic" }}>No recent transactions.</div>
           )}
 
-          {txs.length > 0 && (
-            <>
+          {txs.length > 0 && showFilters && (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
               <button
                 type="button"
-                onClick={() => setShowFilters((prev) => !prev)}
+                onClick={() => setActiveTab("all")}
                 style={{
                   border: "1px solid rgba(255, 255, 255, 0.2)",
-                  padding: "4px 8px",
-                  background: "transparent",
-                  color: "inherit",
+                  padding: "4px 10px",
+                  background: activeTab === "all" ? "var(--color-primary-darker)" : "transparent",
+                  color: activeTab === "all" ? "black" : "inherit",
+                  fontSize: "0.8rem",
                   cursor: "pointer",
-                  fontSize: "0.85rem",
                 }}
-                title="Toggle filters"
-                aria-label="Toggle filters"
               >
-                <FontAwesomeIcon icon={faFilter} />
+                {`all (${txs.length})`}
               </button>
-              {showFilters && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("all")}
-                    style={{
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                      padding: "4px 10px",
-                      background: activeTab === "all" ? "var(--color-primary-darker)" : "transparent",
-                      color: activeTab === "all" ? "black" : "inherit",
-                      fontSize: "0.8rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {`all (${txs.length})`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("pending")}
-                    style={{
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                      padding: "4px 10px",
-                      background: activeTab === "pending" ? "var(--color-primary-darker)" : "transparent",
-                      color: activeTab === "pending" ? "black" : "inherit",
-                      fontSize: "0.8rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {`pending (${pendingTxs.length})`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("executed")}
-                    style={{
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                      padding: "4px 10px",
-                      background: activeTab === "executed" ? "var(--color-primary-darker)" : "transparent",
-                      color: activeTab === "executed" ? "black" : "inherit",
-                      fontSize: "0.8rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {`executed (${successTxs.length})`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("failed")}
-                    style={{
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                      padding: "4px 10px",
-                      background: activeTab === "failed" ? "var(--color-primary-darker)" : "transparent",
-                      color: activeTab === "failed" ? "black" : "inherit",
-                      fontSize: "0.8rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {`failed (${errorTxs.length})`}
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => setActiveTab("pending")}
+                style={{
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  padding: "4px 10px",
+                  background: activeTab === "pending" ? "var(--color-primary-darker)" : "transparent",
+                  color: activeTab === "pending" ? "black" : "inherit",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                }}
+              >
+                {`pending (${pendingTxs.length})`}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("executed")}
+                style={{
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  padding: "4px 10px",
+                  background: activeTab === "executed" ? "var(--color-primary-darker)" : "transparent",
+                  color: activeTab === "executed" ? "black" : "inherit",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                }}
+              >
+                {`executed (${successTxs.length})`}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("failed")}
+                style={{
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  padding: "4px 10px",
+                  background: activeTab === "failed" ? "var(--color-primary-darker)" : "transparent",
+                  color: activeTab === "failed" ? "black" : "inherit",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                }}
+              >
+                {`failed (${errorTxs.length})`}
+              </button>
             </div>
-            </>
           )}
 
           {visibleTxs.map((tx) => {
