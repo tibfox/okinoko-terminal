@@ -475,7 +475,11 @@ export default function LotteryUserLists({
             {!isClosed && !deadlinePassed && (
               <button
                 onClick={() => handleBuyTickets(lottery.id)}
-                style={baseButtonStyle(false)}
+                style={{
+                  ...baseButtonStyle(false),
+                  backgroundColor: 'var(--color-primary-darker)',
+                  color: 'black',
+                }}
                 title="Buy tickets"
               >
                 <FontAwesomeIcon icon={faTicket} />
@@ -711,7 +715,11 @@ export default function LotteryUserLists({
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <button
               onClick={() => onCreateLottery?.()}
-              style={baseButtonStyle(false)}
+              style={{
+                ...baseButtonStyle(false),
+                backgroundColor: 'var(--color-primary-darker)',
+                color: 'black',
+              }}
               title="Host Lottery"
             >
               <FontAwesomeIcon icon={faPlusCircle} />

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { useAioha } from '@aioha/react-ui'
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
+import InfoIcon from '../../common/InfoIcon.jsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faRotateLeft } from '@fortawesome/free-solid-svg-icons'
 
 const panelStyle = {
   display: 'flex',
@@ -25,6 +28,16 @@ const cellLabelStyle = {
   color: 'var(--color-primary-lighter)',
   padding: '0.25rem 0.35rem 0.25rem 0',
   width: '40%',
+}
+
+const labelContentStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+}
+
+const tooltipStyle = {
+  color: 'var(--color-primary-lighter)',
 }
 
 const cellValueStyle = {
@@ -69,16 +82,19 @@ const progressSkeletonStyle = {
 
 const formatNumber = (value, forceDecimals = false) => {
   if (value === null || value === undefined) {
-    return '—'
+    return '-'
   }
   const numeric = Number(value)
   if (Number.isNaN(numeric)) {
-    return '—'
+    return '-'
+  }
+  if (numeric === 0) {
+    return '-'
   }
   const options = forceDecimals
     ? { minimumFractionDigits: 3, maximumFractionDigits: 3 }
     : { maximumFractionDigits: 3 }
-  return numeric.toLocaleString('en-US', options).replace(/,/g, '.')
+  return numeric.toLocaleString('en-US', { ...options, useGrouping: false })
 }
 
 export default function AccountDataPanel() {
@@ -112,23 +128,41 @@ export default function AccountDataPanel() {
 
   const accountRows = useMemo(
     () => [
-      { label: 'RC', value: rc ? `${formatNumber(rc.amount)} / ${formatNumber(rc.max_rcs)}` : '—' },
-      { label: 'HIVE', value: balances ? formatNumber(Number(balances.hive) / 1000, true) : '—' },
-      { label: 'HBD', value: balances ? formatNumber(Number(balances.hbd) / 1000, true) : '—' },
+      {
+        label: 'RC',
+        tooltip: 'Ressource Credits on the Magi Network. These refill automatically based on your HBD (unstaked).',
+        value: rc
+          ? `${formatNumber(Math.floor(rc.amount / 1000))} / ${formatNumber(Math.floor(rc.max_rcs / 1000))}`
+          : '—',
+      },
+      {
+        label: 'HIVE',
+        tooltip: 'The amount of unstaked HIVE in your wallet.',
+        value: balances ? formatNumber(Number(balances.hive) / 1000, true) : '—',
+      },
+      {
+        label: 'HBD',
+        tooltip: 'The amount of unstaked HBD in your account. These are reposible of the the amount of RC you have available.',
+        value: balances ? formatNumber(Number(balances.hbd) / 1000, true) : '—',
+      },
       {
         label: 'sHBD',
+        tooltip: 'Staked HBD give you 15% APR while still being transferrable',
         value: balances ? formatNumber(Number(balances.hbd_savings) / 1000, true) : '—',
       },
       {
         label: 'cHIVE',
+        tooltip: 'Staked HIVE which is only needed for node operators',
         value: balances ? formatNumber(Number(balances.hive_consensus) / 1000, true) : '—',
       },
       {
         label: 'cHIVE unst.',
-        value: balances ? formatNumber(Number(balances.sHiveUnstaking) / 1000, true) : '—',
+        tooltip: 'currently unstaking HIVE. Unstaked coins will be made available after an unbonding period of five elections (about a day).',
+        value: balances ? formatNumber(Number(balances.consensus_unstaking) / 1000, true) : '—',
       },
       {
         label: 'sHBD unst.',
+        tooltip: 'currently unstaking HBD. Unstaked coins will be made available after about three days.',
         value: balances ? formatNumber(Number(balances.pending_hbd_unstaking) / 1000, true) : '—',
       },
     ],
@@ -168,6 +202,8 @@ export default function AccountDataPanel() {
             <button
               type="button"
               onClick={handleRefresh}
+              aria-label="Refresh balances"
+              title="Refresh balances"
               style={{
                 border: '1px solid var(--color-primary-dark)',
                 background: 'transparent',
@@ -179,7 +215,7 @@ export default function AccountDataPanel() {
                 letterSpacing: '0.1em',
               }}
             >
-              Refresh
+              <FontAwesomeIcon icon={faRotateLeft} />
             </button>
           </div>
 
@@ -212,7 +248,12 @@ export default function AccountDataPanel() {
               <tbody>
                 {accountRows.map((row) => (
                   <tr key={row.label}>
-                    <td style={cellLabelStyle}>{row.label}</td>
+                    <td style={cellLabelStyle}>
+                      <span style={labelContentStyle}>
+                        {row.label}
+                        {row.tooltip ? <InfoIcon tooltip={row.tooltip} size={14} style={tooltipStyle} /> : null}
+                      </span>
+                    </td>
                     <td style={cellValueStyle}>{row.value}</td>
                   </tr>
                 ))}

@@ -1,5 +1,5 @@
-const DEFAULT_MAINTENANCE_MODE = false
-const DEFAULT_MAINTENANCE_MESSAGE = 'We are currently performing system maintenance. Please check back shortly.'
-
 export const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
-export const MAINTENANCE_MESSAGE = import.meta.env.VITE_MAINTENANCE_MESSAGE || DEFAULT_MAINTENANCE_MESSAGE
+export const MAINTENANCE_MESSAGE = import.meta.env.VITE_MAINTENANCE_MESSAGE || ''
+export const BLOCKISSUE_AUTOMATIC_MODE = import.meta.env.VITE_BLOCKISSUE_AUTOMATIC_MODE === 'true'
+export const BLOCKISSUE_MESSAGE = import.meta.env.VITE_BLOCKISSUE_MESSAGE || ''
+export const BLOCKISSUE_FORCE_STALE = import.meta.env.VITE_BLOCKISSUE_FORCE_STALE === 'true'

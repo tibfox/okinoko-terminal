@@ -1,4 +1,5 @@
 import { render } from 'preact'
+import { useEffect, useState } from 'preact/hooks'
 import './index.css'
 import { App } from './app.jsx'
 
@@ -68,7 +69,151 @@ import { PopupProvider } from "./popup/PopupProvider.jsx";
 import { TerminalWindowProvider } from './components/terminal/providers/TerminalWindowProvider.jsx';
 import { BackgroundEffectsProvider } from './components/backgrounds/BackgroundEffectsProvider.jsx';
 import { MaintenanceOverlay } from './components/MaintenanceOverlay.jsx';
-import { MAINTENANCE_MODE, MAINTENANCE_MESSAGE } from './lib/maintenanceConfig.js';
+import {
+  MAINTENANCE_MODE,
+  MAINTENANCE_MESSAGE,
+  BLOCKISSUE_AUTOMATIC_MODE,
+  BLOCKISSUE_MESSAGE,
+  BLOCKISSUE_FORCE_STALE,
+} from './lib/maintenanceConfig.js';
+
+const BLOCKS_API_BASE_URL = import.meta.env.VITE_BLOCKS_BACKEND
+const BLOCK_ISSUE_THRESHOLD_MS = 15 * 60 * 1000
+const BLOCK_ISSUE_POLL_INTERVAL_MS = 15000
+
+const parseNumeric = (value) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
+const extractLastBlockHeight = (propsData) => {
+  if (!propsData || typeof propsData !== 'object') {
+    return null
+  }
+  const candidates = [
+    propsData.l2_block_height,
+    propsData.l2BlockHeight,
+    propsData.last_irreversible_block_num,
+    propsData.last_block_id,
+  ]
+  for (const candidate of candidates) {
+    const parsed = parseNumeric(candidate)
+    if (parsed != null) {
+      return parsed
+    }
+  }
+  return null
+}
+
+const parseBlockTimestamp = (value) => {
+  if (!value) {
+    return null
+  }
+  if (typeof value === 'number') {
+    const ms = value > 1e12 ? value : value * 1000
+    const date = new Date(ms)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  if (typeof value === 'string') {
+    const isoValue = value.endsWith('Z') ? value : `${value}Z`
+    const date = new Date(isoValue)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  return null
+}
+
+const getLatestBlockTimestamp = async () => {
+  if (!BLOCKS_API_BASE_URL) {
+    return null
+  }
+  const propsResponse = await fetch(`${BLOCKS_API_BASE_URL}/props`)
+  if (!propsResponse.ok) {
+    throw new Error(`Props request failed with ${propsResponse.status}`)
+  }
+  const propsData = await propsResponse.json()
+  const height = extractLastBlockHeight(propsData)
+  if (!Number.isFinite(height)) {
+    throw new Error('Unable to determine latest L2 block height')
+  }
+
+  const params = new URLSearchParams({
+    last_block_id: String(height),
+    count: '1',
+  })
+  const blocksResponse = await fetch(`${BLOCKS_API_BASE_URL}/blocks?${params.toString()}`)
+  if (!blocksResponse.ok) {
+    throw new Error(`Blocks request failed with ${blocksResponse.status}`)
+  }
+  const payload = await blocksResponse.json()
+  const rows = Array.isArray(payload) ? payload : []
+  if (!rows.length) {
+    return null
+  }
+  const latest = rows.reduce((acc, row) => {
+    const currentId = parseNumeric(row?.be_info?.block_id)
+    if (!acc) {
+      return row
+    }
+    const accId = parseNumeric(acc?.be_info?.block_id)
+    if (currentId == null || accId == null) {
+      return acc
+    }
+    return currentId > accId ? row : acc
+  }, null)
+  const tsValue = latest?.be_info?.ts ?? latest?.ts
+  return parseBlockTimestamp(tsValue)
+}
+
+const BlockIssueOverlay = () => {
+  const [isStale, setIsStale] = useState(false)
+
+  useEffect(() => {
+    if (!BLOCKISSUE_AUTOMATIC_MODE || !BLOCKS_API_BASE_URL) {
+      setIsStale(false)
+      return
+    }
+    let cancelled = false
+    const checkBlocks = async () => {
+      try {
+        if (BLOCKISSUE_FORCE_STALE) {
+          if (!cancelled) {
+            setIsStale(true)
+          }
+          return
+        }
+        const latestTimestamp = await getLatestBlockTimestamp()
+        if (!latestTimestamp) {
+          if (!cancelled) {
+            setIsStale(false)
+          }
+          return
+        }
+        const ageMs = Date.now() - latestTimestamp.getTime()
+        const stale = ageMs >= BLOCK_ISSUE_THRESHOLD_MS
+        if (!cancelled) {
+          setIsStale(stale)
+        }
+      } catch {
+        if (!cancelled) {
+          setIsStale(false)
+        }
+      }
+    }
+
+    checkBlocks()
+    const id = setInterval(checkBlocks, BLOCK_ISSUE_POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
+  if (!BLOCKISSUE_AUTOMATIC_MODE || !isStale) {
+    return null
+  }
+
+  return <MaintenanceOverlay message={BLOCKISSUE_MESSAGE} />
+}
 
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -195,7 +340,11 @@ const client = createClient({
 
 render(
   <BackgroundEffectsProvider>
-    {MAINTENANCE_MODE && <MaintenanceOverlay message={MAINTENANCE_MESSAGE} />}
+    {MAINTENANCE_MODE ? (
+      <MaintenanceOverlay message={MAINTENANCE_MESSAGE} />
+    ) : (
+      <BlockIssueOverlay />
+    )}
     <TerminalWindowProvider>
       <Provider value={client}>
         <TransactionProvider>

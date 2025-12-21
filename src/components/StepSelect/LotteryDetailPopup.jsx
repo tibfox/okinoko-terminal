@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'preact/hooks'
+import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowUpRightFromSquare, faTicket, faTrophy } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
@@ -6,6 +7,18 @@ import PollPie from './PollPie.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
+
+const LOTTERY_PARTICIPANTS_QUERY = gql`
+  query LotteryParticipants($lotteryId: numeric!) {
+    oki_lottery_v2_participant_summary(
+      where: { lottery_id: { _eq: $lotteryId } }
+      order_by: { tickets: desc }
+    ) {
+      participant
+      tickets
+    }
+  }
+`
 
 const formatDeadline = (unixTimestamp) => {
   const date = new Date(unixTimestamp * 1000)
@@ -70,6 +83,11 @@ const parseLotteryMeta = (raw) => {
   }
 }
 
+const formatParticipant = (participant) => {
+  const name = String(participant || '').replace(/^hive:/i, '')
+  return name ? `@${name}` : 'Unknown'
+}
+
 const baseButtonStyle = {
   backgroundColor: 'transparent',
   color: 'var(--color-primary-lighter)',
@@ -87,6 +105,14 @@ const baseButtonStyle = {
   whiteSpace: 'nowrap',
 }
 
+const tabButtonStyle = (active = false) => ({
+  ...baseButtonStyle,
+  backgroundColor: active ? 'var(--color-primary-darker)' : 'transparent',
+  color: active ? 'black' : 'var(--color-primary-lighter)',
+  fontSize: '0.75rem',
+  padding: '0.35em 0.8em',
+})
+
 export default function LotteryDetailPopup({
   lottery,
   userTickets = 0,
@@ -96,6 +122,7 @@ export default function LotteryDetailPopup({
 }) {
   if (!lottery) return null
 
+  const [activeChart, setActiveChart] = useState('prize')
   const countdown = useCountdown(lottery.deadline)
   const totalPot = (lottery.total_tickets_sold || 0) * (lottery.ticket_price || 0)
   const burnPercent = Number(lottery.burn_percent) || 0
@@ -113,6 +140,12 @@ export default function LotteryDetailPopup({
   const lotteryPostUrl = metaParts.lotteryPostUrl
   const donationPostUrl = metaParts.donationPostUrl
   const description = metaParts.additionalDescription
+  const lotteryId = Number(lottery.id)
+  const [{ data: participantData }] = useQuery({
+    query: LOTTERY_PARTICIPANTS_QUERY,
+    variables: { lotteryId },
+    pause: !Number.isFinite(lotteryId),
+  })
 
   // Parse winner shares
   const shares = (lottery.winner_shares || '')
@@ -135,6 +168,35 @@ export default function LotteryDetailPopup({
   const ticketParts = [
     { label: 'Your Tickets', percent: totalTickets > 0 ? (userTickets / totalTickets) * 100 : 0 },
     { label: 'Other Tickets', percent: totalTickets > 0 ? ((totalTickets - userTickets) / totalTickets) * 100 : 0 },
+  ]
+  const participantRows = participantData?.oki_lottery_v2_participant_summary || []
+  const ticketsByParticipant = new Map()
+  participantRows.forEach((row) => {
+    const key = row.participant || ''
+    const existing = ticketsByParticipant.get(key) || 0
+    ticketsByParticipant.set(key, existing + (Number(row.tickets) || 0))
+  })
+  const sortedParticipants = [...ticketsByParticipant.entries()]
+    .map(([participant, tickets]) => ({ participant, tickets }))
+    .sort((a, b) => b.tickets - a.tickets)
+  const topBuyers = sortedParticipants.slice(0, 5)
+  const topBuyerTickets = topBuyers.reduce((sum, entry) => sum + entry.tickets, 0)
+  const otherBuyerTickets = Math.max(0, totalTickets - topBuyerTickets)
+  const topBuyerParts = [
+    ...topBuyers.map((entry) => ({
+      label: formatParticipant(entry.participant),
+      percent: totalTickets > 0 ? (entry.tickets / totalTickets) * 100 : 0,
+      tickets: entry.tickets,
+    })),
+    ...(otherBuyerTickets > 0
+      ? [
+          {
+            label: 'Others',
+            percent: totalTickets > 0 ? (otherBuyerTickets / totalTickets) * 100 : 0,
+            tickets: otherBuyerTickets,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -275,47 +337,98 @@ export default function LotteryDetailPopup({
         </tbody>
       </table>
 
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
-          <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary-lighter)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button
+            onClick={() => setActiveChart('prize')}
+            style={tabButtonStyle(activeChart === 'prize')}
+            type="button"
+          >
             Prize Split
-          </span>
-          <PollPie parts={distributionParts} size={130} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
-            {distributionParts.map((o, i) => (
-              <div key={`dist-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                <span style={{ color: 'var(--color-primary-lighter)' }}>
-                  {o.label}: {o.percent.toFixed(1)}%
-                  {Number.isFinite(o.amount) ? ` (${o.amount.toFixed(3)} ${formatAsset(lottery.asset)})` : ''}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
-          <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary-lighter)' }}>
+          </button>
+          <button
+            onClick={() => setActiveChart('tickets')}
+            style={tabButtonStyle(activeChart === 'tickets')}
+            type="button"
+          >
             Tickets
-          </span>
-          <PollPie parts={ticketParts} size={130} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
-            {ticketParts.map((o, i) => (
-              <div key={`tickets-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                <span style={{ color: 'var(--color-primary-lighter)' }}>
-                  {o.label}: {o.percent.toFixed(1)}%
-                </span>
-              </div>
-            ))}
-          </div>
+          </button>
+          <button
+            onClick={() => setActiveChart('buyers')}
+            style={tabButtonStyle(activeChart === 'buyers')}
+            type="button"
+          >
+            Top Buyers
+          </button>
         </div>
+        {activeChart === 'prize' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
+            <PollPie parts={distributionParts} size={150} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+              {distributionParts.map((o, i) => (
+                <div key={`dist-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span style={{ color: 'var(--color-primary-lighter)' }}>
+                    {o.label}: {o.percent.toFixed(1)}%
+                    {Number.isFinite(o.amount) ? ` (${o.amount.toFixed(3)} ${formatAsset(lottery.asset)})` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {activeChart === 'tickets' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
+            <PollPie parts={ticketParts} size={150} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+              {ticketParts.map((o, i) => (
+                <div key={`tickets-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span style={{ color: 'var(--color-primary-lighter)' }}>
+                    {o.label}: {o.percent.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {activeChart === 'buyers' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
+            {topBuyerParts.length > 0 && totalTickets > 0 ? (
+              <>
+                <PollPie parts={topBuyerParts} size={150} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                  {topBuyerParts.map((o, i) => (
+                    <div key={`buyers-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      <span style={{ color: 'var(--color-primary-lighter)' }}>
+                        {o.label}: {o.percent.toFixed(1)}% ({o.tickets} tickets)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
+                No ticket buyer data.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'center' }}>
         {!lottery.is_executed && !canExecute && onBuyTickets && (
-          <NeonButton onClick={onBuyTickets} style={baseButtonStyle}>
+          <NeonButton
+            onClick={onBuyTickets}
+            style={{
+              ...baseButtonStyle,
+              backgroundColor: 'var(--color-primary-darker)',
+              color: 'black',
+            }}
+          >
             <FontAwesomeIcon icon={faTicket} />
             <span>Buy Tickets</span>
           </NeonButton>
