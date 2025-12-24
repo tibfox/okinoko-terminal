@@ -1,0 +1,170 @@
+import { useState, useMemo } from 'preact/hooks'
+import { KeyTypes } from '@aioha/aioha'
+import FloatingLabelInput from '../../common/FloatingLabelInput.jsx'
+
+export default function DepositPopup({ onClose, aioha, user }) {
+  const [amount, setAmount] = useState('')
+  const [asset, setAsset] = useState('HIVE')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [showHiveAuthMessage, setShowHiveAuthMessage] = useState(false)
+
+  const normalizedUser = useMemo(() => {
+    console.log('DepositPopup - user prop:', user)
+    if (!user) return 'unknown'
+    const normalized = user.startsWith('hive:') ? user.slice(5) : user
+    console.log('DepositPopup - normalized user:', normalized)
+    return normalized
+  }, [user])
+
+  const isValidAmount = useMemo(() => {
+    if (!amount) return false
+    const num = parseFloat(amount)
+    return !isNaN(num) && num > 0
+  }, [amount])
+
+  const handleAmountChange = (e) => {
+    let val = e.target.value.replace(',', '.')
+    if (val === '' || /^\d*([.]\d{0,3})?$/.test(val)) {
+      setAmount(val)
+    }
+  }
+
+  const handleAmountBlur = () => {
+    if (amount && !isNaN(parseFloat(amount))) {
+      setAmount(parseFloat(amount).toFixed(3))
+    }
+  }
+
+  const handleSend = async () => {
+    if (!isValidAmount || isProcessing) return
+
+    setIsProcessing(true)
+
+    try {
+      const formattedAmount = parseFloat(amount).toFixed(3)
+      const memo = `to=${normalizedUser}`
+
+      // Construct the transaction operations
+      const ops = [
+        [
+          'transfer',
+          {
+            from: normalizedUser,
+            to: 'vsc.gateway',
+            amount: `${formattedAmount} ${asset}`,
+            memo: memo,
+          },
+        ],
+      ]
+
+      console.log('Sending transaction:', ops)
+
+      // Check if using HiveAuth
+      const isHiveAuth = aioha.getCurrentProvider && aioha.getCurrentProvider() === 'hiveauth'
+      if (isHiveAuth) {
+        setShowHiveAuthMessage(true)
+      }
+
+      // Execute the transaction using Aioha
+      const result = await aioha.signAndBroadcastTx(ops, KeyTypes.Active)
+
+      setShowHiveAuthMessage(false)
+
+      console.log('Transaction result:', result)
+
+      if (result?.success) {
+        // Success - close the popup
+        alert(`Deposit successful! Transaction ID: ${result.result}\n\nYour deposit is being processed by the Magi network now. Please wait a moment and refresh your balance in the account data panel.`)
+        onClose()
+      } else {
+        console.error('Transaction failed:', result?.error)
+        alert(`Transaction failed: ${result?.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error sending transaction:', error)
+      alert(`Error: ${error.message || 'Unknown error'}`)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--color-primary-lighter)' }}>
+        Please set the amount you want to deposit from the Hive wallet @{normalizedUser} to the Magi wallet @
+        {normalizedUser}.
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+        <FloatingLabelInput
+          type="text"
+          inputMode="decimal"
+          placeholder="0.000"
+          label="Amount"
+          value={amount}
+          onChange={handleAmountChange}
+          onBlur={handleAmountBlur}
+          style={{
+            flex: '1',
+          }}
+        />
+
+        <select
+          className="vsc-input"
+          value={asset}
+          onChange={(e) => setAsset(e.target.value)}
+          style={{
+            flex: '0 0 120px',
+            height: '50px',
+            appearance: 'none',
+            backgroundColor: 'black',
+            padding: '0 20px 0 12px',
+            backgroundImage:
+              'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
+            backgroundPosition: 'calc(100% - 12px) center, calc(100% - 7px) center',
+            backgroundSize: '5px 5px, 5px 5px',
+            backgroundRepeat: 'no-repeat',
+            color: 'var(--color-primary-lighter)',
+            border: '1px solid var(--color-primary-darkest)',
+          }}
+        >
+          <option value="HIVE">HIVE</option>
+          <option value="HBD">HBD</option>
+        </select>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleSend}
+        disabled={!isValidAmount || isProcessing}
+        style={{
+          border: '1px solid var(--color-primary-darkest)',
+          background: isValidAmount && !isProcessing ? 'var(--color-primary-darkest)' : 'transparent',
+          color: isValidAmount && !isProcessing ? 'var(--color-primary)' : 'var(--color-primary-darker)',
+          padding: '0.75rem 1rem',
+          cursor: isValidAmount && !isProcessing ? 'pointer' : 'not-allowed',
+          fontSize: '0.85rem',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          fontFamily: "'Share Tech Mono', monospace",
+          transition: 'all 0.2s ease',
+          opacity: isValidAmount && !isProcessing ? 1 : 0.4,
+        }}
+      >
+        {isProcessing ? 'Processing...' : 'Send'}
+      </button>
+
+      {showHiveAuthMessage && (
+        <div style={{
+          fontSize: '0.8rem',
+          color: '#ff4444',
+          textAlign: 'center',
+          marginTop: '0.5rem',
+          letterSpacing: '0.05em'
+        }}>
+          Please accept the transaction in HiveAuth
+        </div>
+      )}
+    </div>
+  )
+}

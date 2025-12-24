@@ -1153,7 +1153,7 @@
               "orderBy": "deadline"
             },
             {
-              "name": "Payment (tickets = amount / ticket price)",
+              "name": "Payment",
               "payloadName": "vscIntent",
               "type": "vscIntent",
               "mandatory": true,

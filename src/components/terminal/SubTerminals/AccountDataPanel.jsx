@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'preact/hooks'
-import { useAioha } from '@aioha/react-ui'
+import { useEffect, useMemo, useState, useContext } from 'preact/hooks'
+import { useAioha } from '@aioha/providers/react'
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
 import InfoIcon from '../../common/InfoIcon.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faRotateLeft } from '@fortawesome/free-solid-svg-icons'
+import { faRotateLeft, faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons'
+import { PopupContext } from '../../../popup/context.js'
+import DepositPopup from './DepositPopup.jsx'
+import WithdrawPopup from './WithdrawPopup.jsx'
 
 const panelStyle = {
   display: 'flex',
@@ -98,9 +101,10 @@ const formatNumber = (value, forceDecimals = false) => {
 }
 
 export default function AccountDataPanel() {
-  const { user } = useAioha()
+  const { user, aioha } = useAioha()
   const { balances, rc, loading, refresh } = useAccountBalances()
   const [fakePercent, setFakePercent] = useState(0)
+  const { openPopup, closePopup } = useContext(PopupContext)
 
   const showSkeleton = loading && (!balances || !rc)
   const normalizedUser = useMemo(() => {
@@ -183,6 +187,28 @@ export default function AccountDataPanel() {
     refresh({ force: true, withLoading: true })
   }
 
+  const handleDeposit = () => {
+    console.log('handleDeposit - user:', user)
+    console.log('handleDeposit - aioha:', aioha)
+    // Capture values in closure to prevent re-render issues
+    const capturedAioha = aioha
+    const capturedUser = user
+    openPopup({
+      title: 'Deposit',
+      body: () => <DepositPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
+    })
+  }
+
+  const handleWithdraw = () => {
+    // Capture values in closure to prevent re-render issues
+    const capturedAioha = aioha
+    const capturedUser = user
+    openPopup({
+      title: 'Withdraw',
+      body: () => <WithdrawPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
+    })
+  }
+
   return (
     <div style={panelStyle}>
       <div className="neon-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem' }}>
@@ -209,13 +235,60 @@ export default function AccountDataPanel() {
                 background: 'transparent',
                 color: 'var(--color-primary-lighter)',
                 padding: '0.25rem 0.75rem',
-                
+
                 cursor: 'pointer',
                 fontSize: '0.75rem',
                 letterSpacing: '0.1em',
               }}
             >
               <FontAwesomeIcon icon={faRotateLeft} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <button
+              type="button"
+              onClick={handleDeposit}
+              aria-label="Deposit"
+              title="Deposit"
+              className="account-action-btn"
+              style={{
+                border: '1px solid var(--color-primary-darker)',
+                background: 'rgba(0, 0, 0, 0.6)',
+                color: 'var(--color-primary-lighter)',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                flex: 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FontAwesomeIcon icon={faArrowUp} style={{ marginRight: '0.5rem' }} />
+              <span className="button-text">Deposit</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleWithdraw}
+              aria-label="Withdraw"
+              title="Withdraw"
+              className="account-action-btn"
+              style={{
+                border: '1px solid var(--color-primary-darker)',
+                background: 'rgba(0, 0, 0, 0.6)',
+                color: 'var(--color-primary-lighter)',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                flex: 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FontAwesomeIcon icon={faArrowDown} style={{ marginRight: '0.5rem' }} />
+              <span className="button-text">Withdraw</span>
             </button>
           </div>
 

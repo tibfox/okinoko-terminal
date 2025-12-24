@@ -587,3 +587,14 @@ select {
   color: var(--color-primary-darkest);
   font-style: italic;
 }
+
+/* === Account Data Terminal Buttons === */
+.account-action-btn:hover {
+  border-color: var(--color-primary-lighter) !important;
+}
+
+@media (max-width: 768px) {
+  .button-text {
+    display: none;
+  }
+}

@@ -1,11 +1,19 @@
 import { h } from 'preact'
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useState, useContext } from 'preact/hooks'
 import RcCircleGraph from './RcCircleGraph.jsx'
-import Menu from "../../buttons/MenuButton.jsx" 
+import Menu from "../../buttons/MenuButton.jsx"
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
+import { useAioha } from '@aioha/providers/react'
+import { PopupContext } from '../../../popup/context.js'
+import DepositPopup from '../SubTerminals/DepositPopup.jsx'
+import WithdrawPopup from '../SubTerminals/WithdrawPopup.jsx'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons'
 
 export default function BalanceDisplay({ account, fontMult = 1 }) {
   const { balances: bal, rc, loading, refresh } = useAccountBalances()
+  const { user, aioha } = useAioha()
+  const { openPopup, closePopup } = useContext(PopupContext)
   const [hovered, setHovered] = useState(false)
   const [fakePercent, setFakePercent] = useState(0)
 
@@ -26,6 +34,24 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
     if (isOpen) {
       refresh({ force: true })
     }
+  }
+
+  const handleDeposit = () => {
+    const capturedAioha = aioha
+    const capturedUser = user
+    openPopup({
+      title: 'Deposit',
+      body: () => <DepositPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
+    })
+  }
+
+  const handleWithdraw = () => {
+    const capturedAioha = aioha
+    const capturedUser = user
+    openPopup({
+      title: 'Withdraw',
+      body: () => <WithdrawPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
+    })
   }
 
   const format = (n, forceDecimals = false) => {
@@ -90,7 +116,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
            
           </tr>
           <tr>
-            
+
             <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
               <b>HBD:</b>
             </td>
@@ -100,6 +126,53 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
           </tr>
         </tbody>
       </table>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+        <button
+          type="button"
+          onClick={handleDeposit}
+          aria-label="Deposit"
+          title="Deposit"
+          className="account-action-btn"
+          style={{
+            border: '1px solid var(--color-primary-darker)',
+            background: 'rgba(0, 0, 0, 0.6)',
+            color: 'var(--color-primary-lighter)',
+            padding: '0.5rem 1rem',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            flex: 1,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <FontAwesomeIcon icon={faArrowUp} style={{ marginRight: '0.5rem' }} />
+          Deposit
+        </button>
+        <button
+          type="button"
+          onClick={handleWithdraw}
+          aria-label="Withdraw"
+          title="Withdraw"
+          className="account-action-btn"
+          style={{
+            border: '1px solid var(--color-primary-darker)',
+            background: 'rgba(0, 0, 0, 0.6)',
+            color: 'var(--color-primary-lighter)',
+            padding: '0.5rem 1rem',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            flex: 1,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <FontAwesomeIcon icon={faArrowDown} style={{ marginRight: '0.5rem' }} />
+          Withdraw
+        </button>
+      </div>
     </Menu>
   )
 }
