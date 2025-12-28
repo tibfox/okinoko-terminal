@@ -3,7 +3,29 @@ import ListButton from '../buttons/ListButton.jsx'
 import DescriptionBox from '../common/DescriptionBox.jsx'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faFileContract } from '@fortawesome/free-solid-svg-icons';
+import {
+  faFileContract,
+  faHandshake,
+  faGamepad,
+  faTicket,
+  faPeopleGroup
+} from '@fortawesome/free-solid-svg-icons';
+
+// Icon mapping: string name to FontAwesome icon object
+const iconMap = {
+  faFileContract,
+  faHandshake,
+  faGamepad,
+  faTicket,
+  faPeopleGroup
+};
+
+/**
+ * Get the icon for a contract, falling back to default if not found
+ */
+const getContractIcon = (iconName) => {
+  return iconMap[iconName] || faFileContract;
+};
 
 /**
  * ContractList
@@ -71,7 +93,7 @@ export default function ContractList({
               zIndex: 1,
             }}
           >
-            <FontAwesomeIcon icon={faFileContract} style={{ marginRight: '10px' }} />
+            <FontAwesomeIcon icon={getContractIcon(c.icon)} style={{ marginRight: '10px' }} />
             {c.name}
           </ListButton>
         ))}

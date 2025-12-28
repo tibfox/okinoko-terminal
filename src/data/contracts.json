@@ -9,6 +9,7 @@
       "deployedOn": "2025-10-18T22:02:33",
       "verifiedOn": "2025-10-20T08:37:05",
       "description": "This contract acts as an on-chain escrow between two parties, optionally including an arbitrator for dispute resolution. Deposit funds securely and choose whether to release them or request a refund.",
+      "icon": "faHandshake",
       "functions": [
         {
           "name": "e_create",
@@ -118,6 +119,7 @@
       "deployedOn": "2025-11-06 14:53:27",
       "verifiedOn": "2025-12-11 20:42:13",
       "description": "Play games on-chain!",
+      "icon": "faGamepad",
       "functions": [
         {
           "name": "1",
@@ -184,6 +186,7 @@
       "deployedOn": "2025-11-28T22:20:57",
       "verifiedOn": "unverified",
       "description": "Create your own DAO with your own rules!",
+      "icon": "faPeopleGroup",
       "functions": [
         {
           "name": "project_create",
@@ -1043,6 +1046,7 @@
       "deployedOn": "2025-12-20T13:11:27",
       "verifiedOn": "2025-12-20T13:12:30",
       "description": "Create and participate in on-chain lotteries with customizable prize distributions, burn rates, and optional donations.",
+      "icon": "faTicket",
       "functions": [
         {
           "name": "create_lottery",

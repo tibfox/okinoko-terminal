@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'preact/hooks'
+import { useMemo, useEffect, useState } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -28,12 +28,25 @@ export default function GameDetails({
   onResign,
   onTimeout,
 }) {
+  const [latestMoveTimestamp, setLatestMoveTimestamp] = useState(null)
+
   if (!game) return null
 
   const prizePool =
     game.bet > 0 ? `${game.bet * 2} ${game.asset}` : 'none'
   const hasOpponent = Boolean(game?.playerX && game?.playerY)
-  const daysAgo = Math.floor(Number(game?.lastMoveMinutesAgo ?? 0) / (24 * 60))
+
+  // Calculate daysAgo from timestamp (use latest from moves query if available)
+  let daysAgo = 0
+  const timestampToUse = latestMoveTimestamp || game?.lastMoveTimestamp
+  if (timestampToUse) {
+    const lastMoveDate = new Date(timestampToUse)
+    const now = new Date()
+    const diffMinutes = Math.floor((now - lastMoveDate) / (1000 * 60))
+    daysAgo = Math.floor(diffMinutes / (24 * 60))
+  } else {
+    daysAgo = Math.floor(Number(game?.lastMoveMinutesAgo ?? 0) / (24 * 60))
+  }
   const isGomokuVariant = (game?.type || '').toLowerCase().includes('gomoku')
   const swapPhaseRaw = (game?.moveType || game?.state || '').toString().toLowerCase().trim()
   const swapPhaseLabel = (() => {
@@ -251,7 +264,7 @@ export default function GameDetails({
         )}
 
         {/* Move history */}
-        <GameMovesTable game={game} />
+        <GameMovesTable game={game} onLatestMoveTimestamp={setLatestMoveTimestamp} />
       </div>
     </div>
   )
@@ -327,7 +340,7 @@ const toNumericVar = value =>
 
 /* ---------------- GameMovesTable ---------------- */
 
-function GameMovesTable({ game }) {
+function GameMovesTable({ game, onLatestMoveTimestamp }) {
   const dimensions = useMemo(() => getBoardDimensions(game?.type), [game?.type])
   const numericGameId = toNumericVar(game?.id)
   const { updateCounter } = useGameSubscription()
@@ -348,6 +361,22 @@ function GameMovesTable({ game }) {
 
   const moves = data?.moves ?? []
   const swaps = data?.swaps ?? []
+
+  // Extract and pass the latest move or join timestamp to parent
+  useEffect(() => {
+    if (onLatestMoveTimestamp) {
+      if (moves.length > 0) {
+        // Moves are ordered by block height ascending, so last one is most recent
+        const latestMove = moves[moves.length - 1]
+        if (latestMove?.indexer_ts) {
+          onLatestMoveTimestamp(latestMove.indexer_ts)
+        }
+      } else if (data?.joins?.length > 0 && data.joins[0]?.indexer_ts) {
+        // If no moves but game was joined, use the join timestamp
+        onLatestMoveTimestamp(data.joins[0].indexer_ts)
+      }
+    }
+  }, [moves, data?.joins, onLatestMoveTimestamp])
 
   const entries = useMemo(() => {
     const list = []

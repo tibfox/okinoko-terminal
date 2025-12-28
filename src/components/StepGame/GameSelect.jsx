@@ -165,6 +165,16 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
       }
       const nextTurnPlayer = row.next_turn_player
       const moveType = row.movetype || 'm'
+
+      // Calculate lastMoveMinutesAgo from indexer_ts
+      let lastMoveMinutesAgo = 0
+      if (row.indexer_ts) {
+        const lastMoveDate = new Date(row.indexer_ts)
+        const now = new Date()
+        const diffMs = now - lastMoveDate
+        lastMoveMinutesAgo = Math.floor(diffMs / (1000 * 60))
+      }
+
       return {
         id: row.id,
         name: row.name,
@@ -182,7 +192,8 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
         state: moveType || 'play',
         board: null,
         lastMoveBy: row.last_move_by,
-        lastMoveMinutesAgo: 0,
+        lastMoveMinutesAgo,
+        lastMoveTimestamp: row.indexer_ts || null,
       }
     })
     setContinueGames(nextGames)

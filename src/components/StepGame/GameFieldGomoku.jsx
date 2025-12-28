@@ -735,8 +735,31 @@ export default function GameField({
     playBeep(1000, 25, 'square')
   }
 
-  const minsAgo = game.lastMoveMinutesAgo
-  const daysAgo = Math.floor(minsAgo / (24 * 60))
+  // Calculate daysAgo from the latest move or join timestamp
+  const moves = gameDetails?.data?.moves ?? []
+  const joins = gameDetails?.data?.joins ?? []
+  let daysAgo = 0
+
+  if (moves.length > 0) {
+    // If there are moves, use the latest move timestamp
+    const latestMove = moves[moves.length - 1]
+    if (latestMove?.indexer_ts) {
+      const lastMoveDate = new Date(latestMove.indexer_ts)
+      const now = new Date()
+      const diffMinutes = Math.floor((now - lastMoveDate) / (1000 * 60))
+      daysAgo = Math.floor(diffMinutes / (24 * 60))
+    }
+  } else if (joins.length > 0 && joins[0]?.indexer_ts) {
+    // If no moves but game was joined, use the join timestamp
+    const joinDate = new Date(joins[0].indexer_ts)
+    const now = new Date()
+    const diffMinutes = Math.floor((now - joinDate) / (1000 * 60))
+    daysAgo = Math.floor(diffMinutes / (24 * 60))
+  } else {
+    // Fallback to game.lastMoveMinutesAgo if no moves or joins available yet
+    const minsAgo = game.lastMoveMinutesAgo || 0
+    daysAgo = Math.floor(minsAgo / (24 * 60))
+  }
   const swapDecisionOverlay = isSwapDecisionPhase && isMyTurn && !isAddingExtra ? (
     <div
       style={{
@@ -959,7 +982,7 @@ export default function GameField({
           </NeonButton>
 
           <NeonButton
-            disabled={!hasOpponent || daysAgo < 7}
+            disabled={isMyTurn || !hasOpponent || daysAgo < 7}
             onClick={() => handleTimeoutClick([])}
             style={{ marginBottom: '10px', flex: 1 }}
           >

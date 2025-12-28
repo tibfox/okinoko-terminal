@@ -37,6 +37,7 @@ export const ACTIVE_GAMES_FOR_PLAYER_QUERY = gql`
       betasset
       fmc
       name
+      indexer_ts
     }
   }
 `;
@@ -62,6 +63,7 @@ export const GAME_MOVES_QUERY = gql`
       by
       fmp
       indexer_block_height
+      indexer_ts
     }
     swaps: okinoko_iarv2_swap_events(
       where: { id: { _eq: $gameId } }
