@@ -75,15 +75,19 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
     )
   }
 
-  if (!rc || !bal) return null
-
-  const rcRatio = rc.max_rcs > 0 ? rc.amount / rc.max_rcs : 0
+  // Fallback to 0 if RC or balance data is missing
+  const rcAmount = rc?.amount ?? 0
+  const rcMaxRcs = rc?.max_rcs ?? 0
+  const rcRatio = rcMaxRcs > 0 ? rcAmount / rcMaxRcs : 0
   const rcPercent = (rcRatio * 100).toFixed(1)
+
+  const hiveBalance = bal?.hive ? Number(bal.hive) / 1000 : 0
+  const hbdBalance = bal?.hbd ? Number(bal.hbd) / 1000 : 0
 
   return (
     <Menu
       closeOnOutsideClick={true}
-      title={account} 
+      title={account}
       trigger={
         <RcCircleGraph
           rcPercent={rcPercent}
@@ -103,7 +107,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
               <b>RC:</b>
             </td>
             <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
-              {format(rc.amount)} / {format(rc.max_rcs)}
+              {format(rcAmount)} / {format(rcMaxRcs)}
             </td>
           </tr>
           <tr>
@@ -111,9 +115,9 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
               <b>HIVE:</b>
             </td>
             <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
-              {format(Number(bal.hive) / 1000, true)}
+              {format(hiveBalance, true)}
             </td>
-           
+
           </tr>
           <tr>
 
@@ -121,7 +125,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
               <b>HBD:</b>
             </td>
             <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
-          {format(Number(bal.hbd) / 1000, true)}
+          {format(hbdBalance, true)}
           </td>
           </tr>
         </tbody>
