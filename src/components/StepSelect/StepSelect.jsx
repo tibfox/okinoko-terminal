@@ -51,7 +51,17 @@ export default function StepSelect({
   setParams,
   setStep,
 }) {
-  const contracts = useMemo(() => sortContracts(contractsCfg.contracts || []), [])
+  const contracts = useMemo(() => {
+    const isDev = import.meta.env.DEV
+    const filtered = (contractsCfg.contracts || []).filter(contract => {
+      // Show all contracts in dev mode, but filter out devOnly contracts in production
+      if (contract.devOnly && !isDev) {
+        return false
+      }
+      return true
+    })
+    return sortContracts(filtered)
+  }, [])
   const { user } = useAioha()
   const isMobile = useDeviceBreakpoint()
   const [activePage, setActivePage] = useState(getStoredPage)

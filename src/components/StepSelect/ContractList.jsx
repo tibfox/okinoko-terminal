@@ -8,7 +8,8 @@ import {
   faHandshake,
   faGamepad,
   faTicket,
-  faPeopleGroup
+  faPeopleGroup,
+  faDharmachakra
 } from '@fortawesome/free-solid-svg-icons';
 
 // Icon mapping: string name to FontAwesome icon object
@@ -17,7 +18,8 @@ const iconMap = {
   faHandshake,
   faGamepad,
   faTicket,
-  faPeopleGroup
+  faPeopleGroup,
+  faDharmachakra
 };
 
 /**
@@ -93,7 +95,7 @@ export default function ContractList({
               zIndex: 1,
             }}
           >
-            <FontAwesomeIcon icon={getContractIcon(c.icon)} style={{ marginRight: '10px' }} />
+            <FontAwesomeIcon icon={getContractIcon(c.icon)} style={{ marginRight: '10px' ,fontSize: '1.2rem', }} />
             {c.name}
           </ListButton>
         ))}

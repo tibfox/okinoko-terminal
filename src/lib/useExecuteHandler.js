@@ -151,14 +151,38 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     const intents = []
 
     const pushIntentFromValue = (val) => {
+      console.log('pushIntentFromValue called with:', val)
       if (!val || typeof val !== 'object') return
-      const amount = (val.amount ?? '').toString()
-      const asset = (val.asset ?? '').toString().toLowerCase()
-      if (amount !== '' && asset) {
-        intents.push({
-          type: 'transfer.allow',
-          args: { limit: amount, token: asset },
+
+      // Check if this is a multi-intent format { hive: '10.000', hbd: '5.000' }
+      // Prioritize multi-intent detection when hive or hbd properties exist
+      const hasMultiIntent = val.hasOwnProperty('hive') || val.hasOwnProperty('hbd')
+      console.log('hasMultiIntent:', hasMultiIntent, 'val:', val)
+
+      if (hasMultiIntent) {
+        // Multi-intent: iterate over each asset
+        Object.keys(val).forEach(asset => {
+          const amount = (val[asset] ?? '').toString().trim()
+          console.log(`Multi-intent: ${asset} = "${amount}"`)
+          if (amount !== '' && (asset === 'hive' || asset === 'hbd')) {
+            console.log(`Adding intent for ${asset}: ${amount}`)
+            intents.push({
+              type: 'transfer.allow',
+              args: { limit: amount, token: asset.toLowerCase() },
+            })
+          }
         })
+      } else {
+        // Single intent: { amount: '10.000', asset: 'HIVE' }
+        const amount = (val.amount ?? '').toString()
+        const asset = (val.asset ?? '').toString().toLowerCase()
+        console.log(`Single intent: ${asset} = ${amount}`)
+        if (amount !== '' && asset) {
+          intents.push({
+            type: 'transfer.allow',
+            args: { limit: amount, token: asset },
+          })
+        }
       }
     }
 
@@ -333,6 +357,45 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
               val = getMandatoryDefault(p)
             }
 
+            // Special handling for winners field in split_prize_defined
+            if ((fn.name === 'split_prize_defined' || fn.vscId === 'vsc1BU9JeZG4z4z1HWn5sH25RS3THNTsEnXXhb') &&
+                ((p.payloadName || '').toLowerCase() === 'winners' || (p.name || '').toLowerCase().includes('winner'))) {
+              if (Array.isArray(val) && val.length > 0) {
+                // Serialize winners to format: addr1#(amt1#asset1,amt2#asset2);addr2#(amt1#asset1)
+                const winnerStrings = val.map(winner => {
+                  if (!winner.address || !winner.prizes || winner.prizes.length === 0) {
+                    return ''
+                  }
+
+                  const address = winner.address
+                  const prizes = winner.prizes.filter(p => p.amount && parseFloat(p.amount) > 0)
+
+                  if (prizes.length === 0) {
+                    return ''
+                  }
+
+                  // Format each prize
+                  const prizeStrings = prizes.map(prize => {
+                    const amount = parseFloat(prize.amount)
+                    const asset = prize.asset
+                    const formatted = prize.isFixed ? amount.toFixed(3) : amount.toFixed(1)
+                    return prize.isFixed ? `${formatted}#${asset}#fixed` : `${formatted}#${asset}`
+                  })
+
+                  // If multiple prizes, wrap in parentheses
+                  if (prizeStrings.length > 1) {
+                    return `${address}#(${prizeStrings.join(',')})`
+                  } else {
+                    return `${address}#${prizeStrings[0]}`
+                  }
+                }).filter(Boolean)
+
+                val = winnerStrings.join(';')
+              } else {
+                val = ''
+              }
+            }
+
             // Pull from parameter-level config, fallback to standard values
             const trueOut = p.boolTrue != null ? String(p.boolTrue) : 'true'
             const falseOut = p.boolFalse != null ? String(p.boolFalse) : 'false'
@@ -421,6 +484,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         })
 
         const jsonString = JSON.stringify(obj)
+        console.log('Returning payload with intents:', intents)
         return { payload: jsonString, intents, action }
       }
     }
@@ -539,12 +603,35 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         }
 
         if (p.type === 'vscIntent') {
-          if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) return false
+          if (!val) return false
 
-          const amount = parseFloat(String(val.amount).replace(',', '.'))
-          const available = val.asset === 'HIVE' ? balances.hive : balances.hbd
-          if (amount > available) return false
-          return true
+          // Check if this is multi-intent format
+          const hasMultiIntent = !val.amount && !val.asset && (val.hive || val.hbd)
+
+          if (hasMultiIntent) {
+            // Multi-intent: check that at least one asset has valid amount
+            const assets = Object.keys(val).filter(k => k === 'hive' || k === 'hbd')
+            if (assets.length === 0) return false
+
+            // Check that at least one asset has a valid amount
+            const hasValidAmount = assets.some(asset => {
+              const amountStr = val[asset]
+              if (!amountStr || amountStr === '') return false
+              const amount = parseFloat(String(amountStr).replace(',', '.'))
+              if (isNaN(amount) || amount <= 0) return false
+              const available = asset === 'hive' ? balances.hive : balances.hbd
+              return amount <= available
+            })
+
+            return hasValidAmount
+          } else {
+            // Single intent
+            if (val.amount === '' || isNaN(parseFloat(val.amount))) return false
+            const amount = parseFloat(String(val.amount).replace(',', '.'))
+            const available = val.asset === 'HIVE' ? balances.hive : balances.hbd
+            if (amount > available) return false
+            return true
+          }
         }
 
         return val !== '' && val !== undefined && val !== null
@@ -567,23 +654,57 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         if (!p.mandatory) return
         const val = inputParams?.[p.name]
         if (p.type === 'vscIntent') {
-          if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) {
-            issues.push(`Missing amount for "${p.name}"`)
-            return
-          }
-          const amount = parseFloat(String(val.amount).replace(',', '.'))
-          const available = (val.asset === 'HIVE' ? balances.hive : balances.hbd) || 0
-          if (amount > available) {
-            issues.push(
-              `Insufficient balance for "${p.name}": need ${formatAmt(amount)} ${val.asset || ''}, have ${formatAmt(available)}`
-            )
+          // Check if this is a multi-intent format { hive: '10.000', hbd: '5.000' }
+          const hasMultiIntent = val && typeof val === 'object' && !val.amount && !val.asset && (val.hive || val.hbd)
+
+          if (hasMultiIntent) {
+            // Multi-intent validation
+            const assets = ['hive', 'hbd']
+            let hasAnyAmount = false
+
+            for (const asset of assets) {
+              const amount = val[asset]
+              if (amount && amount !== '') {
+                hasAnyAmount = true
+                const parsed = parseFloat(String(amount).replace(',', '.'))
+                if (isNaN(parsed)) {
+                  issues.push(`Invalid amount for "${p.name}" (${asset.toUpperCase()})`)
+                } else {
+                  const available = (asset === 'hive' ? balances.hive : balances.hbd) || 0
+                  if (parsed > available) {
+                    issues.push(
+                      `Insufficient balance for "${p.name}" (${asset.toUpperCase()}): need ${formatAmt(parsed)} ${asset.toUpperCase()}, have ${formatAmt(available)}`
+                    )
+                  }
+                }
+              }
+            }
+
+            // If no amounts provided at all for multi-intent, that's an error
+            if (!hasAnyAmount) {
+              issues.push(`Missing amounts for "${p.name}" - please enter HIVE and/or HBD amounts`)
+            }
+          } else {
+            // Single intent validation
+            if (!val || val.amount === '' || isNaN(parseFloat(val.amount))) {
+              issues.push(`Missing amount for "${p.name}"`)
+              return
+            }
+            const amount = parseFloat(String(val.amount).replace(',', '.'))
+            const available = (val.asset === 'HIVE' ? balances.hive : balances.hbd) || 0
+            if (amount > available) {
+              issues.push(
+                `Insufficient balance for "${p.name}": need ${formatAmt(amount)} ${val.asset || ''}, have ${formatAmt(available)}`
+              )
+            }
           }
           return
         }
+        let checkedVal = val
         if ((val === undefined || val === null || val === '') && p.mandatory && (p.type === 'bool' || p.type === 'boolean')) {
-          val = getDefaultValue(p)
+          checkedVal = getDefaultValue(p)
         }
-        if (val === '' || val === undefined || val === null) {
+        if (checkedVal === '' || checkedVal === undefined || checkedVal === null) {
           issues.push(`Missing value for "${p.name}"`)
         }
       })
@@ -744,5 +865,6 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     jsonPreview,
     handleSend,
     allMandatoryFilled,
+    describeMissing,
   }
 }

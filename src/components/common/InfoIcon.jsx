@@ -17,24 +17,14 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
           fontSize: `${size}px`,
           ...(style || {}),
         }}
-        onMouseEnter={(e) =>
+        onMouseEnter={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect()
           setHintOverlay({
             text: tooltip,
-            x: e.clientX - 60,
-            y: e.clientY - 60,
+            x: rect.left + rect.width / 2,
+            y: rect.top,
           })
-        }
-        onMouseMove={(e) =>
-          setHintOverlay((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  x: e.clientX - 60,
-                  y: e.clientY - 60,
-                }
-              : prev
-          )
-        }
+        }}
         onMouseLeave={() => setHintOverlay(null)}
       />
 
@@ -42,8 +32,9 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
         <div
           style={{
             position: 'fixed',
-            top: hintOverlay.y,
+            top: hintOverlay.y - 10,
             left: hintOverlay.x,
+            transform: 'translate(-50%, -100%)',
             zIndex: 2147483647,
             background: 'black',
             border: '1px solid var(--color-primary-darker)',

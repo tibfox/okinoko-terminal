@@ -17,6 +17,9 @@ import NeonListDropdown from '../common/NeonListDropdown.jsx'
 import LotteryDropdown from '../common/LotteryDropdown.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
+import NeonListInput from '../common/NeonListInput.jsx'
+import WinnerSharesInput from '../common/WinnerSharesInput.jsx'
+import WinnerPrizesInput from '../common/WinnerPrizesInput.jsx'
 
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
@@ -61,6 +64,8 @@ export default function ExecuteForm({
   pending,
   setStep,
   allMandatoryFilled,
+  setAssetSharesValid,
+  describeMissing,
 }) {
   const [isMobile, setIsMobile] = useState(false)
   const [insufficient, setInsufficient] = useState(false)
@@ -84,6 +89,7 @@ export default function ExecuteForm({
   const [metaValue, setMetaValue] = useState('')
   const [editingMetaIndex, setEditingMetaIndex] = useState(null)
   const [editingMetaKey, setEditingMetaKey] = useState('')
+  const [participantsListMode, setParticipantsListMode] = useState(false)
   const [editingMetaValue, setEditingMetaValue] = useState('')
   const [lotteryMetaFields, setLotteryMetaFields] = useState({
     lotteryPostUrl: '',
@@ -708,6 +714,341 @@ export default function ExecuteForm({
       (isMetaField && 'Meta') ||
       p.name
     const labelText = `${customLabel}${(p.mandatory || isCoreProposalField) ? ' *' : ''}`
+
+    // Special handling for participants field in split_prize_random
+    const isParticipantsField =
+      (fn?.name === 'split_prize_random' || fn?.vscId === 'vsc1BU9JeZG4z4z1HWn5sH25RS3THNTsEnXXhb') &&
+      ((p.payloadName || '').toLowerCase() === 'participants' ||
+        (p.name || '').toLowerCase() === 'participants')
+
+    if (isParticipantsField) {
+      const rawVal = params[p.name] ?? params[p.payloadName || p.name] ?? ''
+      const participantsList = String(rawVal)
+        .split(/[;,\s\n\t]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+
+      const normalizeParticipant = (val) => {
+        let cleaned = String(val || '').trim()
+        // Remove @ prefix if present
+        if (cleaned.startsWith('@')) {
+          cleaned = 'hive:' + cleaned.slice(1)
+        } else if (!cleaned.startsWith('hive:') && cleaned) {
+          cleaned = 'hive:' + cleaned
+        }
+        return cleaned
+      }
+
+      const updateParticipants = (list) => {
+        const serialized = list
+          .filter(Boolean)
+          .map(normalizeParticipant)
+          .join(';')
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+            }}
+          >
+            <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+              {labelText}
+            </div>
+            <NeonSwitch
+              name={participantsListMode ? 'List Mode' : 'Paste Mode'}
+              checked={participantsListMode}
+              onChange={setParticipantsListMode}
+            />
+          </div>
+
+          {participantsListMode ? (
+            <NeonListInput
+              items={participantsList}
+              onChange={updateParticipants}
+              placeholder="@username or hive:username"
+              emptyMessage="No participants yet. Add usernames below."
+              normalizeItem={normalizeParticipant}
+              validateItem={(item) => item && item.trim().length > 0}
+            />
+          ) : (
+            <textarea
+              value={rawVal}
+              onChange={(e) => {
+                const val = e.target.value
+                setParams((prev) => ({
+                  ...prev,
+                  [p.name]: val,
+                  [p.payloadName || p.name]: val,
+                }))
+              }}
+              placeholder="Paste addresses (semicolon, comma, or space separated)&#10;Examples:&#10;hive:alice;hive:bob;hive:charlie&#10;@alice @bob @charlie&#10;hive:alice, hive:bob, hive:charlie"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-primary-darkest)',
+                color: 'var(--color-primary-lighter)',
+                padding: '8px',
+                minHeight: '100px',
+                width: '100%',
+                fontFamily: 'Share Tech Mono, monospace',
+                fontSize: '0.9rem',
+                resize: 'vertical',
+              }}
+            />
+          )}
+
+          {participantsList.length > 0 && (
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
+              {participantsList.length} participant{participantsList.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Special handling for assetShares field in split_prize_random
+    const isAssetSharesField =
+      (fn?.name === 'split_prize_random' || fn?.vscId === 'vsc1BU9JeZG4z4z1HWn5sH25RS3THNTsEnXXhb') &&
+      ((p.payloadName || '').toLowerCase() === 'assetshares' ||
+        (p.name || '').toLowerCase().includes('asset shares'))
+
+    if (isAssetSharesField) {
+      const rawVal = params[p.name] ?? params[p.payloadName || p.name] ?? ''
+      const winnerCount = parseInt(params['Winner Count'] || params['winnerCount'] || 0, 10)
+
+      // Parse the existing value into asset groups
+      // Format: (50#hive,60#hbd);(30#hive,40#hbd);(20#hive) or 50#hive;30#hive;20#hive
+      const parseAssetGroups = (str) => {
+        if (!str || str.trim() === '') return []
+
+        // Parse winner groups first
+        const winnerGroups = []
+        const groups = str.split(';').map(s => s.trim()).filter(Boolean)
+
+        groups.forEach(group => {
+          const winnerShares = {}
+          let items = []
+
+          if (group.startsWith('(') && group.endsWith(')')) {
+            items = group.slice(1, -1).split(',').map(s => s.trim())
+          } else {
+            items = [group]
+          }
+
+          items.forEach(item => {
+            const parts = item.split('#')
+            if (parts.length >= 2) {
+              const amount = parts[0].trim()
+              const asset = parts[1].trim().toLowerCase()
+              const isFixed = parts.length === 3 && parts[2].trim().toLowerCase() === 'fixed'
+              winnerShares[asset] = { amount, isFixed }
+            }
+          })
+
+          winnerGroups.push(winnerShares)
+        })
+
+        // Convert to asset groups
+        const assetGroups = []
+        const assetKeys = new Set()
+        winnerGroups.forEach(ws => Object.keys(ws).forEach(k => assetKeys.add(k)))
+
+        assetKeys.forEach(asset => {
+          const amounts = []
+          let isFixed = false
+
+          winnerGroups.forEach(ws => {
+            if (ws[asset]) {
+              // Convert '0' placeholder back to empty string for UI
+              const amount = ws[asset].amount === '0' ? '' : ws[asset].amount
+              amounts.push(amount)
+              isFixed = ws[asset].isFixed
+            } else {
+              amounts.push('')
+            }
+          })
+
+          assetGroups.push({ asset, isFixed, amounts })
+        })
+
+        return assetGroups
+      }
+
+      const serializeAssetGroups = (assetGroups) => {
+        if (assetGroups.length === 0) return ''
+
+        // Find max winner count
+        const maxWinners = Math.max(...assetGroups.map(g => g.amounts.length), 0)
+        if (maxWinners === 0) return ''
+
+        // Build winner groups
+        const winnerGroups = []
+        for (let i = 0; i < maxWinners; i++) {
+          const winnerShares = []
+          assetGroups.forEach(group => {
+            if (i < group.amounts.length) {
+              // Use '0' as placeholder for empty amounts during editing
+              const amount = group.amounts[i] || '0'
+              const parts = [amount, group.asset]
+              if (group.isFixed) parts.push('fixed')
+              winnerShares.push(parts.join('#'))
+            }
+          })
+
+          if (winnerShares.length > 0) {
+            if (winnerShares.length === 1) {
+              winnerGroups.push(winnerShares[0])
+            } else {
+              winnerGroups.push('(' + winnerShares.join(',') + ')')
+            }
+          }
+        }
+
+        return winnerGroups.join(';')
+      }
+
+      const assetGroups = parseAssetGroups(rawVal)
+
+      const updateAssetGroups = (groups) => {
+        const serialized = serializeAssetGroups(groups)
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: serialized,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      // Validate asset groups (always percentage mode)
+      const validateAssetGroups = (groups) => {
+        if (groups.length === 0) return true // Empty is valid (will use default distribution)
+
+        for (const group of groups) {
+          // Check all amounts are filled
+          for (const amount of group.amounts) {
+            if (!amount || amount.trim() === '' || amount === '0') {
+              return false // Empty amount found
+            }
+            const num = parseFloat(amount)
+            if (!Number.isFinite(num) || num <= 0) {
+              return false // Invalid number
+            }
+          }
+
+          // Always percentage mode - check total is 100%
+          // if (!group.isFixed) { // Commented out - always percentage mode
+            const total = group.amounts.reduce((sum, amt) => sum + (parseFloat(amt) || 0), 0)
+            if (Math.abs(total - 100) >= 0.1) {
+              return false // Total is not 100%
+            }
+          // }
+        }
+
+        return true
+      }
+
+      const assetGroupsValid = validateAssetGroups(assetGroups)
+
+      // Store validation result in ref for parent component
+      useEffect(() => {
+        if (setAssetSharesValid) {
+          setAssetSharesValid(assetGroupsValid)
+        }
+      }, [assetGroupsValid])
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+            {labelText}
+          </div>
+          <WinnerSharesInput
+            assetGroups={assetGroups}
+            onChange={updateAssetGroups}
+            winnerCount={winnerCount}
+          />
+          <div
+            style={{
+              fontSize: '0.85rem',
+              color: 'var(--color-primary-lighter)',
+              opacity: 0.7,
+              fontStyle: 'italic',
+            }}
+          >
+            Leave empty to distribute all assets equally among winners
+          </div>
+        </div>
+      )
+    }
+
+    // Special handling for winners field in split_prize_defined
+    const isWinnersField =
+      (fn?.name === 'split_prize_defined' || fn?.vscId === 'vsc1BU9JeZG4z4z1HWn5sH25RS3THNTsEnXXhb') &&
+      (((p.payloadName || '').toLowerCase() === 'winners') ||
+        (p.name || '').toLowerCase().includes('winner'))
+
+    if (isWinnersField) {
+      const winners = params[p.name] ?? params[p.payloadName || p.name] ?? []
+
+      const updateWinners = (newWinners) => {
+        setParams((prev) => ({
+          ...prev,
+          [p.name]: newWinners,
+          [p.payloadName || p.name]: newWinners,
+        }))
+      }
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+            {labelText}
+          </div>
+          <WinnerPrizesInput
+            winners={Array.isArray(winners) ? winners : []}
+            onChange={updateWinners}
+          />
+          <div
+            style={{
+              fontSize: '0.85rem',
+              color: 'var(--color-primary-lighter)',
+              opacity: 0.7,
+              fontStyle: 'italic',
+            }}
+          >
+            Each winner can have HIVE and/or HBD prizes. Each asset must use the same mode (percentage or fixed) across all winners.
+          </div>
+        </div>
+      )
+    }
+
     const isWinnerSharesField =
       fn?.name === 'create_lottery' &&
       (((p.payloadName || '').toLowerCase() === 'winnershares') ||
@@ -2271,6 +2612,211 @@ export default function ExecuteForm({
     }
 
     if (p.type === 'vscIntent') {
+      // Check if we have asset groups defined (for split_prize_random)
+      const assetSharesParam = fn?.parameters?.find(
+        (param) =>
+          ((param.payloadName || '').toLowerCase() === 'assetshares' ||
+            (param.name || '').toLowerCase().includes('asset shares'))
+      )
+      const assetSharesValue = assetSharesParam
+        ? (params[assetSharesParam.name] ?? params[assetSharesParam.payloadName || assetSharesParam.name] ?? '')
+        : ''
+
+      // Check if we have winners defined (for split_prize_defined)
+      const winnersParam = fn?.parameters?.find(
+        (param) =>
+          ((param.payloadName || '').toLowerCase() === 'winners' ||
+            (param.name || '').toLowerCase().includes('winner'))
+      )
+      const winnersValue = winnersParam
+        ? (params[winnersParam.name] ?? params[winnersParam.payloadName || winnersParam.name] ?? [])
+        : []
+
+      // Parse to determine unique assets
+      const uniqueAssets = new Set()
+
+      // From assetShares (split_prize_random)
+      if (assetSharesValue && assetSharesValue.trim()) {
+        const groups = assetSharesValue.split(';').map(s => s.trim()).filter(Boolean)
+        groups.forEach(group => {
+          let items = []
+          if (group.startsWith('(') && group.endsWith(')')) {
+            items = group.slice(1, -1).split(',').map(s => s.trim())
+          } else {
+            items = [group]
+          }
+          items.forEach(item => {
+            const parts = item.split('#')
+            if (parts.length >= 2) {
+              const asset = parts[1].trim().toLowerCase()
+              uniqueAssets.add(asset)
+            }
+          })
+        })
+      }
+
+      // From winners (split_prize_defined)
+      if (Array.isArray(winnersValue) && winnersValue.length > 0) {
+        winnersValue.forEach(winner => {
+          if (winner.prizes && Array.isArray(winner.prizes)) {
+            winner.prizes.forEach(prize => {
+              if (prize.asset) {
+                uniqueAssets.add(prize.asset.toLowerCase())
+              }
+            })
+          }
+        })
+      }
+
+      // Use multi-intent if we have multiple assets defined
+      const needsMultiIntent = uniqueAssets.size > 1
+
+      if (needsMultiIntent) {
+        // Multi-intent component
+        const intents = params[p.name] ?? {}
+        const assets = Array.from(uniqueAssets)
+
+        // Calculate minimum required amounts for fixed-mode assets
+        // and validate percentage totals for percentage-mode assets
+        const minRequiredAmounts = {}
+        const percentageTotals = {}
+        const assetModes = {} // Track mode for each asset
+
+        if (Array.isArray(winnersValue) && winnersValue.length > 0) {
+          winnersValue.forEach(winner => {
+            if (winner.prizes && Array.isArray(winner.prizes)) {
+              winner.prizes.forEach(prize => {
+                if (prize.asset && prize.amount) {
+                  const asset = prize.asset.toLowerCase()
+                  const amount = parseFloat(prize.amount)
+
+                  if (!isNaN(amount) && amount > 0) {
+                    // Track asset mode
+                    assetModes[asset] = prize.isFixed
+
+                    if (prize.isFixed) {
+                      // Fixed mode: sum amounts
+                      minRequiredAmounts[asset] = (minRequiredAmounts[asset] || 0) + amount
+                    } else {
+                      // Percentage mode: sum percentages
+                      percentageTotals[asset] = (percentageTotals[asset] || 0) + amount
+                    }
+                  }
+                }
+              })
+            }
+          })
+        }
+
+        const updateIntent = (asset, amount) => {
+          setParams((prev) => ({
+            ...prev,
+            [p.name]: { ...intents, [asset]: amount },
+          }))
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+              {labelText}
+            </div>
+            {assets.map(asset => {
+              const currentAmount = intents[asset] ?? ''
+              const available = asset === 'hive' ? balances.hive : balances.hbd
+              const parsed = parseFloat(String(currentAmount).replace(',', '.'))
+              const exceeds = !isNaN(parsed) && parsed > available
+
+              // Check if amount meets minimum for fixed mode (with 0.0001 tolerance for floating-point precision)
+              const minRequired = minRequiredAmounts[asset] || 0
+              const belowMinimum = minRequired > 0 && !isNaN(parsed) && parsed > 0 && parsed < (minRequired - 0.0001)
+
+              // Check if percentage total is valid (should be ~100%)
+              const percentageTotal = percentageTotals[asset] || 0
+              const isPercentageMode = assetModes[asset] === false
+              const percentageInvalid = isPercentageMode && percentageTotal > 0 && Math.abs(percentageTotal - 100) > 0.1
+
+              const onAmountChange = (e) => {
+                let val = e.target.value.replace(',', '.')
+                if (/^\d*([.]\d{0,3})?$/.test(val) || val === '') {
+                  updateIntent(asset, val)
+                }
+              }
+
+              const onAmountBlur = (e) => {
+                const val = parseFloat(String(e.target.value).replace(',', '.'))
+                if (!isNaN(val)) {
+                  // Minimum value is 0.001 or the sum of fixed amounts, whichever is higher
+                  const absoluteMin = Math.max(0.001, minRequired)
+                  const clamped = Math.max(absoluteMin, val)
+                  updateIntent(asset, clamped.toFixed(3))
+                }
+              }
+
+              return (
+                <div
+                  key={asset}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    padding: '8px',
+                    border: '1px solid var(--color-primary-darkest)',
+                    background: 'rgba(0, 255, 255, 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <FloatingLabelInput
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Amount"
+                      label={asset.toUpperCase()}
+                      value={currentAmount}
+                      onChange={onAmountChange}
+                      onBlur={onAmountBlur}
+                      style={{
+                        flex: 1,
+                        borderColor: (exceeds || belowMinimum) ? 'red' : 'var(--color-primary-darkest)',
+                        boxShadow: (exceeds || belowMinimum) ? '0 0 8px red' : 'none',
+                      }}
+                    />
+                    <div
+                      style={{
+                        minWidth: '60px',
+                        color: 'var(--color-primary-lighter)',
+                        fontSize: '0.9rem',
+                      }}
+                    >
+                      {asset.toUpperCase()}
+                    </div>
+                  </div>
+                  {exceeds && (
+                    <div style={{ color: 'red', fontSize: '0.8rem' }}>
+                      Insufficient balance
+                    </div>
+                  )}
+                  {!exceeds && belowMinimum && (
+                    <div style={{ color: 'var(--color-warning)', fontSize: '0.8rem' }}>
+                      ⚠ Minimum required: {minRequired.toFixed(3)} {asset.toUpperCase()} (sum of fixed amounts)
+                    </div>
+                  )}
+                  {!exceeds && !belowMinimum && percentageInvalid && (
+                    <div style={{ color: 'var(--color-warning)', fontSize: '0.8rem' }}>
+                      ⚠ Total percentage is {percentageTotal.toFixed(1)}% (should be 100%)
+                    </div>
+                  )}
+                  {!exceeds && !belowMinimum && !percentageInvalid && available > 0 && (
+                    <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.8rem', opacity: 0.7 }}>
+                      Available: {available.toFixed(3)}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      }
+
+      // Single intent (original code)
       const current = params[p.name] ?? { amount: '', asset: 'HIVE' }
       const available =
         current.asset === 'HIVE' ? balances.hive : balances.hbd
@@ -2306,9 +2852,11 @@ export default function ExecuteForm({
       const onAmountBlur = (e) => {
         const val = parseFloat(String(e.target.value).replace(',', '.'))
         if (!isNaN(val)) {
+          // Minimum value is 0.001
+          const clamped = Math.max(0.001, val)
           setParams((prev) => ({
             ...prev,
-            [p.name]: { ...current, amount: val.toFixed(3) },
+            [p.name]: { ...current, amount: clamped.toFixed(3) },
           }))
         }
       }
@@ -2491,10 +3039,15 @@ export default function ExecuteForm({
     return (
       <FloatingLabelInput
         label={labelText}
-        type={p.type === 'number' ? 'number' : 'text'}
+        type={p.name === 'Winner Count' ? 'text' : (p.type === 'number' ? 'number' : 'text')}
         value={params[p.name] ?? ''}
         onChange={(e) => {
-          const val = e.target.value
+          let val = e.target.value
+          // For Winner Count, only allow positive integers
+          if (p.name === 'Winner Count') {
+            // Remove all non-digit characters
+            val = val.replace(/[^0-9]/g, '')
+          }
           setParams((prev) => ({
             ...prev,
             [p.name]: val,
@@ -2515,7 +3068,7 @@ export default function ExecuteForm({
         }
         min={p.min}
         max={p.max}
-        step={p.min !== undefined || p.max !== undefined ? '0.1' : undefined}
+        step={p.name === 'Winner Count' ? '1' : (p.min !== undefined || p.max !== undefined ? '0.1' : undefined)}
         style={{ marginTop: '4px' }}
       />
     )
@@ -2536,7 +3089,7 @@ export default function ExecuteForm({
     }
     if (isOptionsField && !forcePollActive) return null
     const hint = (p.hintText || '').trim()
-    const labelText = `${p.name}${p.mandatory ? ' *' : ''}`
+    const labelText = `${p.name}${p.mandatory || p.displayAsMandatory ? ' *' : ''}`
     return (
       <div key={p.name} style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
@@ -2567,10 +3120,10 @@ export default function ExecuteForm({
     isProposalCreate &&
     (p === forcePollParam || p === optionsParam || p === payoutsParam || p === metaParam)
   const mandatoryParams = supportsOptionalGrouping
-    ? parameters.filter((p) => p.mandatory || isProposalCoreParam(p))
+    ? parameters.filter((p) => p.mandatory || p.displayAsMandatory || isProposalCoreParam(p))
     : parameters
   const optionalParams = supportsOptionalGrouping
-    ? parameters.filter((p) => !p.mandatory && !isProposalCoreParam(p))
+    ? parameters.filter((p) => !p.mandatory && !p.displayAsMandatory && !isProposalCoreParam(p))
     : []
 
   const rcLimitValue =
@@ -2682,6 +3235,28 @@ export default function ExecuteForm({
           </>
         ) : (
           <p>No parameters for this function.</p>
+        )}
+
+        {/* Validation errors */}
+        {describeMissing && !allMandatoryFilled && (
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '12px',
+              border: '1px solid var(--color-warning)',
+              background: 'rgba(255, 165, 0, 0.1)',
+              borderRadius: '4px',
+            }}
+          >
+            <div style={{ color: 'var(--color-warning)', fontWeight: 'bold', marginBottom: '8px' }}>
+              ⚠ Please fix the following issues:
+            </div>
+            <ul style={{ margin: '0', paddingLeft: '20px', color: 'var(--color-primary-lighter)' }}>
+              {describeMissing().map((issue, idx) => (
+                <li key={idx} style={{ marginBottom: '4px' }}>{issue}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>

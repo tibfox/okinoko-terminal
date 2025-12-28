@@ -60,6 +60,7 @@ export default function StepExecute({
     return clampPosition(saved, 0.5)
   })
   const [draggingDivider, setDraggingDivider] = useState(false)
+  const [assetSharesValid, setAssetSharesValid] = useState(true)
   const layoutRef = useRef(null)
 
   // ✅ load pending tx only after everything mounts
@@ -230,6 +231,7 @@ export default function StepExecute({
     jsonPreview,
     handleSend,
     allMandatoryFilled,
+    describeMissing,
   } = useExecuteHandler({ contract, fn, params, setParams, resumedTx })
 
   const sharesValid =
@@ -246,6 +248,18 @@ export default function StepExecute({
     const intentParam = fn?.parameters?.find((p) => p.type === 'vscIntent')
     if (!intentParam) return true
     const intentVal = params?.[intentParam.name]
+
+    // Check if it's a multi-intent (object with asset keys like { hive: "0.300", hbd: "1.000" })
+    if (intentVal && typeof intentVal === 'object' && !intentVal.amount) {
+      // Multi-intent: check if at least one asset has a valid amount > 0
+      const amounts = Object.values(intentVal)
+      return amounts.some(val => {
+        const amount = parseFloat(String(val ?? '').replace(',', '.'))
+        return Number.isFinite(amount) && amount > 0
+      })
+    }
+
+    // Single intent: check amount property
     const amount = parseFloat(String(intentVal?.amount ?? '').replace(',', '.'))
     return Number.isFinite(amount) && amount > 0
   }, [fn, params])
@@ -266,7 +280,8 @@ export default function StepExecute({
     donationValid &&
     rangesValid &&
     intentAmountValid &&
-    ticketEstimateValid
+    ticketEstimateValid &&
+    assetSharesValid
 
   const handleSendAndForward = async () => {
     if (isMobile && activePage !== 'preview') {
@@ -352,6 +367,8 @@ export default function StepExecute({
             onSend={handleSend}
             setStep={setStep}
             allMandatoryFilled={allMandatoryFilled}
+            setAssetSharesValid={setAssetSharesValid}
+            describeMissing={describeMissing}
           />
         </div>
 

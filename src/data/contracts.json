@@ -187,6 +187,7 @@
       "verifiedOn": "unverified",
       "description": "Create your own DAO with your own rules!",
       "icon": "faPeopleGroup",
+      "devOnly": true,
       "functions": [
         {
           "name": "project_create",
@@ -772,6 +773,7 @@
       "deployedOn": "2025-10-31T15:12:33",
       "verifiedOn": "unverified",
       "description": "All currently supported sdk functions",
+      "devOnly": true,
       "functions": [
         {
           "name": "c_log",
@@ -1105,7 +1107,7 @@
               "sortIndex": 5
             },
             {
-              "name": "Donation Account (optional)",
+              "name": "Donation Account",
               "payloadName": "donationAccount",
               "type": "address",
               "mandatory": false,
@@ -1113,7 +1115,7 @@
               "sortIndex": 6
             },
             {
-              "name": "Donation Percent (optional)",
+              "name": "Donation Percent",
               "payloadName": "donationPercent",
               "type": "int",
               "asString": false,
@@ -1124,7 +1126,7 @@
               "sortIndex": 7
             },
             {
-              "name": "Metadata (optional)",
+              "name": "Metadata",
               "payloadName": "metadata",
               "type": "lottery_meta",
               "asString": false,
@@ -1261,6 +1263,122 @@
           ],
           "hintText": "Only the lottery owner can change the metadata like description or post urls.",
           "groupHeader": "Lottery Management"
+        }
+      ]
+    },
+    {
+      "name": "Ōkinoko Senka (Prizes)",
+      "id": 6,
+      "sortIndex": 5,
+      "vscId": "vsc1BU9JeZG4z4z1HWn5sH25RS3THNTsEnXXhb",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2025-12-15",
+      "verifiedOn": "unverified",
+      "description": "Transparent on-chain prize distribution. Split prizes among random winners or predefined recipients with flexible multi-asset support.",
+      "icon": "faDharmachakra",
+      "devOnly": true,
+      "functions": [
+        {
+          "name": "split_prize_random",
+          "friendlyName": "Random Prize Split",
+          "description": "Randomly select winners from a participant pool and distribute prizes with equal or custom shares per asset. Winners are selected using a verifiable random seed.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Winner Count",
+              "payloadName": "winnerCount",
+              "type": "number",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Number of winners to select (1-100)",
+              "min": 1,
+              "max": 100,
+              "sortIndex": 1
+            },
+            {
+              "name": "Participants",
+              "payloadName": "participants",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "List of participant addresses. Full format: hive:alice;hive:bob or Short format: @alice @bob @charlie (auto-converted to hive: format)",
+              "sortIndex": 2
+            },
+            {
+              "name": "Asset Shares",
+              "payloadName": "assetShares",
+              "type": "string",
+              "mandatory": false,
+              "displayAsMandatory": true,
+              "hintText": "You can define the percentage shares per asset for winners. If empty, all assets are split equally among winners.",
+              "sortIndex": 3
+            },
+            {
+              "name": "Transfer Type",
+              "payloadName": "transferToL1",
+              "type": "bool",
+              "boolTrue": "true",
+              "boolFalse": "false",
+              "asString": true,
+              "mandatory": true,
+              "hintText": "Enable L1 withdrawal to Hive blockchain. Default is L2 transfer (Magi Network).",
+              "sortIndex": 5,
+              "displayTrue": "On Hive",
+              "displayFalse": "Transfer: On Magi"
+            },
+            {
+              "name": "Prize Amount",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "Total prize amount to distribute. You can provide multiple transfer intents for multi-asset distributions.",
+              "sortIndex": 6
+            }
+          ],
+          "hintText": "Asset shares must sum to 100% per asset. If no shares provided, all assets are distributed equally among winners.",
+          "groupHeader": ""
+        },
+        {
+          "name": "split_prize_defined",
+          "friendlyName": "Defined Prize Split",
+          "description": "Distribute prizes to predefined winners with custom share percentages or fixed amounts per asset. Each winner can receive different assets with custom allocations.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "parameters": [
+            {
+              "name": "Winners and Prizes",
+              "payloadName": "winners",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "Winner entries (supports @username format). Percentage: hive:alice#50#hive or @alice#50#hive. Fixed: hive:alice#5.000#hive#fixed or @alice#5.000#hive#fixed. Multi-asset: hive:alice#(50#hive,60#hbd);hive:bob#(30#hive,40#hbd)",
+              "sortIndex": 1
+            },
+            {
+              "name": "Transfer to L1",
+              "payloadName": "transferToL1",
+              "type": "bool",
+              "boolTrue": "true",
+              "boolFalse": "false",
+              "asString": true,
+              "mandatory": true,
+              "hintText": "Enable L1 withdrawal to Hive blockchain. Default is L2 transfer (Magi Network). Use 'true', '1', or 'yes' to enable.",
+              "sortIndex": 3,
+              "displayTrue": "On Hive",
+              "displayFalse": "Transfer: On Magi"
+            },
+            {
+              "name": "Prize Amount",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "Total prize amount to distribute. You can provide multiple transfer intents for multi-asset distributions.",
+              "sortIndex": 4
+            }
+          ],
+          "hintText": "Percentage mode: shares must sum to 100% per asset. Fixed mode: specify exact amounts. Cannot mix modes for the same asset.",
+          "groupHeader": ""
         }
       ]
     }
