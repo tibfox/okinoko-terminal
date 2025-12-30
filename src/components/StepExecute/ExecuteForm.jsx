@@ -2941,9 +2941,24 @@ export default function ExecuteForm({
             </span>
           </div>
           {isJoinLottery && selectedLotteryTicket?.ticketPrice && (
-            <div style={{ fontSize: '1.2rem', color: 'var(--color-primary-lighter)' }}>
-              Tickets: {ticketEstimateLabel ?? '—'} for {selectedLotteryTicket.ticketPrice} {ticketAsset} each
-            </div>
+            <>
+              <div style={{ fontSize: '1.2rem', color: 'var(--color-primary-lighter)' }}>
+                Tickets: {ticketEstimateLabel ?? '—'} for {selectedLotteryTicket.ticketPrice} {ticketAsset} each
+              </div>
+              <div style={{
+                fontSize: '0.9rem',
+                color: 'var(--color-primary-lighter)',
+                opacity: 0.8,
+                fontStyle: 'italic',
+                marginTop: '4px',
+                padding: '8px',
+                background: 'rgba(0, 255, 255, 0.05)',
+                border: '1px solid rgba(0, 255, 255, 0.2)',
+                borderRadius: '4px'
+              }}>
+                Buying multiple tickets increases your chance of winning. You will not be able to win multiple prizes by buying multiple tickets.
+              </div>
+            </>
           )}
         </div>
       )
