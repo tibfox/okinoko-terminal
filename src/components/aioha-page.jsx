@@ -38,10 +38,10 @@ export const AiohaPage = () => {
 <div className="aioha-modal-theme">
       <AiohaModal
         displayed={modalDisplayed}
-       
+
         loginOptions={{
           msg: 'Login',
-          keyType: KeyTypes.Active,
+          keyType: KeyTypes.Posting,
         }}
         arrangement="grid"
         onLogin={console.log}

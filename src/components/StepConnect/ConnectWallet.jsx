@@ -47,7 +47,7 @@ export default function ConnectWallet({ showModal, setShowModal, setStep }) {
           displayed={showModal}
           loginOptions={{
             msg: 'Login',
-            keyType: KeyTypes.Active, // request Active key for transaction authority
+            keyType: KeyTypes.Posting, // request Posting key for initial connection
           }
         }
           onLogin={(r) => {
