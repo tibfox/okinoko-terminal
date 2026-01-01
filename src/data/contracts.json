@@ -1115,12 +1115,12 @@
               "sortIndex": 6
             },
             {
-              "name": "Donation Percent",
+              "name": "Donation Percentage",
               "payloadName": "donationPercent",
               "type": "int",
               "asString": false,
               "mandatory": false,
-              "hintText": "Percentage to donate (0-50%). Burn + donation cannot exceed 90%",
+              "hintText": "Percentage to donate (0-50%) from the pool. Burn + donation cannot exceed 90%",
               "min": 0,
               "max": 50,
               "sortIndex": 7
