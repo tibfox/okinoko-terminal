@@ -433,23 +433,19 @@ export default function LotteryUserLists({
             <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>
               {lottery.name || `Lottery #${lottery.id}`}
             </span>
-            <button
-              onClick={() => openLotteryDetail(lottery)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--color-primary)',
-                cursor: 'pointer',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-              title="Lottery info"
-            >
-              <FontAwesomeIcon icon={faCircleInfo} />
-            </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => openLotteryDetail(lottery)}
+              style={baseButtonStyle(false)}
+              title="Lottery details"
+            >
+              {isMobile ? (
+                <FontAwesomeIcon icon={faCircleInfo} />
+              ) : (
+                <span>Details</span>
+              )}
+            </button>
             {lotteryPostUrl && (
               <a
                 href={lotteryPostUrl}

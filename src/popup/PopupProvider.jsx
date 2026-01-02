@@ -2,12 +2,14 @@ import { useState, useEffect } from "preact/hooks";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
 import { PopupContext } from "./context.js";
+import { useDeviceBreakpoint } from '../hooks/useDeviceBreakpoint.js';
 
 export function PopupProvider({ children }) {
   const [popup, setPopup] = useState(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const isMobile = useDeviceBreakpoint();
 
   const openPopup = ({ title, body }) => {
     setPopup({
@@ -81,8 +83,8 @@ export function PopupProvider({ children }) {
           <div
             style={{
               position: "relative",
-              width: "min(95vw, 50vw)",
-              maxHeight: "95vh",
+              width: isMobile ? "90vw" : "min(95vw, 50vw)",
+              maxHeight: isMobile ? "90vh" : "95vh",
               display: "flex",
               flexDirection: "column",
               transform: `translate(${position.x}px, ${position.y}px)`,

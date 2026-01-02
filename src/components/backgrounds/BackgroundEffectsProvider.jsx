@@ -8,6 +8,7 @@ import DarkVeilEffect from './DarkVeilEffect.jsx'
 import FaultyTerminalEffect from './FaultyTerminalEffect.jsx'
 import GlitterEffect from './GlitterEffect.jsx'
 import TwinkleGridEffect from './TwinkleGridEffect.jsx'
+import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 
 export const BACKGROUND_EFFECTS = [
   {
@@ -96,10 +97,15 @@ const BackgroundEffectsContext = createContext({
 })
 
 export function BackgroundEffectsProvider({ children }) {
+  const isMobile = useDeviceBreakpoint()
   const [activeEffectId, setActiveEffectId] = useState(() => getValidEffectId(readEffectFromCookie()) ?? getDefaultEffectId())
+
+  // Force disable background effects on mobile for performance
+  const effectiveEffectId = isMobile ? 'none' : activeEffectId
+
   const activeEffect = useMemo(
-    () => BACKGROUND_EFFECTS.find((effect) => effect.id === activeEffectId) ?? null,
-    [activeEffectId],
+    () => BACKGROUND_EFFECTS.find((effect) => effect.id === effectiveEffectId) ?? null,
+    [effectiveEffectId],
   )
 
   const EffectComponent = activeEffect?.component ?? null

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowUpRightFromSquare, faTicket, faTrophy, faUserAstronaut } from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpRightFromSquare, faTicket, faTrophy, faUserAstronaut, faChevronDown, faChevronUp, faInfoCircle, faTable, faChartPie } from '@fortawesome/free-solid-svg-icons'
 import { faStar } from '@fortawesome/free-regular-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import PollPie from './PollPie.jsx'
@@ -124,6 +124,10 @@ export default function LotteryDetailPopup({
   if (!lottery) return null
 
   const [activeChart, setActiveChart] = useState('prize')
+  const [winnersCollapsed, setWinnersCollapsed] = useState(false)
+  const [headerCollapsed, setHeaderCollapsed] = useState(false)
+  const [detailsCollapsed, setDetailsCollapsed] = useState(false)
+  const [chartsCollapsed, setChartsCollapsed] = useState(true)
   const countdown = useCountdown(lottery.deadline)
   const totalPot = (lottery.total_tickets_sold || 0) * (lottery.ticket_price || 0)
   const burnPercent = Number(lottery.burn_percent) || 0
@@ -195,7 +199,7 @@ export default function LotteryDetailPopup({
     const [avatarError, setAvatarError] = useState(false)
     const hiveUser = (creator || '').startsWith('hive:') ? (creator || '').replace(/^hive:/, '') : null
     const avatarUrl = hiveUser ? `https://images.hive.blog/u/${hiveUser}/avatar` : null
-    const size = 140
+    const size = isMobile ? 105 : 140
 
     const avatarContent = avatarUrl && !avatarError ? (
       <img
@@ -225,7 +229,7 @@ export default function LotteryDetailPopup({
           boxShadow: '0 0 10px rgba(0,0,0,0.6)',
         }}
       >
-        <FontAwesomeIcon icon={faUserAstronaut} size="3x" />
+        <FontAwesomeIcon icon={faUserAstronaut} size={isMobile ? "2x" : "3x"} />
       </div>
     )
 
@@ -256,14 +260,52 @@ export default function LotteryDetailPopup({
     whiteSpace: 'nowrap',
   }
 
+  const collapsibleHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    cursor: isMobile ? 'pointer' : 'default',
+    marginBottom: '12px',
+  }
+
+  const handleCollapsibleClick = (setter) => () => {
+    if (isMobile) setter(prev => !prev)
+  }
+
+  const handleCollapsibleKeyDown = (setter) => (e) => {
+    if (isMobile && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      setter(prev => !prev)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '280px' }}>
       <div style={{
-        ...headerLayoutStyle,
         padding: '16px',
         background: 'linear-gradient(135deg, rgba(246, 173, 85, 0.1) 0%, rgba(79, 209, 197, 0.1) 100%)',
         border: '1px solid var(--color-primary-darkest)',
       }}>
+        {isMobile && (
+          <div
+            style={{ ...collapsibleHeaderStyle, marginBottom: headerCollapsed ? '0' : '12px' }}
+            onClick={handleCollapsibleClick(setHeaderCollapsed)}
+            onKeyDown={handleCollapsibleKeyDown(setHeaderCollapsed)}
+            role="button"
+            tabIndex={0}
+          >
+            <FontAwesomeIcon icon={faInfoCircle} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
+            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Info
+            </div>
+            <FontAwesomeIcon
+              icon={headerCollapsed ? faChevronDown : faChevronUp}
+              style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
+            />
+          </div>
+        )}
+        {(!isMobile || !headerCollapsed) && (
+        <div style={headerLayoutStyle}>
         <div>
           <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
             {lottery.name || `Lottery #${lottery.id}`}
@@ -337,9 +379,11 @@ export default function LotteryDetailPopup({
             <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Unknown creator</div>
           )}
         </div>
+        </div>
+        )}
       </div>
 
-      {lottery.is_executed && lottery.winners && lottery.winners.length > 0 && (
+      {(shares.length > 0 || (donationPercent > 0 && donationName)) && (
         <div
           style={{
             padding: '16px',
@@ -347,70 +391,206 @@ export default function LotteryDetailPopup({
             border: '1px solid var(--color-primary-darkest)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: isMobile && winnersCollapsed ? '0' : '12px',
+              cursor: isMobile ? 'pointer' : 'default',
+            }}
+            onClick={() => isMobile && setWinnersCollapsed(prev => !prev)}
+            role={isMobile ? 'button' : undefined}
+            tabIndex={isMobile ? 0 : undefined}
+            onKeyDown={(e) => {
+              if (isMobile && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                setWinnersCollapsed(prev => !prev)
+              }
+            }}
+          >
             <FontAwesomeIcon icon={faStar} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              {lottery.winners.length === 1 ? 'Winner' : 'Winners'}
+              {shares.length === 1 ? 'Winner' : 'Winners'}
             </div>
+            {isMobile && (
+              <FontAwesomeIcon
+                icon={winnersCollapsed ? faChevronDown : faChevronUp}
+                style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
+              />
+            )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {lottery.winners.map((winner, idx) => {
-              const winnerName = String(winner || '').replace(/^hive:/i, '')
-              const winnerUrl = winnerName ? `https://ecency.com/@${winnerName}` : ''
-              const winAmount = lottery.winner_amounts && lottery.winner_amounts[idx] ? Number(lottery.winner_amounts[idx]) : 0
-              return (
-                <div
-                  key={`winner-${lottery.id}-${idx}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 12px',
-                    border: '1px solid var(--color-primary-darkest)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {(!isMobile || !winnersCollapsed) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
+            {lottery.is_executed && lottery.winners && lottery.winners.length > 0
+              ? lottery.winners.map((winner, idx) => {
+                  const winnerName = String(winner || '').replace(/^hive:/i, '')
+                  const winnerUrl = winnerName ? `https://ecency.com/@${winnerName}` : ''
+                  const winAmount = lottery.winner_amounts && lottery.winner_amounts[idx] ? Number(lottery.winner_amounts[idx]) : 0
+                  return (
                     <div
+                      key={`winner-${lottery.id}-${idx}`}
                       style={{
-                        fontSize: '0.9rem',
-                        fontWeight: 700,
-                        color: idx === 0 ? 'var(--color-primary-darker)' : 'var(--color-primary-lighter)',
-                        minWidth: '30px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px',
+                        border: '1px solid var(--color-primary-darkest)',
+                        background: 'rgba(0, 0, 0, 0.2)',
+                        minWidth: '120px',
                       }}
                     >
-                      #{idx + 1}
-                    </div>
-                    {winnerName ? (
-                      <a
-                        href={winnerUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                      <div
                         style={{
-                          color: 'var(--color-primary-lightest)',
-                          textDecoration: 'none',
-                          fontSize: '1rem',
-                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          color: idx === 0 ? 'var(--color-primary-darker)' : 'var(--color-primary-lighter)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
                         }}
                       >
-                        @{winnerName}
-                      </a>
-                    ) : (
-                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: '1rem' }}>Unknown</span>
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '1rem',
-                      fontWeight: 700,
-                      color: 'var(--color-primary)',
-                    }}
-                  >
-                    {winAmount.toFixed(3)} {formatAsset(lottery.asset)}
-                  </div>
+                        #{idx + 1}
+                      </div>
+                      <LotteryAvatar creator={winner} userName={winnerName} userUrl={winnerUrl} />
+                      {winnerName ? (
+                        <a
+                          href={winnerUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            color: 'var(--color-primary-lightest)',
+                            textDecoration: 'none',
+                            fontSize: '0.9rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          @{winnerName}
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>Unknown</span>
+                      )}
+                      <div
+                        style={{
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          color: 'var(--color-primary)',
+                        }}
+                      >
+                        {winAmount.toFixed(3)} {formatAsset(lottery.asset)}
+                      </div>
+                    </div>
+                  )
+                })
+              : shares.map((share, idx) => {
+                  const estimatedAmount = prizePool * (share / 100)
+                  return (
+                    <div
+                      key={`placeholder-${lottery.id}-${idx}`}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px',
+                        border: '1px solid var(--color-primary-darkest)',
+                        background: 'rgba(0, 0, 0, 0.2)',
+                        minWidth: '120px',
+                        opacity: 0.7,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          color: idx === 0 ? 'var(--color-primary-darker)' : 'var(--color-primary-lighter)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        #{idx + 1}
+                      </div>
+                      <div
+                        style={{
+                          width: isMobile ? '105px' : '140px',
+                          height: isMobile ? '105px' : '140px',
+                          borderRadius: '50%',
+                          border: '2px solid var(--color-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--color-primary)',
+                          fontSize: isMobile ? '2.25rem' : '3rem',
+                          fontWeight: 700,
+                          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
+                        }}
+                      >
+                        ?
+                      </div>
+                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>TBD</span>
+                      <div
+                        style={{
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          color: 'var(--color-primary)',
+                        }}
+                      >
+                        ~{estimatedAmount.toFixed(3)} {formatAsset(lottery.asset)}
+                      </div>
+                    </div>
+                  )
+                })}
+            {donationPercent > 0 && donationName && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  border: '1px solid var(--color-primary-darkest)',
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  minWidth: '120px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: 'var(--color-primary-lighter)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Donation
                 </div>
-              )
-            })}
+                <LotteryAvatar creator={lottery.donation_account} userName={donationName} userUrl={donationUrl} />
+                <a
+                  href={donationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    color: 'var(--color-primary-lightest)',
+                    textDecoration: 'none',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  @{donationName}
+                </a>
+                <div
+                  style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  {lottery.is_executed ? '' : '~'}{donationAmount.toFixed(3)} {formatAsset(lottery.asset)}
+                </div>
+              </div>
+            )}
           </div>
+          )}
         </div>
       )}
 
@@ -453,21 +633,40 @@ export default function LotteryDetailPopup({
               border: '1px solid var(--color-primary-darkest)',
             }}
           >
+            {isMobile && (
+              <div
+                style={{ ...collapsibleHeaderStyle, marginBottom: detailsCollapsed ? '0' : '12px' }}
+                onClick={handleCollapsibleClick(setDetailsCollapsed)}
+                onKeyDown={handleCollapsibleKeyDown(setDetailsCollapsed)}
+                role="button"
+                tabIndex={0}
+              >
+                <FontAwesomeIcon icon={faTable} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Details
+                </div>
+                <FontAwesomeIcon
+                  icon={detailsCollapsed ? faChevronDown : faChevronUp}
+                  style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
+                />
+              </div>
+            )}
+            {(!isMobile || !detailsCollapsed) && (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
               <tbody>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Lottery ID
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                     {lottery.id}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Ticket Price
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       {lottery.ticket_price} {formatAsset(lottery.asset)}
                       <GamblingInfoIcon size={14} context="lottery" />
@@ -475,59 +674,59 @@ export default function LotteryDetailPopup({
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Your Tickets
                   </td>
-                  <td style={{ paddingBottom: '6px', color: userTickets > 0 ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontWeight: userTickets > 0 ? 700 : 400 }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: userTickets > 0 ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontWeight: userTickets > 0 ? 700 : 400 }}>
                     {userTickets} {userTickets > 0 ? `(${((userTickets / (lottery.total_tickets_sold || 1)) * 100).toFixed(1)}% of total)` : ''}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Total Tickets Sold
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                     {lottery.total_tickets_sold || 0}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Participants
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                     {lottery.unique_participants || 0}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Deadline
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                     {formatDeadline(lottery.deadline)}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Countdown
                   </td>
-                  <td style={{ paddingBottom: '6px', color: canExecute ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontWeight: canExecute ? 700 : 400 }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: canExecute ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontWeight: canExecute ? 700 : 400 }}>
                     {canExecute ? 'Ready to execute!' : countdown}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Burn Amount
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                     {burnAmount.toFixed(3)} {formatAsset(lottery.asset)} ({burnPercent}%)
                   </td>
                 </tr>
                 {lottery.donation_account && lottery.donation_percent > 0 && (
                   <tr>
-                    <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                    <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                       Donation
                     </td>
-                    <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
+                    <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary-lighter)' }}>
                       <span style={{ marginRight: '8px' }}>
                         {donationAmount.toFixed(3)} {formatAsset(lottery.asset)} ({donationPercent}%) to{' '}
                         {donationName ? (
@@ -558,15 +757,16 @@ export default function LotteryDetailPopup({
                   </tr>
                 )}
                 <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
+                  <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
                     Prize Pool
                   </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary)' }}>
+                  <td style={{ paddingBottom: isMobile ? '3px' : '6px', color: 'var(--color-primary)' }}>
                     {prizePool.toFixed(3)} {formatAsset(lottery.asset)}
                   </td>
                 </tr>
               </tbody>
             </table>
+            )}
           </div>
 
           <div
@@ -581,6 +781,26 @@ export default function LotteryDetailPopup({
               border: '1px solid var(--color-primary-darkest)',
             }}
           >
+            {isMobile && (
+              <div
+                style={{ ...collapsibleHeaderStyle, marginBottom: chartsCollapsed ? '0' : '12px', width: '100%' }}
+                onClick={handleCollapsibleClick(setChartsCollapsed)}
+                onKeyDown={handleCollapsibleKeyDown(setChartsCollapsed)}
+                role="button"
+                tabIndex={0}
+              >
+                <FontAwesomeIcon icon={faChartPie} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Charts
+                </div>
+                <FontAwesomeIcon
+                  icon={chartsCollapsed ? faChevronDown : faChevronUp}
+                  style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
+                />
+              </div>
+            )}
+            {(!isMobile || !chartsCollapsed) && (
+            <>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
               <button
                 onClick={() => setActiveChart('prize')}
@@ -657,6 +877,8 @@ export default function LotteryDetailPopup({
                   </div>
                 )}
               </div>
+            )}
+            </>
             )}
           </div>
         </div>

@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import DescriptionBox from '../common/DescriptionBox.jsx'
 import FunctionList from './FunctionList.jsx'
+import FunctionGrid from './FunctionGrid.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
 import DaoUserLists from './DaoUserLists.jsx'
 import LotteryUserLists from './LotteryUserLists.jsx'
@@ -228,7 +229,8 @@ export default function ContractDetails({
       )}
       {!isDaoContract && !isLotteryContract && (isMobile || !isFunctionsCollapsed) && (
         <>
-          <FunctionList
+          {/* To revert to list on mobile, change FunctionGrid back to FunctionList */}
+          <FunctionGrid
             selectedContract={selectedContract}
             fnName={fnName}
             setFnName={setFnName}

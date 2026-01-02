@@ -4,6 +4,7 @@ import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import SparkleButton from '../buttons/SparkleButton.jsx'
 import ContractList from './ContractList.jsx'
+import ContractGrid from './ContractGrid.jsx'
 import ContractDetails from './ContractDetails.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
@@ -271,7 +272,7 @@ export default function StepSelect({
         }}
         ref={layoutRef}
       >
-        {/* --- Contract List --- */}
+        {/* --- Contract List/Grid --- */}
         <div
           style={{
             display: isMobile
@@ -286,8 +287,8 @@ export default function StepSelect({
             visibility: leftCollapsed ? 'hidden' : 'visible',
           }}
         >
-          <ContractList
-            isMobile={isMobile}
+          {/* To revert to list on mobile, change ContractGrid back to ContractList with isMobile prop */}
+          <ContractGrid
             contracts={visibleContracts}
             contractId={contractId}
             setContractId={(id) => {
