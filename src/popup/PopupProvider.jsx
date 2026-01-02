@@ -81,7 +81,7 @@ export function PopupProvider({ children }) {
           <div
             style={{
               position: "relative",
-              width: "min(95vw, 500px)",
+              width: "min(95vw, 50vw)",
               maxHeight: "95vh",
               display: "flex",
               flexDirection: "column",
