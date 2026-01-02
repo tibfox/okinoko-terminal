@@ -66,10 +66,14 @@
             {
               "name": "Escrow Id",
               "payloadName": "id",
-              "type": "lotteryDropdown",
+              "type": "escrowDropdown",
               "asString": false,
               "mandatory": true,
-              "hintText": "",
+              "graphqlQuery": "okinoko_escrow_open",
+              "valueField": "id",
+              "labelTemplate": "#{id}: {name}",
+              "subtitleTemplate": "{amount} {asset} · {payer} → {payee} · Arb: {arbitrator}",
+              "hintText": "Select an open escrow you are involved in",
               "sortIndex": 1
             },
             {
@@ -80,6 +84,7 @@
               "boolTrue": "r",
               "asString": true,
               "mandatory": true,
+              "default": true,
               "hintText": "Decide whether to release the funds to the receiver or refund the sender.",
               "sortIndex": 2,
               "displayTrue": "Release",

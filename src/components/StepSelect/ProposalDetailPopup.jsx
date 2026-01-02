@@ -193,8 +193,13 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '260px' }}>
-      <div style={headerLayoutStyle}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '260px' }}>
+      <div style={{
+        ...headerLayoutStyle,
+        padding: '16px',
+        background: 'linear-gradient(135deg, rgba(246, 173, 85, 0.1) 0%, rgba(79, 209, 197, 0.1) 100%)',
+        border: '1px solid var(--color-primary-darkest)',
+      }}>
         <div>
           <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
             {detail.name || `Proposal #${detail.proposal_id}`}
@@ -204,8 +209,8 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
               {detail.description}
             </div>
           ) : null}
-          {proposalUrl ? (
-            <div style={{ marginTop: '8px', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+          <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+            {proposalUrl && (
               <NeonButton
                 onClick={() => {
                   try {
@@ -217,8 +222,26 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
                 <FontAwesomeIcon icon={faLink} />
                 <span>Open Proposal URL</span>
               </NeonButton>
-            </div>
-          ) : null}
+            )}
+            {isMember && (
+              <NeonButton onClick={onVote} style={popupButtonStyle}>
+                <FontAwesomeIcon icon={faVoteYea} />
+                <span>Vote</span>
+              </NeonButton>
+            )}
+            {isMember && (
+              <NeonButton disabled={tallyLocked} onClick={onTally} style={popupButtonStyle}>
+                <FontAwesomeIcon icon={faCalculator} />
+                <span>{tallyLocked ? 'Tally (locked)' : 'Tally'}</span>
+              </NeonButton>
+            )}
+            {isMember && canExecute && (
+              <NeonButton disabled={!executionReady} onClick={onExecute} style={popupButtonStyle}>
+                <FontAwesomeIcon icon={faPlay} />
+                <span>{executionReady ? 'Execute' : 'Execute (wait)'}</span>
+              </NeonButton>
+            )}
+          </div>
         </div>
         <div
           style={{
@@ -236,61 +259,69 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
           </div>
         </div>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: '6px',
-          flexWrap: 'wrap',
-          justifyContent: 'space-evenly',
-          margin: '4px 0 6px',
-          alignItems: 'center',
-          width: '100%',
-        }}
-      >
-        {isMember && (
-          <NeonButton onClick={onVote} style={popupButtonStyle}>
-            <FontAwesomeIcon icon={faVoteYea} />
-            <span>Vote</span>
-          </NeonButton>
-        )}
-        {isMember && (
-          <NeonButton disabled={tallyLocked} onClick={onTally} style={popupButtonStyle}>
-            <FontAwesomeIcon icon={faCalculator} />
-            <span>{tallyLocked ? 'Tally (after deadline)' : 'Tally'}</span>
-          </NeonButton>
-        )}
-        {isMember && canExecute && (
-          <NeonButton disabled={!executionReady} onClick={onExecute} style={popupButtonStyle}>
-            <FontAwesomeIcon icon={faPlay} />
-            <span>{executionReady ? 'Execute' : 'Execute (after tally)'}</span>
-          </NeonButton>
-        )}
-      </div>
-      <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <tbody>
-            <tr>
-              <td style={tableCellLabel}>Created</td>
-              <td style={tableCellValue}>{createdAt ? formatDateUtc(createdAt) : 'n/a'}</td>
-            </tr>
-            <tr>
-              <td style={tableCellLabel}>Duration</td>
-              <td style={tableCellValue}>
-                {Number.isFinite(durationHours) ? `${durationHours}h` : 'n/a'}
-                {deadline ? ` (ends ${formatDateUtc(deadline)})` : ''}
-              </td>
-            </tr>
-            <tr>
-              <td style={tableCellLabel}>State</td>
-              <td style={tableCellValue}>{detail.result?.toUpperCase() || detail.state || 'pending'}</td>
-            </tr>
-            <tr>
-              <td style={tableCellLabel}>Metadata</td>
-              <td style={tableCellValue}>{detail.metadata || '—'}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+
+      <style>{`
+        @media (min-width: 768px) {
+          .proposal-two-column {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 24px !important;
+          }
+          .proposal-left-col {
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          .proposal-right-col {
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+        }
+      `}</style>
+
+      <div className="proposal-two-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 0', background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.15) 100%)' }}>
+        <div
+          className="proposal-left-col"
+          style={{
+            padding: '12px',
+            background: 'rgba(0, 0, 0, 0.2)',
+            border: '1px solid var(--color-primary-darkest)',
+          }}
+        >
+          <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr>
+                  <td style={tableCellLabel}>Created</td>
+                  <td style={tableCellValue}>{createdAt ? formatDateUtc(createdAt) : 'n/a'}</td>
+                </tr>
+                <tr>
+                  <td style={tableCellLabel}>Duration</td>
+                  <td style={tableCellValue}>
+                    {Number.isFinite(durationHours) ? `${durationHours}h` : 'n/a'}
+                    {deadline ? ` (ends ${formatDateUtc(deadline)})` : ''}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={tableCellLabel}>State</td>
+                  <td style={tableCellValue}>{detail.result?.toUpperCase() || detail.state || 'pending'}</td>
+                </tr>
+                <tr>
+                  <td style={tableCellLabel}>Metadata</td>
+                  <td style={tableCellValue}>{detail.metadata || '—'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div
+          className="proposal-right-col"
+          style={{
+            padding: '12px',
+            background: 'rgba(0, 0, 0, 0.2)',
+            border: '1px solid var(--color-primary-darkest)',
+          }}
+        >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
       {detail.is_poll ? (
         <div>
@@ -372,6 +403,8 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
     </div>
 
       )}
+      </div>
+        </div>
       </div>
     </div>
   )

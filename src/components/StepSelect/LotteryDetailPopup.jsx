@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowUpRightFromSquare, faTicket, faTrophy } from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpRightFromSquare, faTicket, faTrophy, faUserAstronaut } from '@fortawesome/free-solid-svg-icons'
 import { faStar } from '@fortawesome/free-regular-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import PollPie from './PollPie.jsx'
@@ -186,51 +186,157 @@ export default function LotteryDetailPopup({
     tickets: entry.tickets,
   }))
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '280px' }}>
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 900 : false
+  const headerLayoutStyle = isMobile
+    ? { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }
+    : { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'center' }
+
+  const LotteryAvatar = ({ creator, userName, userUrl }) => {
+    const [avatarError, setAvatarError] = useState(false)
+    const hiveUser = (creator || '').startsWith('hive:') ? (creator || '').replace(/^hive:/, '') : null
+    const avatarUrl = hiveUser ? `https://images.hive.blog/u/${hiveUser}/avatar` : null
+    const size = 140
+
+    const avatarContent = avatarUrl && !avatarError ? (
+      <img
+        src={avatarUrl}
+        alt="Creator avatar"
+        onError={() => setAvatarError(true)}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          border: '2px solid var(--color-primary)',
+          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
+        }}
+      />
+    ) : (
       <div
         style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: '50%',
+          border: '2px solid var(--color-primary)',
           display: 'flex',
-          gap: '12px',
-          alignItems: 'flex-start',
-          padding: '16px',
-          background: 'linear-gradient(135deg, rgba(246, 173, 85, 0.1) 0%, rgba(79, 209, 197, 0.1) 100%)',
-          border: '1px solid var(--color-primary-darkest)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--color-primary)',
+          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
         }}
       >
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: '1.15rem', marginBottom: '4px' }}>
+        <FontAwesomeIcon icon={faUserAstronaut} size="3x" />
+      </div>
+    )
+
+    if (userName && userUrl) {
+      return (
+        <a href={userUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+          {avatarContent}
+        </a>
+      )
+    }
+
+    return avatarContent
+  }
+
+  const popupButtonStyle = {
+    backgroundColor: 'transparent',
+    color: 'var(--color-primary-lighter)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    fontSize: '0.85rem',
+    padding: '0.35em 0.8em',
+    cursor: 'pointer',
+    border: '1px solid var(--color-primary-darkest)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '280px' }}>
+      <div style={{
+        ...headerLayoutStyle,
+        padding: '16px',
+        background: 'linear-gradient(135deg, rgba(246, 173, 85, 0.1) 0%, rgba(79, 209, 197, 0.1) 100%)',
+        border: '1px solid var(--color-primary-darkest)',
+      }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
             {lottery.name || `Lottery #${lottery.id}`}
           </div>
-          <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '8px' }}>
-            by{' '}
-            {creatorName ? (
-              <a href={creatorUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
-                @{creatorName}
-              </a>
-            ) : (
-              ''
-            )}
-          </div>
           {description && (
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, color: 'var(--color-primary-lighter)' }}>
+            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, color: 'var(--color-primary-lighter)', marginBottom: '8px', textAlign: isMobile ? 'center' : 'left' }}>
               {description}
             </div>
           )}
+          <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+            {lotteryPostUrl && (
+              <NeonButton
+                as="a"
+                href={lotteryPostUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={popupButtonStyle}
+                title="Open lottery post"
+              >
+                <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                <span>Open Post</span>
+              </NeonButton>
+            )}
+            {!lottery.is_executed && !canExecute && onBuyTickets && (
+              <NeonButton
+                onClick={onBuyTickets}
+                style={{
+                  ...popupButtonStyle,
+                  backgroundColor: 'var(--color-primary-darker)',
+                  color: 'black',
+                }}
+              >
+                <FontAwesomeIcon icon={faTicket} />
+                <span>Buy Tickets</span>
+              </NeonButton>
+            )}
+            {canExecute && onExecute && (
+              <NeonButton onClick={onExecute} style={popupButtonStyle}>
+                <FontAwesomeIcon icon={faTrophy} />
+                <span>Execute Lottery</span>
+              </NeonButton>
+            )}
+          </div>
         </div>
-        {lotteryPostUrl && (
-          <NeonButton
-            as="a"
-            href={lotteryPostUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={baseButtonStyle}
-            title="Open lottery post"
-          >
-            <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-            <span>Open Post</span>
-          </NeonButton>
-        )}
+        <div
+          style={{
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '6px',
+            order: isMobile ? -1 : 0,
+          }}
+        >
+          <LotteryAvatar creator={lottery.creator} userName={creatorName} userUrl={creatorUrl} />
+          {creatorName ? (
+            <a
+              href={creatorUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                fontSize: '0.9rem',
+                opacity: 0.9,
+                color: 'var(--color-primary-lighter)',
+                textDecoration: 'none',
+              }}
+            >
+              @{creatorName}
+            </a>
+          ) : (
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Unknown creator</div>
+          )}
+        </div>
       </div>
 
       {lottery.is_executed && lottery.winners && lottery.winners.length > 0 && (
@@ -554,30 +660,6 @@ export default function LotteryDetailPopup({
             )}
           </div>
         </div>
-      </div>
-
-
-
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'center' }}>
-        {!lottery.is_executed && !canExecute && onBuyTickets && (
-          <NeonButton
-            onClick={onBuyTickets}
-            style={{
-              ...baseButtonStyle,
-              backgroundColor: 'var(--color-primary-darker)',
-              color: 'black',
-            }}
-          >
-            <FontAwesomeIcon icon={faTicket} />
-            <span>Buy Tickets</span>
-          </NeonButton>
-        )}
-        {canExecute && onExecute && (
-          <NeonButton onClick={onExecute} style={baseButtonStyle}>
-            <FontAwesomeIcon icon={faTrophy} />
-            <span>Execute Lottery</span>
-          </NeonButton>
-        )}
       </div>
     </div>
   )

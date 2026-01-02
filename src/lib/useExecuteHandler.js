@@ -10,6 +10,8 @@ import { PopupContext } from '../popup/context.js'
 
 const getDefaultValue = (p) => {
   if (!p) return ''
+  // Check for explicit default value first
+  if (p.default !== undefined) return p.default
   if (p.type === 'bool' || p.type === 'boolean') return false
   if (p.type === 'number') return 0
   if (p.type?.startsWith('meta-')) return {}

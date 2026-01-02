@@ -1,4 +1,4 @@
-import { useMemo, useState, useContext, useCallback, useEffect, useRef } from 'preact/hooks'
+import { useMemo, useState, useContext, useCallback, useEffect } from 'preact/hooks'
 import { gql, useQuery, useClient } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -159,8 +159,6 @@ const ProposalAvatar = ({ creator }) => {
       variables: { projectId },
       requestPolicy: 'network-only',
     })
-    const detailContentRef = useRef(null)
-    const [detailHeight, setDetailHeight] = useState(null)
 
     if (detailFetching) {
       return (
@@ -211,18 +209,6 @@ const ProposalAvatar = ({ creator }) => {
       acc[key] += t.direction === 'out' ? -amt : amt
       return acc
     }, {})
-    const [detailTab, setDetailTab] = useState('details')
-
-    useEffect(() => {
-      if (!detailContentRef.current) return
-      const measure = () => {
-        const h = detailContentRef.current.offsetHeight
-        if (h && h !== detailHeight) setDetailHeight(h)
-      }
-      measure()
-      const id = requestAnimationFrame(measure)
-      return () => cancelAnimationFrame(id)
-    }, [detailData, detailTab, detailHeight])
 
     const headerLayoutStyle = isMobile
       ? { display: 'flex', flexDirection: 'column', gap: '12px' }
@@ -245,13 +231,18 @@ const ProposalAvatar = ({ creator }) => {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '260px', position: 'relative' }}>
-        <div style={headerLayoutStyle}>
+        <div style={{
+          ...headerLayoutStyle,
+          padding: '16px',
+          background: 'linear-gradient(135deg, rgba(246, 173, 85, 0.1) 0%, rgba(79, 209, 197, 0.1) 100%)',
+          border: '1px solid var(--color-primary-darkest)',
+        }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{base.name || `DAO #${projectId}`}</div>
             <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
             <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
-            {daoUrl ? (
-              <div style={{ marginTop: '8px' }}>
+            <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {daoUrl && (
                 <NeonButton
                   onClick={() => {
                     try {
@@ -263,8 +254,21 @@ const ProposalAvatar = ({ creator }) => {
                   <FontAwesomeIcon icon={faLink} />
                   <span>Open DAO URL</span>
                 </NeonButton>
-              </div>
-            ) : null}
+              )}
+              {!isMember && onJoin && (
+                <NeonButton disabled={joinPending} onClick={() => onJoin(base)} style={popupButtonStyle}>
+                  {joinPending ? 'Joining…' : (() => {
+                    const stakeMin = Number(base.stake_min_amount) || 0
+                    const asset = (base.funds_asset || 'HIVE').toUpperCase()
+                    const isStakeBased = base.voting_system === '1'
+                    if (stakeMin > 0) {
+                      return `Join DAO (${isStakeBased ? '≥' : ''}${stakeMin} ${asset})`
+                    }
+                    return 'Join DAO'
+                  })()}
+                </NeonButton>
+              )}
+            </div>
           </div>
           <div
             style={{
@@ -282,21 +286,31 @@ const ProposalAvatar = ({ creator }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => setDetailTab('details')} style={baseButtonStyle(detailTab === 'details')}>
-            Details
-          </button>
-          <button onClick={() => setDetailTab('proposals')} style={baseButtonStyle(detailTab === 'proposals')}>
-            Proposals
-          </button>
-        </div>
+        <style>{`
+          @media (min-width: 768px) {
+            .dao-two-column {
+              display: flex !important;
+              flex-direction: row !important;
+              gap: 24px !important;
+            }
+            .dao-left-col {
+              flex: 1 !important;
+              min-width: 0 !important;
+            }
+            .dao-right-col {
+              flex: 1 !important;
+              min-width: 0 !important;
+            }
+          }
+        `}</style>
 
-        <div style={{ position: 'relative', minHeight: detailHeight ? `${detailHeight}px` : undefined }}>
+        <div className="dao-two-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 0', background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.15) 100%)' }}>
           <div
-            ref={detailContentRef}
+            className="dao-left-col"
             style={{
-              display: detailTab === 'details' ? 'block' : 'none',
-              width: '100%',
+              padding: '12px',
+              background: 'rgba(0, 0, 0, 0.2)',
+              border: '1px solid var(--color-primary-darkest)',
             }}
           >
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -344,7 +358,7 @@ const ProposalAvatar = ({ creator }) => {
               </tbody>
             </table>
 
-            <div>
+            <div style={{ marginTop: '12px' }}>
               <div style={{ fontWeight: 700, marginBottom: '4px' }}>
                 Members ({members.length})
               </div>
@@ -358,7 +372,7 @@ const ProposalAvatar = ({ creator }) => {
                       style={{
                         padding: '4px 8px',
                         border: '1px solid var(--color-primary-darkest)',
-                       
+
                         opacity: m.active ? 1 : 0.6,
                       }}
                     >
@@ -367,19 +381,17 @@ const ProposalAvatar = ({ creator }) => {
                   ))}
                 </div>
               )}
-              {!isMember && onJoin ? (
-                <div style={{ marginTop: '8px' }}>
-                  <NeonButton disabled={joinPending} onClick={() => onJoin(base)} style={baseButtonStyle(false)}>
-                    {joinPending ? 'Joining…' : 'Join DAO'}
-                  </NeonButton>
-                </div>
-              ) : null}
-              
             </div>
-
           </div>
 
-          {detailTab === 'proposals' && (
+          <div
+            className="dao-right-col"
+            style={{
+              padding: '12px',
+              background: 'rgba(0, 0, 0, 0.2)',
+              border: '1px solid var(--color-primary-darkest)',
+            }}
+          >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span style={{ fontWeight: 700 }}>
@@ -415,7 +427,7 @@ const ProposalAvatar = ({ creator }) => {
               </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     )
@@ -663,7 +675,7 @@ export default function DaoUserLists({
   const relationLabel = useMemo(() => (dao) => {
     if (membershipMap.get(dao.project_id)) return 'Member'
     if (dao.created_by === user) return 'Creator'
-    return 'Viewer'
+    return 'Public DAO'
   }, [membershipMap, user])
 
   const matchesRelationFilter = useCallback(
@@ -804,7 +816,7 @@ const renderDaoList = () => {
               { key: 'all', label: 'All' },
               { key: 'created', label: 'Created' },
               { key: 'member', label: 'Member' },
-              { key: 'viewer', label: 'Public' },
+              { key: 'viewer', label: 'Public DAO' },
             ].map((tab) => (
             <button
               key={`rel-${tab.key}`}

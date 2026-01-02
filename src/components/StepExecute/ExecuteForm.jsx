@@ -15,6 +15,7 @@ import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
 import LotteryDropdown from '../common/LotteryDropdown.jsx'
+import EscrowDropdown from '../common/EscrowDropdown.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import NeonListInput from '../common/NeonListInput.jsx'
@@ -1500,6 +1501,32 @@ export default function ExecuteForm({
           }}
           param={p}
           placeholder={p.hintText || 'Select an active lottery'}
+        />
+      )
+    }
+
+    // Escrow dropdown selector
+    if (p.type === 'escrowDropdown') {
+      const rawVal = params[p.name] ?? params[p.payloadName] ?? ''
+      const value =
+        rawVal === null || rawVal === undefined || rawVal === ''
+          ? ''
+          : String(rawVal)
+
+      return (
+        <EscrowDropdown
+          value={value}
+          onChange={(val) => {
+            const numericVal = Number(val)
+            setParams((prev) => ({
+              ...prev,
+              [p.name]: numericVal,
+              [p.payloadName || p.name]: numericVal,
+            }))
+          }}
+          param={p}
+          placeholder={p.hintText || 'Select an escrow'}
+          user={user}
         />
       )
     }

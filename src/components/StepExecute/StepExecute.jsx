@@ -117,6 +117,21 @@ export default function StepExecute({
     () => contract?.functions?.find((f) => f.name === fnName),
     [contract, fnName]
   )
+
+  // Initialize params with default values when fn changes
+  useEffect(() => {
+    if (!fn?.parameters?.length || !setParams) return
+    const defaults = {}
+    fn.parameters.forEach((p) => {
+      if (p.default !== undefined) {
+        defaults[p.name] = p.default
+      }
+    })
+    if (Object.keys(defaults).length > 0) {
+      setParams((prev) => ({ ...defaults, ...prev }))
+    }
+  }, [fn, setParams])
+
   const isJoinLottery = fn?.name === 'join_lottery'
   const lotteryIdParam = useMemo(
     () =>
