@@ -38,15 +38,22 @@ export default function ContractGrid({
 }) {
   return (
     <div
+      className="neon-scroll"
       style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-        gap: '12px',
-        padding: '12px',
         overflowY: 'auto',
         height: '100%',
+        padding: '12px',
       }}
     >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+          gap: '12px',
+          minHeight: '100%',
+          alignContent: 'center',
+        }}
+      >
       {contracts.map((c) => {
         const isSelected = contractId === c.vscId
         return (
@@ -77,6 +84,7 @@ export default function ContractGrid({
               fontWeight: isSelected ? 700 : 400,
               transition: 'all 0.15s ease',
               minHeight: '120px',
+              maxHeight: '160px',
             }}
             onMouseEnter={(e) => {
               if (!isSelected) {
@@ -104,6 +112,7 @@ export default function ContractGrid({
           </button>
         )
       })}
+      </div>
     </div>
   )
 }

@@ -1,13 +1,37 @@
-import { useMemo, useEffect, useContext, useState } from 'preact/hooks'
+import { useMemo, useEffect, useContext, useState, useCallback } from 'preact/hooks'
 import { createContext } from 'preact'
 import { useQuery, gql, useSubscription } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDice, faCirclePlay, faUser, faStore, faHourglassHalf } from '@fortawesome/free-solid-svg-icons'
+import { faDice, faCirclePlay, faUser, faStore, faChevronDown, faChevronUp, faHashtag, faCircleDot, faTableCells, faTableCellsLarge } from '@fortawesome/free-solid-svg-icons'
+
+// Map icon names from contracts.json to actual FontAwesome icons
+const iconMap = {
+  faHashtag,
+  faCircleDot,
+  faTableCells,
+  faTableCellsLarge,
+  faDice,
+}
 import { useAioha } from '@aioha/react-ui'
 import { deriveGameTypeId } from '../StepGame/gameTypes.js'
 import { playBeep } from '../../lib/beep.js'
 import { IAR_EVENTS_LIVE_SUBSCRIPTION, MAX_BLOCK_HEIGHT_QUERY } from '../../data/inarow_gql.js'
 import { TransactionContext } from '../../transactions/context.js'
+
+// Cookie helpers for game group collapse state
+const getGameGroupCollapseFromCookie = () => {
+  if (typeof document === 'undefined') return {}
+  const match = (document.cookie || '')
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith('gameGroupCollapse='))
+  if (!match) return {}
+  try {
+    return JSON.parse(decodeURIComponent(match.split('=')[1] || '{}'))
+  } catch {
+    return {}
+  }
+}
 
 // Context for sharing IAR2 event subscription across all game buttons
 const IarEventsContext = createContext(null)
@@ -102,6 +126,21 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
     return u ? `hive:${u}` : ''
   }, [user])
 
+  const [groupCollapse, setGroupCollapse] = useState(getGameGroupCollapseFromCookie)
+
+  // Save group collapse state to cookie
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.cookie = `gameGroupCollapse=${encodeURIComponent(JSON.stringify(groupCollapse))}; path=/; max-age=${60 * 60 * 24 * 30}`
+  }, [groupCollapse])
+
+  const toggleGroupCollapse = useCallback((groupKey) => {
+    setGroupCollapse((prev) => ({
+      ...prev,
+      [groupKey]: !prev[groupKey],
+    }))
+  }, [])
+
   const grouped = useMemo(() => {
     const fns = selectedContract?.functions || []
     const groups = []
@@ -140,10 +179,11 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
     return (
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+          display: 'flex',
+          flexWrap: 'wrap',
           gap: '12px',
           padding: '12px 0',
+          justifyContent: 'center',
         }}
       >
         {renderTiles(grouped.flatMap((g) => g.items))}
@@ -153,32 +193,68 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {grouped.map((group) => (
-        <div key={group.key || 'default'}>
-          {group.label && (
-            <div
-              style={{
-                marginBottom: '8px',
-                color: 'var(--color-primary-lighter)',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                fontSize: '0.85rem',
-              }}
-            >
-              {group.label}
-            </div>
-          )}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            {renderTiles(group.items)}
+      {grouped.map((group) => {
+        const groupKey = group.key || 'default'
+        const isCollapsed = groupCollapse[groupKey]
+
+        return (
+          <div key={groupKey}>
+            {group.label && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: isCollapsed ? '0' : '10px',
+                  marginRight: '20px',
+                  paddingBottom: '6px',
+                  borderBottom: '1px solid var(--color-primary-darkest)',
+                  cursor: 'pointer',
+                }}
+                onClick={() => toggleGroupCollapse(groupKey)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    toggleGroupCollapse(groupKey)
+                  }
+                }}
+              >
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: 'var(--color-primary-lighter)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    flex: 1,
+                  }}
+                >
+                  {group.label} ({group.items.length})
+                </span>
+                <FontAwesomeIcon
+                  icon={isCollapsed ? faChevronDown : faChevronUp}
+                  style={{ fontSize: '0.8rem', opacity: 0.7 }}
+                />
+              </div>
+            )}
+            {!isCollapsed && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  paddingRight: '12px',
+                  justifyContent: 'center',
+                }}
+              >
+                {renderTiles(group.items)}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -268,6 +344,7 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
         letterSpacing: '0.05em',
         fontWeight: isSelected ? 700 : 400,
         transition: 'all 0.15s ease',
+        minWidth: '120px',
         minHeight: '120px',
       }}
       onMouseEnter={(e) => {
@@ -284,7 +361,7 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
       }}
     >
       <FontAwesomeIcon
-        icon={isGame ? faDice : faCirclePlay}
+        icon={isGame ? (fn.icon && iconMap[fn.icon] ? iconMap[fn.icon] : faDice) : faCirclePlay}
         style={{
           fontSize: '1.5rem',
           color: isSelected ? 'black' : 'var(--color-primary)',
@@ -302,7 +379,6 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
           color: isSelected ? 'inherit' : 'var(--color-primary)',
           fontWeight: '600',
         }}>
-          <FontAwesomeIcon icon={faHourglassHalf} style={{ fontSize: '0.7rem' }} />
           your turn: {myTurnCount}
         </div>
       )}

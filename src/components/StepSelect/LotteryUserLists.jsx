@@ -12,6 +12,10 @@ import {
   faPen,
   faTicket,
   faTrophy,
+  faUserShield,
+  faTicketAlt,
+  faGlobe,
+  faStar,
 } from '@fortawesome/free-solid-svg-icons'
 import ListButton from '../buttons/ListButton.jsx'
 import contractsCfg from '../../data/contracts.json'
@@ -158,6 +162,44 @@ const parseLotteryMeta = (raw) => {
   }
 }
 
+// Cookie helpers for lottery group collapse state
+const getLotteryGroupCollapseFromCookie = () => {
+  if (typeof document === 'undefined') return { spotlight: false, creator: false, joined: false, other: false }
+  const match = (document.cookie || '')
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith('lotteryGroupCollapse='))
+  if (!match) return { spotlight: false, creator: false, joined: false, other: false }
+  try {
+    return JSON.parse(decodeURIComponent(match.split('=')[1] || '{}'))
+  } catch {
+    return { spotlight: false, creator: false, joined: false, other: false }
+  }
+}
+
+// Helper to check if a lottery qualifies for spotlight
+const isSpotlightLottery = (lottery, hasJoined) => {
+  if (hasJoined) return false
+
+  const now = Date.now()
+  const deadlineMs = lottery.deadline * 1000
+  const createdAtMs = lottery.created_at * 1000
+  const totalDuration = deadlineMs - createdAtMs
+  const timeRemaining = deadlineMs - now
+  const timeElapsed = now - createdAtMs
+
+  // Max 7 days in ms
+  const maxDays = 7 * 24 * 60 * 60 * 1000
+
+  // New lottery: less than 20% of time elapsed (80% remaining), but max 7 days since creation
+  const isNew = timeElapsed <= Math.min(totalDuration * 0.2, maxDays)
+
+  // Ending soon: less than 10% of time remaining, but max 7 days remaining
+  const isEndingSoon = timeRemaining > 0 && timeRemaining <= Math.min(totalDuration * 0.1, maxDays)
+
+  return isNew || isEndingSoon
+}
+
 export default function LotteryUserLists({
   user,
   isMobile,
@@ -170,7 +212,34 @@ export default function LotteryUserLists({
   const [lotteriesCollapsed, setLotteriesCollapsed] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [lotteryStatusFilter, setLotteryStatusFilter] = useState('active')
+  const [expandedLotteryIds, setExpandedLotteryIds] = useState(new Set())
+  const [groupCollapse, setGroupCollapse] = useState(getLotteryGroupCollapseFromCookie)
   const popup = useContext(PopupContext)
+
+  // Save group collapse state to cookie
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.cookie = `lotteryGroupCollapse=${encodeURIComponent(JSON.stringify(groupCollapse))}; path=/; max-age=${60 * 60 * 24 * 30}`
+  }, [groupCollapse])
+
+  const toggleGroupCollapse = useCallback((groupKey) => {
+    setGroupCollapse((prev) => ({
+      ...prev,
+      [groupKey]: !prev[groupKey],
+    }))
+  }, [])
+
+  const toggleLotteryExpand = useCallback((lotteryId) => {
+    setExpandedLotteryIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(lotteryId)) {
+        next.delete(lotteryId)
+      } else {
+        next.add(lotteryId)
+      }
+      return next
+    })
+  }, [])
 
   const normalizedUser = (user || '').replace(/^hive:/i, '').toLowerCase()
   const hiveUser = normalizedUser ? `hive:${normalizedUser}` : ''
@@ -371,7 +440,7 @@ export default function LotteryUserLists({
     </div>
   )
 
-  const LotteryItem = ({ lottery }) => {
+  const LotteryItem = ({ lottery, isExpanded, onToggleExpand }) => {
     const userTickets = userTicketsByLottery.get(lottery.id) || 0
     const deadlinePassed = isDeadlinePassed(lottery.deadline)
     const countdown = useCountdown(lottery.deadline)
@@ -411,7 +480,110 @@ export default function LotteryUserLists({
         count: Math.max(0, totalTickets - userTickets),
       },
     ]
+    const winnerCount = lottery.winner_count || sharePercents.length || 1
 
+    // Collapsed tile view - shows minimal info
+    if (!isExpanded) {
+      return (
+        <div
+          key={`lottery-${lottery.id}`}
+          onClick={onToggleExpand}
+          style={{
+            border: '1px solid var(--color-primary-darkest)',
+            padding: '12px',
+            background: 'rgba(0, 0, 0, 0.35)',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            minHeight: '160px',
+            maxHeight: '200px',
+            width: isMobile ? '100%' : '200px',
+            transition: 'border-color 0.2s ease, background 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-primary)'
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-primary-darkest)'
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.35)'
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onToggleExpand()
+            }
+          }}
+        >
+          {/* Name */}
+          <div style={{
+            fontWeight: 700,
+            fontSize: '1rem',
+            color: 'var(--color-primary-lighter)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {lottery.name || `Lottery #${lottery.id}`}
+          </div>
+
+          {/* Creator */}
+          <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+            <span style={{ opacity: 0.7 }}>by </span>
+            <span style={{ color: 'var(--color-primary-lighter)' }}>@{creatorName}</span>
+          </div>
+
+          {/* Stats row */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            fontSize: '0.75rem',
+            flexWrap: 'wrap',
+          }}>
+            <span title="Burn percentage">
+              <span style={{ opacity: 0.7 }}>Burn: </span>
+              <span style={{ color: 'var(--color-primary-lighter)' }}>{burnPercent}%</span>
+            </span>
+            {donationPercent > 0 && (
+              <span title="Donation percentage">
+                <span style={{ opacity: 0.7 }}>Donate: </span>
+                <span style={{ color: 'var(--color-primary-lighter)' }}>{donationPercent}%</span>
+              </span>
+            )}
+            <span title="Number of winners">
+              <span style={{ opacity: 0.7 }}>Winners: </span>
+              <span style={{ color: 'var(--color-primary-lighter)' }}>{winnerCount}</span>
+            </span>
+          </div>
+
+          {/* Countdown - prominent at bottom */}
+          <div style={{ marginTop: 'auto' }}>
+            <span style={{
+              color: isClosed ? 'var(--color-primary-lighter)' : (deadlinePassed ? 'var(--color-primary)' : 'var(--color-primary-lighter)'),
+              fontWeight: deadlinePassed && !isClosed ? 700 : 600,
+              fontSize: '1.1rem',
+            }}>
+              {isClosed ? 'Closed' : (deadlinePassed ? 'Ready!' : countdown)}
+            </span>
+          </div>
+
+          {/* Expand hint */}
+          <div style={{
+            fontSize: '0.7rem',
+            opacity: 0.5,
+            textAlign: 'center',
+            marginTop: '4px',
+          }}>
+            <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: '0.6rem' }} /> Click to expand
+          </div>
+        </div>
+      )
+    }
+
+    // Expanded view - full details (original design)
     return (
       <div
         key={`lottery-${lottery.id}`}
@@ -419,6 +591,8 @@ export default function LotteryUserLists({
           border: '1px solid var(--color-primary-darkest)',
           padding: '10px',
           background: 'rgba(0, 0, 0, 0.35)',
+          width: '100%',
+          flexBasis: '100%',
         }}
       >
         <div
@@ -429,22 +603,34 @@ export default function LotteryUserLists({
             marginBottom: '8px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginRight: '16px' }}
+            onClick={onToggleExpand}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onToggleExpand()
+              }
+            }}
+          >
+            <FontAwesomeIcon
+              icon={faChevronUp}
+              style={{ fontSize: '0.8rem', opacity: 0.7 }}
+              title="Collapse"
+            />
             <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>
               {lottery.name || `Lottery #${lottery.id}`}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
             <button
               onClick={() => openLotteryDetail(lottery)}
               style={baseButtonStyle(false)}
               title="Lottery details"
             >
-              {isMobile ? (
-                <FontAwesomeIcon icon={faCircleInfo} />
-              ) : (
-                <span>Details</span>
-              )}
+              <FontAwesomeIcon icon={faCircleInfo} />
             </button>
             {lotteryPostUrl && (
               <a
@@ -455,7 +641,6 @@ export default function LotteryUserLists({
                 title="Open lottery post"
               >
                 <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                {!isMobile && <span>Open Post</span>}
               </a>
             )}
             {isCreator && (
@@ -465,7 +650,6 @@ export default function LotteryUserLists({
                 title="Edit metadata"
               >
                 <FontAwesomeIcon icon={faPen} />
-                {!isMobile && <span>Metadata</span>}
               </button>
             )}
             {!isClosed && !deadlinePassed && (
@@ -479,7 +663,6 @@ export default function LotteryUserLists({
                 title="Buy tickets"
               >
                 <FontAwesomeIcon icon={faTicket} />
-                {!isMobile && <span>Buy Tickets</span>}
               </button>
             )}
             {!isClosed && deadlinePassed && (
@@ -489,7 +672,6 @@ export default function LotteryUserLists({
                 title="Execute lottery"
               >
                 <FontAwesomeIcon icon={faTrophy} />
-                {!isMobile && <span>Execute</span>}
               </button>
             )}
           </div>
@@ -542,7 +724,6 @@ export default function LotteryUserLists({
                         title="Open donation post"
                       >
                         <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                        {!isMobile && <span>Open Post</span>}
                       </a>
                     )}
                   </td>
@@ -663,11 +844,118 @@ export default function LotteryUserLists({
       return renderEmptyState(lotteryStatusFilter === 'closed' ? 'No closed lotteries yet.' : 'No active lotteries. Create one!')
     }
 
+    // Group lotteries by type
+    const joinedLotteryIds = new Set(userParticipations.map((p) => p.lottery_id))
+
+    // Spotlight: new or ending soon lotteries that user hasn't joined
+    const spotlightLotteries = filteredLotteries.filter((l) => {
+      const creatorName = String(l.creator || '').replace(/^hive:/i, '').toLowerCase()
+      const isCreator = creatorName === normalizedUser
+      const hasJoined = joinedLotteryIds.has(l.id)
+      return !isCreator && isSpotlightLottery(l, hasJoined)
+    })
+    const spotlightIds = new Set(spotlightLotteries.map((l) => l.id))
+
+    const groupedLotteries = {
+      spotlight: spotlightLotteries,
+      creator: filteredLotteries.filter((l) => {
+        const creatorName = String(l.creator || '').replace(/^hive:/i, '').toLowerCase()
+        return creatorName === normalizedUser
+      }),
+      joined: filteredLotteries.filter((l) => {
+        const creatorName = String(l.creator || '').replace(/^hive:/i, '').toLowerCase()
+        return creatorName !== normalizedUser && joinedLotteryIds.has(l.id)
+      }),
+      other: filteredLotteries.filter((l) => {
+        const creatorName = String(l.creator || '').replace(/^hive:/i, '').toLowerCase()
+        // Exclude spotlight lotteries from "other" to avoid duplicates
+        return creatorName !== normalizedUser && !joinedLotteryIds.has(l.id) && !spotlightIds.has(l.id)
+      }),
+    }
+
+    const renderGroupSection = (title, lotteryList, icon, groupKey) => {
+      if (lotteryList.length === 0) return null
+      const isCollapsed = groupCollapse[groupKey]
+      return (
+        <div key={title} style={{ marginBottom: '16px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '10px',
+              marginRight: '20px',
+              paddingBottom: '6px',
+              borderBottom: '1px solid var(--color-primary-darkest)',
+              cursor: 'pointer',
+            }}
+            onClick={() => toggleGroupCollapse(groupKey)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                toggleGroupCollapse(groupKey)
+              }
+            }}
+          >
+            <FontAwesomeIcon icon={icon} style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }} />
+            <span style={{
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              color: 'var(--color-primary-lighter)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              flex: 1,
+            }}>
+              {title} ({lotteryList.length})
+            </span>
+            <FontAwesomeIcon
+              icon={isCollapsed ? faChevronDown : faChevronUp}
+              style={{ fontSize: '0.8rem', opacity: 0.7 }}
+            />
+          </div>
+          {!isCollapsed && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
+              justifyContent: 'center',
+              paddingRight: '12px',
+            }}>
+              {lotteryList.map((lottery) => (
+                <LotteryItem
+                  key={`lottery-${lottery.id}`}
+                  lottery={lottery}
+                  isExpanded={expandedLotteryIds.has(lottery.id)}
+                  onToggleExpand={() => toggleLotteryExpand(lottery.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
     return (
-      <div className="lottery-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {filteredLotteries.map((lottery) => (
-          <LotteryItem key={`lottery-${lottery.id}`} lottery={lottery} />
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {renderGroupSection('Spotlight', groupedLotteries.spotlight, faStar, 'spotlight')}
+        {renderGroupSection('Created by You', groupedLotteries.creator, faUserShield, 'creator')}
+        {renderGroupSection('Joined Lotteries', groupedLotteries.joined, faTicketAlt, 'joined')}
+        {renderGroupSection('Other Lotteries', groupedLotteries.other, faGlobe, 'other')}
+        {filteredLotteries.length === 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'var(--color-primary-lighter)',
+            fontSize: '0.9rem',
+            padding: '8px 2px',
+          }}>
+            <FontAwesomeIcon icon={faCircleInfo} />
+            <span>No lotteries match the current filter.</span>
+          </div>
+        )}
       </div>
     )
   }

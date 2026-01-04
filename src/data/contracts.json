@@ -133,7 +133,8 @@
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": ""
+          "groupHeader": "Common",
+          "icon": "faHashtag"
         },
         {
           "name": "4",
@@ -142,7 +143,8 @@
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": ""
+          "groupHeader": "Common",
+          "icon": "faHashtag"
         },
         {
           "name": "2",
@@ -151,7 +153,19 @@
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": ""
+          "groupHeader": "Common",
+          "icon": "faCircleDot"
+        },
+        
+        {
+          "name": "5",
+          "friendlyName": "Squava",
+          "description": "Squava is a Yavalath variant played on a 5×5 grid. Players try to create a row of 4 of their symbol while avoiding a row of 3, which results in an immediate loss.",
+          "parse": "game",
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": "Advanced",
+          "icon": "faTableCellsLarge"
         },
         {
           "name": "6",
@@ -160,7 +174,8 @@
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": ""
+          "groupHeader": "Advanced",
+          "icon": "faTableCells"
         },
         {
           "name": "3",
@@ -169,16 +184,8 @@
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": ""
-        },
-        {
-          "name": "5",
-          "friendlyName": "Squava",
-          "description": "Squava is a Yavalath variant played on a 5×5 grid. Players try to create a row of 4 of their symbol while avoiding a row of 3, which results in an immediate loss.",
-          "parse": "game",
-          "parameters": [],
-          "hintText": "",
-          "groupHeader": ""
+          "groupHeader": "Advanced",
+          "icon": "faTableCells"
         }
       ]
     },
