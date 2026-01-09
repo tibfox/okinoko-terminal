@@ -41,7 +41,7 @@ export function MaintenanceOverlay({ message }) {
     justifyContent: 'center',
     alignItems: 'center',
     padding: '2rem',
-    fontFamily: "'Share Tech Mono', monospace",
+    fontFamily: 'var(--font-family-base)',
     gap: isMobile ? '2rem' : '3rem',
   }
 
@@ -52,14 +52,14 @@ export function MaintenanceOverlay({ message }) {
   }
 
   const iconStyle = {
-    fontSize: '4rem',
+    fontSize:'0.9rem',
     color: 'var(--color-primary)',
   }
 
   const messageStyle = {
     color: 'var(--color-primary)',
     textAlign: 'center',
-    fontSize: isMobile ? '1rem' : '1.2rem',
+    fontSize: 'var(--font-size-base)',
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
     lineHeight: '1.6',

@@ -47,22 +47,22 @@ export default function ResizableDivider({ leftCollapsed, rightCollapsed, onDrag
         {leftCollapsed ? (
           <FontAwesomeIcon
             icon={faCaretRight}
-            style={{ color: 'var(--color-primary-darker)', fontSize: '0.5rem' }}
+            style={{ color: 'var(--color-primary-darker)', fontSize:'0.9rem' }}
           />
         ) : rightCollapsed ? (
           <FontAwesomeIcon
             icon={faCaretLeft}
-            style={{ color: 'var(--color-primary-darker)', fontSize: '0.5rem' }}
+            style={{ color: 'var(--color-primary-darker)', fontSize:'0.9rem' }}
           />
         ) : (
           <>
             <FontAwesomeIcon
               icon={faCaretLeft}
-              style={{ color: 'var(--color-primary-darker)', fontSize: '0.5rem' }}
+              style={{ color: 'var(--color-primary-darker)', fontSize:'0.9rem' }}
             />
             <FontAwesomeIcon
               icon={faCaretRight}
-              style={{ color: 'var(--color-primary-darker)', fontSize: '0.5rem' }}
+              style={{ color: 'var(--color-primary-darker)', fontSize:'0.9rem'}}
             />
           </>
         )}

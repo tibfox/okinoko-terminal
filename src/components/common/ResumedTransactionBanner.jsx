@@ -8,8 +8,8 @@ export default function ResumedTransactionBanner({ tx }) {
         border: '1px solid var(--color-primary-darker)',
         padding: '8px 12px',
         
-        fontFamily: 'monospace',
-        fontSize: '0.85rem',
+        fontFamily: 'var(--font-family-base)',
+        fontSize: 'var(--font-size-base)',
         marginBottom: '10px',
         color: '#00ff88',
       }}

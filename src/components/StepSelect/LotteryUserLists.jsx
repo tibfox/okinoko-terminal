@@ -7,25 +7,16 @@ import {
   faChevronUp,
   faCircleInfo,
   faFilter,
-  faArrowUpRightFromSquare,
   faPlusCircle,
-  faPen,
-  faTicket,
-  faTrophy,
   faUserShield,
   faTicketAlt,
   faGlobe,
   faStar,
 } from '@fortawesome/free-solid-svg-icons'
-import ListButton from '../buttons/ListButton.jsx'
-import contractsCfg from '../../data/contracts.json'
 import { PopupContext } from '../../popup/context.js'
 import LotteryDetailPopup from './LotteryDetailPopup.jsx'
-import PollPie from './PollPie.jsx'
-import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
-const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
 const baseButtonStyle = (active = false) => ({
   backgroundColor: active ? 'var(--color-primary-darker)' : 'transparent',
@@ -33,7 +24,7 @@ const baseButtonStyle = (active = false) => ({
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
   fontStyle: 'normal',
-  fontSize: '0.85rem',
+  fontSize: 'var(--font-size-base)',
   padding: '0.5em 1em',
   cursor: 'pointer',
   border: '1px solid var(--color-primary-darkest)',
@@ -212,7 +203,6 @@ export default function LotteryUserLists({
   const [lotteriesCollapsed, setLotteriesCollapsed] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [lotteryStatusFilter, setLotteryStatusFilter] = useState('active')
-  const [expandedLotteryIds, setExpandedLotteryIds] = useState(new Set())
   const [groupCollapse, setGroupCollapse] = useState(getLotteryGroupCollapseFromCookie)
   const popup = useContext(PopupContext)
 
@@ -227,18 +217,6 @@ export default function LotteryUserLists({
       ...prev,
       [groupKey]: !prev[groupKey],
     }))
-  }, [])
-
-  const toggleLotteryExpand = useCallback((lotteryId) => {
-    setExpandedLotteryIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(lotteryId)) {
-        next.delete(lotteryId)
-      } else {
-        next.add(lotteryId)
-      }
-      return next
-    })
   }, [])
 
   const normalizedUser = (user || '').replace(/^hive:/i, '').toLowerCase()
@@ -431,403 +409,112 @@ export default function LotteryUserLists({
         alignItems: 'center',
         gap: '8px',
         color: 'var(--color-primary-lighter)',
-        fontSize: '0.9rem',
+        fontSize: 'var(--font-size-base)',
         padding: '8px 2px',
       }}
     >
-      <FontAwesomeIcon icon={faCircleInfo} />
+      <FontAwesomeIcon icon={faCircleInfo}   style={{ fontSize: '0.9rem' }}/>
       <span>{message}</span>
     </div>
   )
 
-  const LotteryItem = ({ lottery, isExpanded, onToggleExpand }) => {
-    const userTickets = userTicketsByLottery.get(lottery.id) || 0
+  const LotteryItem = ({ lottery }) => {
     const deadlinePassed = isDeadlinePassed(lottery.deadline)
     const countdown = useCountdown(lottery.deadline)
     const isClosed = Boolean(lottery.is_executed)
-    const totalTickets = lottery.total_tickets_sold || 0
     const burnPercent = Number(lottery.burn_percent) || 0
     const donationPercent =
       lottery.donation_account && lottery.donation_percent > 0 ? Number(lottery.donation_percent) || 0 : 0
-    const totalPot = (Number(lottery.ticket_price) || 0) * (Number(lottery.total_tickets_sold) || 0)
-    const burnAmount = totalPot * (burnPercent / 100)
-    const donationAmount = totalPot * (donationPercent / 100)
-    const prizePoolAmount = Math.max(0, totalPot - burnAmount - donationAmount)
     const sharePercents = (lottery.winner_shares || '')
       .split(/[;,]/)
       .map((s) => Number(s.trim()))
       .filter((n) => Number.isFinite(n) && n > 0)
-    const winners = Array.isArray(lottery.winners) ? lottery.winners : []
-    const winnerAmounts = Array.isArray(lottery.winner_amounts) ? lottery.winner_amounts : []
-    const hasWinnerPayouts = isClosed && winners.length > 0
     const creatorName = String(lottery.creator || '').replace(/^hive:/i, '')
-    const isCreator = creatorName && creatorName.toLowerCase() === normalizedUser
-    const donationName = String(lottery.donation_account || '').replace(/^hive:/i, '')
-    const metaParts = parseLotteryMeta(lottery.metadata)
-    const lotteryPostUrl = metaParts.lotteryPostUrl
-    const donationPostUrl = metaParts.donationPostUrl
-    const creatorUrl = creatorName ? `https://ecency.com/@${creatorName}` : ''
-    const donationUrl = donationName ? `https://ecency.com/@${donationName}` : ''
-    const ticketParts = [
-      {
-        label: 'Your Tickets',
-        percent: totalTickets > 0 ? (userTickets / totalTickets) * 100 : 0,
-        count: userTickets,
-      },
-      {
-        label: 'Other Tickets',
-        percent: totalTickets > 0 ? ((totalTickets - userTickets) / totalTickets) * 100 : 0,
-        count: Math.max(0, totalTickets - userTickets),
-      },
-    ]
     const winnerCount = lottery.winner_count || sharePercents.length || 1
 
-    // Collapsed tile view - shows minimal info
-    if (!isExpanded) {
-      return (
-        <div
-          key={`lottery-${lottery.id}`}
-          onClick={onToggleExpand}
-          style={{
-            border: '1px solid var(--color-primary-darkest)',
-            padding: '12px',
-            background: 'rgba(0, 0, 0, 0.35)',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            minHeight: '160px',
-            maxHeight: '200px',
-            width: isMobile ? '100%' : '200px',
-            transition: 'border-color 0.2s ease, background 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-primary)'
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-primary-darkest)'
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.35)'
-          }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              onToggleExpand()
-            }
-          }}
-        >
-          {/* Name */}
-          <div style={{
-            fontWeight: 700,
-            fontSize: '1rem',
-            color: 'var(--color-primary-lighter)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
-            {lottery.name || `Lottery #${lottery.id}`}
-          </div>
-
-          {/* Creator */}
-          <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>
-            <span style={{ opacity: 0.7 }}>by </span>
-            <span style={{ color: 'var(--color-primary-lighter)' }}>@{creatorName}</span>
-          </div>
-
-          {/* Stats row */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            fontSize: '0.75rem',
-            flexWrap: 'wrap',
-          }}>
-            <span title="Burn percentage">
-              <span style={{ opacity: 0.7 }}>Burn: </span>
-              <span style={{ color: 'var(--color-primary-lighter)' }}>{burnPercent}%</span>
-            </span>
-            {donationPercent > 0 && (
-              <span title="Donation percentage">
-                <span style={{ opacity: 0.7 }}>Donate: </span>
-                <span style={{ color: 'var(--color-primary-lighter)' }}>{donationPercent}%</span>
-              </span>
-            )}
-            <span title="Number of winners">
-              <span style={{ opacity: 0.7 }}>Winners: </span>
-              <span style={{ color: 'var(--color-primary-lighter)' }}>{winnerCount}</span>
-            </span>
-          </div>
-
-          {/* Countdown - prominent at bottom */}
-          <div style={{ marginTop: 'auto' }}>
-            <span style={{
-              color: isClosed ? 'var(--color-primary-lighter)' : (deadlinePassed ? 'var(--color-primary)' : 'var(--color-primary-lighter)'),
-              fontWeight: deadlinePassed && !isClosed ? 700 : 600,
-              fontSize: '1.1rem',
-            }}>
-              {isClosed ? 'Closed' : (deadlinePassed ? 'Ready!' : countdown)}
-            </span>
-          </div>
-
-          {/* Expand hint */}
-          <div style={{
-            fontSize: '0.7rem',
-            opacity: 0.5,
-            textAlign: 'center',
-            marginTop: '4px',
-          }}>
-            <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: '0.6rem' }} /> Click to expand
-          </div>
-        </div>
-      )
-    }
-
-    // Expanded view - full details (original design)
     return (
       <div
         key={`lottery-${lottery.id}`}
+        onClick={() => openLotteryDetail(lottery)}
         style={{
           border: '1px solid var(--color-primary-darkest)',
-          padding: '10px',
+          padding: '12px',
           background: 'rgba(0, 0, 0, 0.35)',
-          width: '100%',
-          flexBasis: '100%',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          minHeight: '140px',
+          width: isMobile ? '100%' : '200px',
+          transition: 'border-color 0.2s ease, background 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--color-primary)'
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--color-primary-darkest)'
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.35)'
+        }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            openLotteryDetail(lottery)
+          }
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '8px',
-          }}
-        >
-          <div
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginRight: '16px' }}
-            onClick={onToggleExpand}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onToggleExpand()
-              }
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faChevronUp}
-              style={{ fontSize: '0.8rem', opacity: 0.7 }}
-              title="Collapse"
-            />
-            <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>
-              {lottery.name || `Lottery #${lottery.id}`}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-            <button
-              onClick={() => openLotteryDetail(lottery)}
-              style={baseButtonStyle(false)}
-              title="Lottery details"
-            >
-              <FontAwesomeIcon icon={faCircleInfo} />
-            </button>
-            {lotteryPostUrl && (
-              <a
-                href={lotteryPostUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={baseButtonStyle(false)}
-                title="Open lottery post"
-              >
-                <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-              </a>
-            )}
-            {isCreator && (
-              <button
-                onClick={() => handleEditMetadata(lottery)}
-                style={baseButtonStyle(false)}
-                title="Edit metadata"
-              >
-                <FontAwesomeIcon icon={faPen} />
-              </button>
-            )}
-            {!isClosed && !deadlinePassed && (
-              <button
-                onClick={() => handleBuyTickets(lottery.id)}
-                style={{
-                  ...baseButtonStyle(false),
-                  backgroundColor: 'var(--color-primary-darker)',
-                  color: 'black',
-                }}
-                title="Buy tickets"
-              >
-                <FontAwesomeIcon icon={faTicket} />
-              </button>
-            )}
-            {!isClosed && deadlinePassed && (
-              <button
-                onClick={() => handleExecuteLottery(lottery.id)}
-                style={baseButtonStyle(false)}
-                title="Execute lottery"
-              >
-                <FontAwesomeIcon icon={faTrophy} />
-              </button>
-            )}
-          </div>
+        {/* Name */}
+        <div style={{
+          fontWeight: 700,
+          fontSize: 'var(--font-size-base)',
+          color: 'var(--color-primary-lighter)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {lottery.name || `Lottery #${lottery.id}`}
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'stretch' }}>
-          <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <tbody>
-                <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                    Creator:
-                  </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                    {creatorName ? (
-                      <a href={creatorUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
-                        @{creatorName}
-                      </a>
-                    ) : (
-                      ''
-                    )}
-                  </td>
-                </tr>
-                {lottery.donation_account && lottery.donation_percent > 0 && (
-                <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                    Donation to:
-                  </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                    <span style={{ marginRight: '8px' }}>
-                      {lottery.donation_percent}%{' '}
-                      {donationName ? (
-                        <a href={donationUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
-                          @{donationName}
-                        </a>
-                      ) : (
-                        ''
-                      )}
-                    </span>
-                    {donationPostUrl && (
-                      <a
-                        href={donationPostUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          ...baseButtonStyle(false),
-                          fontSize: '0.75rem',
-                          padding: '0.2em 0.6em',
-                        }}
-                        title="Open donation post"
-                      >
-                        <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      </a>
-                    )}
-                  </td>
-                </tr>
-              )}
-                <tr>
-                  <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                    Burn:
-                  </td>
-                  <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                    {burnPercent}%
-                  </td>
-                </tr>
-                {isMobile && (
-                  <tr>
-                    <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                      Your Tickets:
-                    </td>
-                    <td style={{ paddingBottom: '6px', color: userTickets > 0 ? 'var(--color-primary)' : 'var(--color-primary-lighter)' }}>
-                      {userTickets}
-                    </td>
-                  </tr>
-                )}
-                {isMobile && (
-                  <tr>
-                    <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                      Total Tickets:
-                    </td>
-                    <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                      {totalTickets}
-                    </td>
-                  </tr>
-                )}
-                {hasWinnerPayouts
-                  ? winners.map((winner, idx) => {
-                      const winnerName = String(winner || '').replace(/^hive:/i, '')
-                      const winnerUrl = winnerName ? `https://ecency.com/@${winnerName}` : ''
-                      const amount = Number(winnerAmounts[idx])
-                      return (
-                        <tr key={`winner-${lottery.id}-${idx}`}>
-                          <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                            #{idx + 1} Winner:
-                          </td>
-                          <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                            {winnerName ? (
-                              <a href={winnerUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary-lighter)', textDecoration: 'none' }}>
-                                @{winnerName}
-                              </a>
-                            ) : (
-                              '—'
-                            )}
-                            {Number.isFinite(amount) ? ` (${amount.toFixed(3)} ${formatAsset(lottery.asset)})` : ''}
-                          </td>
-                        </tr>
-                      )
-                    })
-                  : sharePercents.map((share, idx) => (
-                      <tr key={`share-${lottery.id}-${idx}`}>
-                        <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
-                          #{idx + 1} Winner:
-                        </td>
-                        <td style={{ paddingBottom: '6px', color: 'var(--color-primary-lighter)' }}>
-                          {share}% ({(prizePoolAmount * (share / 100)).toFixed(3)} {formatAsset(lottery.asset)})
-                        </td>
-                      </tr>
-                    ))}
-              </tbody>
-            </table>
-            <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
-              <span style={{ opacity: 0.85, display: 'block', marginBottom: '4px' }}>Countdown:</span>
-              <span style={{
-                color: isClosed ? 'var(--color-primary-lighter)' : (deadlinePassed ? 'var(--color-primary)' : 'var(--color-primary-lighter)'),
-                fontWeight: isClosed ? 600 : (deadlinePassed ? 700 : 600),
-                fontSize: '1.35rem',
-              }}>
-                {isClosed ? 'Closed' : (deadlinePassed ? 'Ready to Execute!' : countdown)}
-              </span>
-            </div>
-          </div>
-          {!isMobile && (
-            <div style={{ display: 'flex', gap: '12px', flex: '0 0 auto', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '140px' }}>
-                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center', lineHeight: 1.2 }}>
-                  <span style={{ fontSize: '0.85rem', opacity: 0.85 }}>Ticket Price</span>
-                  <br />
-                  <span style={{ fontSize: '1rem', color: 'var(--color-primary-lighter)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    {lottery.ticket_price} {formatAsset(lottery.asset)}
-                    <GamblingInfoIcon size={14} context="lottery" />
-                  </span>
-                </span>
-                <PollPie parts={ticketParts} size={120} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8rem', alignItems: 'flex-start' }}>
-                  {ticketParts.map((o, i) => (
-                    <div key={`tickets-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                      <span style={{ color: 'var(--color-primary-lighter)' }}>
-                        {o.label}: {o.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+        {/* Creator */}
+        <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.85 }}>
+          <span style={{ opacity: 0.7 }}>by </span>
+          <span style={{ color: 'var(--color-primary-lighter)' }}>@{creatorName}</span>
+        </div>
+
+        {/* Stats row */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          fontSize: 'var(--font-size-base)',
+          flexWrap: 'wrap',
+        }}>
+          <span title="Burn percentage">
+            <span style={{ opacity: 0.7 }}>Burn: </span>
+            <span style={{ color: 'var(--color-primary-lighter)' }}>{burnPercent}%</span>
+          </span>
+          {donationPercent > 0 && (
+            <span title="Donation percentage">
+              <span style={{ opacity: 0.7 }}>Donate: </span>
+              <span style={{ color: 'var(--color-primary-lighter)' }}>{donationPercent}%</span>
+            </span>
           )}
+          <span title="Number of winners">
+            <span style={{ opacity: 0.7 }}>Winners: </span>
+            <span style={{ color: 'var(--color-primary-lighter)' }}>{winnerCount}</span>
+          </span>
+        </div>
+
+        {/* Countdown - prominent at bottom */}
+        <div style={{ marginTop: 'auto' }}>
+          <span style={{
+            color: isClosed ? 'var(--color-primary-lighter)' : (deadlinePassed ? 'var(--color-primary)' : 'var(--color-primary-lighter)'),
+            fontWeight: deadlinePassed && !isClosed ? 700 : 600,
+            fontSize: 'var(--font-size-base)',
+          }}>
+            {isClosed ? 'Closed' : (deadlinePassed ? 'Ready!' : countdown)}
+          </span>
         </div>
       </div>
     )
@@ -876,6 +563,7 @@ export default function LotteryUserLists({
     const renderGroupSection = (title, lotteryList, icon, groupKey) => {
       if (lotteryList.length === 0) return null
       const isCollapsed = groupCollapse[groupKey]
+
       return (
         <div key={title} style={{ marginBottom: '16px' }}>
           <div
@@ -902,7 +590,7 @@ export default function LotteryUserLists({
             <FontAwesomeIcon icon={icon} style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }} />
             <span style={{
               fontWeight: 700,
-              fontSize: '0.95rem',
+              fontSize: 'var(--font-size-base)',
               color: 'var(--color-primary-lighter)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -912,7 +600,7 @@ export default function LotteryUserLists({
             </span>
             <FontAwesomeIcon
               icon={isCollapsed ? faChevronDown : faChevronUp}
-              style={{ fontSize: '0.8rem', opacity: 0.7 }}
+              style={{ fontSize: '0.9rem', opacity: 0.7 }}
             />
           </div>
           {!isCollapsed && (
@@ -927,8 +615,6 @@ export default function LotteryUserLists({
                 <LotteryItem
                   key={`lottery-${lottery.id}`}
                   lottery={lottery}
-                  isExpanded={expandedLotteryIds.has(lottery.id)}
-                  onToggleExpand={() => toggleLotteryExpand(lottery.id)}
                 />
               ))}
             </div>
@@ -949,10 +635,10 @@ export default function LotteryUserLists({
             alignItems: 'center',
             gap: '8px',
             color: 'var(--color-primary-lighter)',
-            fontSize: '0.9rem',
+            fontSize: 'var(--font-size-base)',
             padding: '8px 2px',
           }}>
-            <FontAwesomeIcon icon={faCircleInfo} />
+            <FontAwesomeIcon icon={faCircleInfo}  style={{ fontSize: '0.9rem' }}/>
             <span>No lotteries match the current filter.</span>
           </div>
         )}
@@ -978,7 +664,7 @@ export default function LotteryUserLists({
               style={baseButtonStyle(showFilters)}
               title="Toggle filters"
             >
-              <FontAwesomeIcon icon={showFilters ? faChevronLeft : faFilter} />
+              <FontAwesomeIcon icon={showFilters ? faChevronLeft : faFilter}  style={{ fontSize: '0.9rem' }} />
             </button>
             {showFilters && (
               <>
@@ -1006,7 +692,7 @@ export default function LotteryUserLists({
               }}
               title="Host Lottery"
             >
-              <FontAwesomeIcon icon={faPlusCircle} />
+              <FontAwesomeIcon icon={faPlusCircle}  style={{ fontSize: '0.9rem' }}/>
               <span>Host Lottery</span>
             </button>
             </div>

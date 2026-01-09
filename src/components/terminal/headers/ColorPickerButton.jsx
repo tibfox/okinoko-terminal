@@ -61,7 +61,7 @@ export default function ColorPickerButton({ isMobile, buttonStyle = {} }) {
       title="Pick a theme color"
       style={{ ...baseButtonStyle, ...buttonStyle }}
     >
-      <FontAwesomeIcon icon={faPalette} style={{ fontSize: '0.9rem' }} />
+      <FontAwesomeIcon icon={faPalette}    style={{ fontSize: '0.9rem' }}  />
 
   <input
     ref={inputRef}

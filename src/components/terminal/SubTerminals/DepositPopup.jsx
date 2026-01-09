@@ -90,7 +90,7 @@ export default function DepositPopup({ onClose, aioha, user }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--color-primary-lighter)' }}>
+      <div style={{ fontSize: 'var(--font-size-base)', lineHeight: '1.5', color: 'var(--color-primary-lighter)' }}>
         Please set the amount you want to deposit from the Hive wallet @{normalizedUser} to the Magi wallet @
         {normalizedUser}.
       </div>
@@ -143,10 +143,10 @@ export default function DepositPopup({ onClose, aioha, user }) {
           color: isValidAmount && !isProcessing ? 'var(--color-primary)' : 'var(--color-primary-darker)',
           padding: '0.75rem 1rem',
           cursor: isValidAmount && !isProcessing ? 'pointer' : 'not-allowed',
-          fontSize: '0.85rem',
+          fontSize: 'var(--font-size-base)',
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          fontFamily: "'Share Tech Mono', monospace",
+          fontFamily: 'var(--font-family-base)',
           transition: 'all 0.2s ease',
           opacity: isValidAmount && !isProcessing ? 1 : 0.4,
         }}
@@ -156,7 +156,7 @@ export default function DepositPopup({ onClose, aioha, user }) {
 
       {showHiveAuthMessage && (
         <div style={{
-          fontSize: '0.8rem',
+          fontSize: 'var(--font-size-base)',
           color: '#ff4444',
           textAlign: 'center',
           marginTop: '0.5rem',

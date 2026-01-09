@@ -784,7 +784,7 @@ export default function TerminalContainer({
                     <span
                       style={{
                         color: 'var(--color-primary-lightest)',
-                        fontSize: '0.7rem',
+                        fontSize: 'var(--font-size-base)',
                         letterSpacing: '0.05em',
                         textTransform: 'uppercase',
                       }}
@@ -793,7 +793,7 @@ export default function TerminalContainer({
                     </span>
                     <div
                       style={{
-                        fontSize: '0.65rem',
+                        fontSize: 'var(--font-size-base)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         color: 'var(--color-primary)',
@@ -817,13 +817,13 @@ export default function TerminalContainer({
                               ? 'var(--color-primary-darkest)'
                               : 'rgba(6, 6, 6, 0.9)',
                           color: 'var(--color-primary-lighter)',
-                          fontSize: '0.8rem',
+                          fontSize: 'var(--font-size-base)',
                           cursor: 'pointer',
                         }}
                       >
                         <div style={{ fontWeight: 600 }}>{preset.label}</div>
                         {preset.description ? (
-                          <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>{preset.description}</div>
+                          <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.75 }}>{preset.description}</div>
                         ) : null}
                       </button>
                     ))}
@@ -831,7 +831,7 @@ export default function TerminalContainer({
                       <>
                         <div
                           style={{
-                            fontSize: '0.65rem',
+                            fontSize: 'var(--font-size-base)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                             color: 'var(--color-primary)',
@@ -859,7 +859,7 @@ export default function TerminalContainer({
                                     ? 'var(--color-primary-darkest)'
                                     : 'rgba(6, 6, 6, 0.9)',
                                 color: 'var(--color-primary-lighter)',
-                                fontSize: '0.8rem',
+                                fontSize: 'var(--font-size-base)',
                                 cursor: 'pointer',
                               }}
                             >
@@ -882,7 +882,7 @@ export default function TerminalContainer({
                                 cursor: 'pointer',
                               }}
                             >
-                              <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.75rem' }} />
+                              <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.9rem' }} />
                             </button>
                           </div>
                         ))}
@@ -902,11 +902,11 @@ export default function TerminalContainer({
                         padding: '0.45rem 0.6rem',
                         background: 'rgba(0, 0, 0, 0.85)',
                         color: 'var(--color-primary-lighter)',
-                        fontSize: '0.8rem',
+                        fontSize: 'var(--font-size-base)',
                         cursor: 'pointer',
                       }}
                     >
-                      <FontAwesomeIcon icon={faBookmark} style={{ fontSize: '0.8rem' }} />
+                      <FontAwesomeIcon icon={faBookmark} style={{ fontSize: '0.9rem'}} />
                       Save Current Layout
                     </button>
                   </div>
@@ -951,7 +951,7 @@ export default function TerminalContainer({
                       <span
                         style={{
                           color: 'var(--color-primary-lightest)',
-                          fontSize: '0.7rem',
+                          fontSize: 'var(--font-size-base)',
                           letterSpacing: '0.05em',
                           textTransform: 'uppercase',
                         }}
@@ -973,13 +973,13 @@ export default function TerminalContainer({
                                 ? 'var(--color-primary-darkest)'
                                 : 'rgba(6, 6, 6, 0.9)',
                             color: 'var(--color-primary-lighter)',
-                            fontSize: '0.8rem',
+                            fontSize: 'var(--font-size-base)',
                             cursor: 'pointer',
                           }}
                         >
                           <div style={{ fontWeight: 600 }}>{effect.label}</div>
                           {effect.description ? (
-                            <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>{effect.description}</div>
+                            <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.75 }}>{effect.description}</div>
                           ) : null}
                         </button>
                       ))}
@@ -1001,7 +1001,7 @@ export default function TerminalContainer({
                 title="About Ōkinoko"
                 style={floatingButtonStyle}
               >
-                <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem' }} />
+                <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem'}} />
               </button>
               {/* <button
                 type="button"
@@ -1011,7 +1011,7 @@ export default function TerminalContainer({
                 title="Reset layout"
                 style={floatingButtonStyle}
               >
-                <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.9rem' }} />
+                <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: 'var(--font-size-base)' }} />
               </button> */}
             </div>
             <button
@@ -1034,7 +1034,7 @@ export default function TerminalContainer({
                 height: '2rem',
               }}
             >
-              <FontAwesomeIcon icon={isControlsOpen ? faXmark : faBars} style={{ fontSize: '0.85rem' }} />
+              <FontAwesomeIcon icon={isControlsOpen ? faXmark : faBars} style={{ fontSize: 'var(--font-size-base)' }} />
             </button>
           </div>,
           document.body,
@@ -1172,7 +1172,7 @@ export default function TerminalContainer({
           >
             <FontAwesomeIcon
               icon={visualMinimized ? faWindowMaximize : faWindowMinimize}
-              style={{ fontSize: '0.5rem' }}
+              style={{ fontSize: '0.9rem' }}
             />
           </button>
         )}
@@ -1204,7 +1204,7 @@ export default function TerminalContainer({
           >
             <FontAwesomeIcon
               icon={faCaretDown}
-              style={{ transform: 'rotate(-45deg)', fontSize: '0.7rem' }}
+              style={{ transform: 'rotate(-45deg)', fontSize: '0.9rem' }}
             />
           </button>
         )}

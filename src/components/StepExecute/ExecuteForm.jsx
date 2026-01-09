@@ -674,7 +674,7 @@ export default function ExecuteForm({
           gap: '12px',
         }}
       >
-        <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+        <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
           {leftLabel}
         </span>
         <NeonSwitch
@@ -687,7 +687,7 @@ export default function ExecuteForm({
             }))
           }
         />
-        <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+        <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
           {rightLabel}
         </span>
       </div>
@@ -769,7 +769,7 @@ export default function ExecuteForm({
               width: '100%',
             }}
           >
-            <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+            <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
               {labelText}
             </div>
             <NeonSwitch
@@ -807,15 +807,15 @@ export default function ExecuteForm({
                 padding: '8px',
                 minHeight: '100px',
                 width: '100%',
-                fontFamily: 'Share Tech Mono, monospace',
-                fontSize: '0.9rem',
+                fontFamily: 'var(--font-family-base)',
+                fontSize: 'var(--font-size-base)',
                 resize: 'vertical',
               }}
             />
           )}
 
           {participantsList.length > 0 && (
-            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
+            <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
               {participantsList.length} participant{participantsList.length !== 1 ? 's' : ''}
             </div>
           )}
@@ -981,7 +981,7 @@ export default function ExecuteForm({
             alignItems: 'flex-start',
           }}
         >
-          <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
             {labelText}
           </div>
           <WinnerSharesInput
@@ -991,7 +991,7 @@ export default function ExecuteForm({
           />
           <div
             style={{
-              fontSize: '0.85rem',
+              fontSize: 'var(--font-size-base)',
               color: 'var(--color-primary-lighter)',
               opacity: 0.7,
               fontStyle: 'italic',
@@ -1029,7 +1029,7 @@ export default function ExecuteForm({
             alignItems: 'flex-start',
           }}
         >
-          <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
             {labelText}
           </div>
           <WinnerPrizesInput
@@ -1038,7 +1038,7 @@ export default function ExecuteForm({
           />
           <div
             style={{
-              fontSize: '0.85rem',
+              fontSize: 'var(--font-size-base)',
               color: 'var(--color-primary-lighter)',
               opacity: 0.7,
               fontStyle: 'italic',
@@ -1123,7 +1123,7 @@ export default function ExecuteForm({
             alignItems: 'flex-start',
           }}
         >
-          <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
             {labelText}
           </div>
           <div
@@ -1134,7 +1134,7 @@ export default function ExecuteForm({
             }}
           >
             {shareList.length === 0 ? (
-              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.8, fontSize: '0.9rem' }}>
+              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.8, fontSize: 'var(--font-size-base)' }}>
                 No shares yet.
               </span>
             ) : (
@@ -1185,7 +1185,7 @@ export default function ExecuteForm({
                       }}
                       title="Confirm share"
                     >
-                      <FontAwesomeIcon icon={faCheck} />
+                      <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}} />
                     </button>
                     <button
                       onClick={() => removeShare(idx)}
@@ -1197,7 +1197,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete share"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 ) : (
@@ -1232,14 +1232,14 @@ export default function ExecuteForm({
                       }}
                       title="Delete share"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 )
               )
             )}
           </div>
-          <div style={{ color: total === 100 ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontSize: '0.85rem', opacity: total === 100 ? 1 : 0.8 }}>
+          <div style={{ color: total === 100 ? 'var(--color-primary)' : 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)', opacity: total === 100 ? 1 : 0.8 }}>
             Total: {total}% {total === 100 ? '' : `(${remaining}% remaining)`}
           </div>
           {showNewShareInput ? (
@@ -1276,7 +1276,7 @@ export default function ExecuteForm({
                 }}
                 title="Add share"
               >
-                <FontAwesomeIcon icon={faPlusCircle} />
+                <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
                 <span>Add</span>
               </button>
             </div>
@@ -1295,7 +1295,7 @@ export default function ExecuteForm({
               }}
               title="Add share"
             >
-              <FontAwesomeIcon icon={faPlusCircle} />
+              <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
               <span>Add share</span>
             </button>
           )}
@@ -1600,7 +1600,7 @@ export default function ExecuteForm({
                 style={{
                   color: 'var(--color-primary-lighter)',
                   opacity: 0.8,
-                  fontSize: '0.9rem',
+                  fontSize: 'var(--font-size-base)',
                 }}
               >
                 No options yet.
@@ -1652,7 +1652,7 @@ export default function ExecuteForm({
                       }}
                       title="Confirm option"
                     >
-                      <FontAwesomeIcon icon={faCheck} />
+                      <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}}  />
                     </button>
                     <button
                       onClick={() => removeOption(idx)}
@@ -1664,7 +1664,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete option"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 ) : (
@@ -1700,7 +1700,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete option"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 )
@@ -1751,7 +1751,7 @@ export default function ExecuteForm({
                 }}
                 title="Add option"
               >
-                <FontAwesomeIcon icon={faCheck} />
+                <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}} />
               </button>
             </div>
           ) : (
@@ -1769,7 +1769,7 @@ export default function ExecuteForm({
                
               }}
             >
-              <FontAwesomeIcon icon={faPlusCircle} />
+              <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
               <span>Add option</span>
             </button>
           )}
@@ -2030,7 +2030,7 @@ export default function ExecuteForm({
                 style={{
                   color: 'var(--color-primary-lighter)',
                   opacity: 0.8,
-                  fontSize: '0.9rem',
+                  fontSize: 'var(--font-size-base)',
                 }}
               >
                 No meta entries yet.
@@ -2087,7 +2087,7 @@ export default function ExecuteForm({
                       }}
                       title="Confirm meta"
                     >
-                      <FontAwesomeIcon icon={faCheck} />
+                      <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}} />
                     </button>
                     <button
                       onClick={() => removeMeta(idx)}
@@ -2099,7 +2099,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete meta"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 ) : (
@@ -2138,7 +2138,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete meta"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 )
@@ -2168,7 +2168,7 @@ export default function ExecuteForm({
                 title={metaHintForKey(metaKey)}
               />
             ) : metaOptions.length ? (
-              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.8, fontSize: '0.9rem' }}>
+              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.8, fontSize: 'var(--font-size-base)' }}>
                 All meta options are already added.
               </span>
             ) : (
@@ -2182,7 +2182,7 @@ export default function ExecuteForm({
             )}
             {metaKey ? renderMetaValueInput(metaKey, metaValue, setMetaValue) : null}
             {metaHintForKey(metaKey) && (
-              <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.85rem', opacity: 0.8, width: '100%' }}>
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)', opacity: 0.8, width: '100%' }}>
                 {metaHintForKey(metaKey)}
               </span>
             )}
@@ -2205,7 +2205,7 @@ export default function ExecuteForm({
               }}
               title="Add meta"
             >
-              <FontAwesomeIcon icon={faPlusCircle} />
+              <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
               <span>Add meta</span>
             </button>
           </div>
@@ -2285,11 +2285,11 @@ export default function ExecuteForm({
               gap: '12px',
             }}
           >
-            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
               No
             </span>
             <NeonSwitch name="" checked={checked} onChange={setChoice} />
-            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
               Yes
             </span>
           </div>
@@ -2325,13 +2325,13 @@ export default function ExecuteForm({
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {falseLabel ? (
-            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
               {falseLabel}
             </span>
           ) : null}
           {switchControl}
           {trueLabel ? (
-            <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+            <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
               {trueLabel}
             </span>
           ) : null}
@@ -2461,7 +2461,7 @@ export default function ExecuteForm({
                 style={{
                   color: 'var(--color-primary-lighter)',
                   opacity: 0.8,
-                  fontSize: '0.9rem',
+                  fontSize: 'var(--font-size-base)',
                 }}
               >
                 No payouts yet.
@@ -2503,7 +2503,7 @@ export default function ExecuteForm({
                         onBlur={(e) => setEditingAmount(formatThreeDecimals(e.target.value))}
                         style={amountInputStyle}
                       />
-                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
                         {assetLabel}
                       </span>
                     </div>
@@ -2517,7 +2517,7 @@ export default function ExecuteForm({
                       }}
                       title="Confirm payout"
                     >
-                      <FontAwesomeIcon icon={faCheck} />
+                      <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}} />
                     </button>
                     <button
                       onClick={() => removePayout(idx)}
@@ -2529,7 +2529,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete payout"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 ) : (
@@ -2572,7 +2572,7 @@ export default function ExecuteForm({
                       }}
                       title="Delete payout"
                     >
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
                 )
@@ -2611,7 +2611,7 @@ export default function ExecuteForm({
                 onBlur={(e) => setPayoutAmount(formatThreeDecimals(e.target.value))}
                 style={amountInputStyle}
               />
-              <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
                 {assetLabel}
               </span>
             </div>
@@ -2630,7 +2630,7 @@ export default function ExecuteForm({
               }}
               title="Add payout"
             >
-              <FontAwesomeIcon icon={faPlusCircle} />
+              <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
               <span>Add payout</span>
             </button>
           </div>
@@ -2744,7 +2744,7 @@ export default function ExecuteForm({
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.95rem' }}>
+            <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
               {labelText}
             </div>
             {assets.map(asset => {
@@ -2810,29 +2810,29 @@ export default function ExecuteForm({
                       style={{
                         minWidth: '60px',
                         color: 'var(--color-primary-lighter)',
-                        fontSize: '0.9rem',
+                        fontSize: 'var(--font-size-base)',
                       }}
                     >
                       {asset.toUpperCase()}
                     </div>
                   </div>
                   {exceeds && (
-                    <div style={{ color: 'red', fontSize: '0.8rem' }}>
+                    <div style={{ color: 'red', fontSize: 'var(--font-size-base)' }}>
                       Insufficient balance
                     </div>
                   )}
                   {!exceeds && belowMinimum && (
-                    <div style={{ color: 'var(--color-warning)', fontSize: '0.8rem' }}>
+                    <div style={{ color: 'var(--color-warning)', fontSize: 'var(--font-size-base)' }}>
                       ⚠ Minimum required: {minRequired.toFixed(3)} {asset.toUpperCase()} (sum of fixed amounts)
                     </div>
                   )}
                   {!exceeds && !belowMinimum && percentageInvalid && (
-                    <div style={{ color: 'var(--color-warning)', fontSize: '0.8rem' }}>
+                    <div style={{ color: 'var(--color-warning)', fontSize: 'var(--font-size-base)' }}>
                       ⚠ Total percentage is {percentageTotal.toFixed(1)}% (should be 100%)
                     </div>
                   )}
                   {!exceeds && !belowMinimum && !percentageInvalid && available > 0 && (
-                    <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.8rem', opacity: 0.7 }}>
+                    <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)', opacity: 0.7 }}>
                       Available: {available.toFixed(3)}
                     </div>
                   )}
@@ -2921,7 +2921,7 @@ export default function ExecuteForm({
                   alignItems: 'center',
                   gap: '6px',
                   color: 'var(--color-primary-lighter)',
-                  fontSize: '0.9rem',
+                  fontSize: 'var(--font-size-base)',
                 }}
               >
                 <span>HIVE</span>
@@ -2960,7 +2960,7 @@ export default function ExecuteForm({
             <span
               style={{
                 flex: '0 0 auto',
-                fontSize: '0.8rem',
+                fontSize: 'var(--font-size-base)',
                 color: exceeds ? 'red' : 'var(--color-primary-lighter)',
               }}
             >
@@ -2969,11 +2969,11 @@ export default function ExecuteForm({
           </div>
           {isJoinLottery && selectedLotteryTicket?.ticketPrice && (
             <>
-              <div style={{ fontSize: '1.2rem', color: 'var(--color-primary-lighter)' }}>
+              <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)' }}>
                 Tickets: {ticketEstimateLabel ?? '—'} for {selectedLotteryTicket.ticketPrice} {ticketAsset} each
               </div>
               <div style={{
-                fontSize: '0.9rem',
+                fontSize: 'var(--font-size-base)',
                 color: 'var(--color-primary-lighter)',
                 opacity: 0.8,
                 fontStyle: 'italic',

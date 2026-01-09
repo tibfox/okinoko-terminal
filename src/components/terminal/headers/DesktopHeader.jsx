@@ -1,8 +1,4 @@
-import BalanceDisplay from "../components/AccountDisplay.jsx";
 import SlotText from "../../animations/SlotText.jsx";
-import { useAioha } from "@aioha/react-ui";
-import SettingsMenu from "../components/SettingsMenu.jsx";
-import { useResponsiveTitleSize } from "../../../hooks/useResponsiveTitleSize.js";
 
 export default function DesktopHeader({
   title,
@@ -10,16 +6,10 @@ export default function DesktopHeader({
   onDragPointerDown,
   isMinimized = false,
 }) {
-  const { user } = useAioha();
   const displayTitle = (isMinimized ? titleOnMinimize : title)
     .toUpperCase()
     .replace(/Ō/g, "ō");
-  const { wrapperRef, fontSize, isClamped } = useResponsiveTitleSize({
-    text: displayTitle,
-    isMinimized,
-  });
 
-  const showGlyphFallback = isMinimized && isClamped;
   const tileColors = {
     color: "#000",
     background: "var(--color-primary-darker)",
@@ -58,18 +48,16 @@ export default function DesktopHeader({
             marginRight: "auto",
             cursor: "grab",
             overflow: "hidden",
-            fontSize: `${fontSize}px`,
-            lineHeight: 1.05,
           }}
           onPointerDown={handleDragPointerDown}
-          ref={wrapperRef}
         >
-          {isMinimized && !showGlyphFallback ? (
+          {isMinimized ? (
             <h1
               className="cyber-tile cyber-tile-header"
               style={{
                 margin: 0,
-                fontFamily: "'Share Tech Mono',monospace",
+                fontFamily: 'var(--font-family-base)',
+                fontSize: 'var(--font-size-base)',
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
                 textOverflow: "ellipsis",
@@ -78,6 +66,7 @@ export default function DesktopHeader({
                 display: "block",
                 ...tileColors,
               }}
+              title={displayTitle}
             >
               {displayTitle}
             </h1>
@@ -92,7 +81,7 @@ export default function DesktopHeader({
               pad={false}
               style={{
                 display: "block",
-                lineHeight: 1.05,
+                fontSize: 'var(--font-size-base)',
                 ...tileColors,
               }}
             />

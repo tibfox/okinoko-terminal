@@ -134,7 +134,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               alignItems: "center",
               justifyContent: "space-between",
               marginBottom: "10px",
-              fontSize: "0.9rem",
+              fontSize: "var(--font-size-base)",
               fontWeight: "600",
               // position: "sticky",
               top: 0,
@@ -155,12 +155,13 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                     background: "transparent",
                     color: "inherit",
                     cursor: "pointer",
-                    fontSize: "0.8rem",
+                    fontSize: "var(--font-size-base)",
+                    fontFamily: "var(--font-family-base)",
                   }}
                   title="Toggle filters"
                   aria-label="Toggle filters"
                 >
-                  <FontAwesomeIcon icon={faFilter} />
+                  <FontAwesomeIcon icon={faFilter} style={{ fontSize: '0.9rem' }} />
                 </button>
               )}
               {`TXs (${txs.length})`}
@@ -171,7 +172,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
               disabled={txs.length === 0}
               style={{
                 border: "1px solid rgba(255, 255, 255, 0.2)",
-                
+                fontFamily: "var(--font-family-base)",
+                fontSize: "var(--font-size-base)",
                 padding: "4px 10px",
                 background: "transparent",
                 color: "inherit",
@@ -181,7 +183,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
             >
                <FontAwesomeIcon
                       icon={faTrash}
-                      style={{ marginRight: "6px" }}
+                      style={{ fontSize: '0.9rem' ,marginRight: "6px" }}
+                      
                       title="Remove all"
                     /> all
             </button>
@@ -201,7 +204,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   padding: "4px 10px",
                   background: activeTab === "all" ? "var(--color-primary-darker)" : "transparent",
                   color: activeTab === "all" ? "black" : "inherit",
-                  fontSize: "0.8rem",
+                  fontSize: "var(--font-size-base)",
+                  fontFamily: "var(--font-family-base)",
                   cursor: "pointer",
                 }}
               >
@@ -215,7 +219,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   padding: "4px 10px",
                   background: activeTab === "pending" ? "var(--color-primary-darker)" : "transparent",
                   color: activeTab === "pending" ? "black" : "inherit",
-                  fontSize: "0.8rem",
+                  fontSize: "var(--font-size-base)",
+                  fontFamily: "var(--font-family-base)",
                   cursor: "pointer",
                 }}
               >
@@ -229,7 +234,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   padding: "4px 10px",
                   background: activeTab === "executed" ? "var(--color-primary-darker)" : "transparent",
                   color: activeTab === "executed" ? "black" : "inherit",
-                  fontSize: "0.8rem",
+                  fontSize: "var(--font-size-base)",
+                  fontFamily: "var(--font-family-base)",
                   cursor: "pointer",
                 }}
               >
@@ -243,7 +249,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   padding: "4px 10px",
                   background: activeTab === "failed" ? "var(--color-primary-darker)" : "transparent",
                   color: activeTab === "failed" ? "black" : "inherit",
-                  fontSize: "0.8rem",
+                  fontSize: "var(--font-size-base)",
+                  fontFamily: "var(--font-family-base)",
                   cursor: "pointer",
                 }}
               >
@@ -269,12 +276,12 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                 <div
                   style={{
                     wordBreak: "break-all",
-                    fontSize: "0.9rem",
+                    fontSize: "var(--font-size-base)",
                     fontWeight: "bold",
                   }}
                   title={tx.id}
                 >
-                  <FontAwesomeIcon icon={stateIcon[tx.status]} />
+                  <FontAwesomeIcon icon={stateIcon[tx.status]} style={{ fontSize: '0.9rem' }} />
                   <span>
                     {tx.id.length > TRUNCATE
                       ? tx.id.slice(0, TRUNCATE) + "…"
@@ -289,7 +296,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                  {/* Copy button */}
                   <FontAwesomeIcon
                     icon={faCopy}
-                    style={{ marginRight: "8px" }}
+                    style={{ fontSize: '0.9rem',marginRight: "8px" }}
+                    
                     onClick={() => navigator.clipboard.writeText(tx.id)}
                     title="Copy transaction ID"
                   />
@@ -297,7 +305,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   {/* External link */}
                   <FontAwesomeIcon
                     icon={faUpRightFromSquare}
-                  
+                  style={{ fontSize: '0.9rem' }} 
                     onClick={() =>
                       window.open(`https://vsc.techcoderx.com/tx/${tx.id}`, "_blank")
                     }
@@ -306,7 +314,8 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
 
                   <FontAwesomeIcon
                     icon={faTrash}
-                    style={{ marginLeft: "auto", alignContent: "right" }}
+                    style={{ fontSize: '0.9rem',marginLeft: "auto", alignContent: "right" }}
+                  
                     title="Remove from list"
                     onClick={() => removeTransaction(tx.id)}
                   />
@@ -321,7 +330,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   alignItems: "center",
                   marginTop: "6px",
                   cursor: "pointer",
-                  fontSize: "0.8rem",
+                  fontSize: "var(--font-size-base)",
                   // color: "var(--color-primary)",
                 }}
                 onClick={() => togglePayload(tx.id)}
@@ -340,7 +349,7 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                   {isExpanded ? "hide details" : "show details"}
                   <FontAwesomeIcon
                     icon={isExpanded ? faChevronUp : faChevronDown}
-                    style={{ fontSize: "0.75rem" }}
+                      style={{ fontSize: '0.9rem' }} 
                   />
                 </span>
               </div>
@@ -352,9 +361,10 @@ import { formatUTC } from "../../../lib/friendlyDates.js";
                     marginTop: "6px",
                     background: "rgba(255,255,255,0.05)",
                     padding: "6px",
-                    fontSize: "13px",
+                    fontSize: "var(--font-size-base)",
+                    fontFamily: "var(--font-family-base)",
                     overflowX: "auto",
-                    
+
                     color: "var(--color-primary-lighter)",
                   }}
                 >

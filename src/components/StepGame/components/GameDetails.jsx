@@ -115,7 +115,7 @@ export default function GameDetails({
 
         {opponentName && (
           <div style={{
-            fontSize: '0.9rem',
+            fontSize: 'var(--font-size-base)',
             color: 'var(--color-primary-lighter)',
             marginBottom: '12px',
             opacity: 0.85
@@ -154,7 +154,7 @@ export default function GameDetails({
         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <NeonButton onClick={handleResignClick} style={{ width: '200px' }}>
-              <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
+              <FontAwesomeIcon icon={faFlag} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
               {hasOpponent ? 'Resign' : 'Cancel Game'}
             </NeonButton>
             <InfoIcon
@@ -174,7 +174,7 @@ export default function GameDetails({
                 onClick={handleTimeoutClick}
                 style={{ width: '200px' }}
               >
-                <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+                <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
                 Claim Timeout
               </NeonButton>
               <InfoIcon
@@ -204,17 +204,17 @@ export default function GameDetails({
           >
             <div style={{ marginBottom: '6px' }}>{swapInfo.waitingText}</div>
             {swapInfo.description && (
-              <div style={{ fontSize: '0.9rem', marginBottom: '6px', opacity: 0.85 }}>
+              <div style={{ fontSize: 'var(--font-size-base)', marginBottom: '6px', opacity: 0.85 }}>
                 {swapInfo.description}
               </div>
             )}
             {swapInfo.remaining && (
-              <div style={{ fontSize: '0.85rem', marginBottom: '4px', color: 'var(--color-primary-lighter)' }}>
+              <div style={{ fontSize: 'var(--font-size-base)', marginBottom: '4px', color: 'var(--color-primary-lighter)' }}>
                 {swapInfo.remaining}
               </div>
             )}
             {swapInfo.nextStone && (
-              <div style={{ fontSize: '0.85rem', marginBottom: '6px' }}>
+              <div style={{ fontSize: 'var(--font-size-base)', marginBottom: '6px' }}>
                 {swapInfo.nextStone}
               </div>
             )}
@@ -253,7 +253,7 @@ export default function GameDetails({
             )}
             {swapInfo.history?.length > 0 && (
               <div className="neon-scroll" style={{ maxHeight: '90px', overflowY: 'auto' }}>
-                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', textAlign: 'left' }}>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: 'var(--font-size-base)', textAlign: 'left' }}>
                   {swapInfo.history.slice(-5).map((entry, idx) => (
                     <li key={`${entry}-${idx}`}>{entry}</li>
                   ))}
@@ -304,7 +304,7 @@ function WinConditions({ gameType }) {
 
   return (
     <div style={{
-      fontSize: '0.8rem',
+      fontSize: 'var(--font-size-base)',
       marginBottom: '16px',
       padding: '8px 12px',
       borderRadius: '4px',

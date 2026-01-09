@@ -43,6 +43,8 @@ export default function ContractGrid({
         overflowY: 'auto',
         height: '100%',
         padding: '12px',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <div
@@ -50,8 +52,7 @@ export default function ContractGrid({
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
           gap: '12px',
-          minHeight: '100%',
-          alignContent: 'center',
+          margin: 'auto 0',
         }}
       >
       {contracts.map((c) => {
@@ -72,14 +73,14 @@ export default function ContractGrid({
               padding: '20px 16px',
               backgroundColor: isSelected
                 ? 'var(--color-primary-darker)'
-                : 'rgba(0, 0, 0, 0.3)',
+                : 'rgba(0, 0, 0, 0.7)',
               color: isSelected ? 'black' : 'var(--color-primary-lighter)',
               border: isSelected
                 ? '2px solid var(--color-primary)'
                 : '1px solid var(--color-primary-darkest)',
               cursor: 'pointer',
               textTransform: 'uppercase',
-              fontSize: '0.8rem',
+              fontSize: 'var(--font-size-base)',
               letterSpacing: '0.05em',
               fontWeight: isSelected ? 700 : 400,
               transition: 'all 0.15s ease',
@@ -88,13 +89,13 @@ export default function ContractGrid({
             }}
             onMouseEnter={(e) => {
               if (!isSelected) {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
                 e.currentTarget.style.borderColor = 'var(--color-primary)'
               }
             }}
             onMouseLeave={(e) => {
               if (!isSelected) {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
+                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
                 e.currentTarget.style.borderColor = 'var(--color-primary-darkest)'
               }
             }}
@@ -102,7 +103,7 @@ export default function ContractGrid({
             <FontAwesomeIcon
               icon={getContractIcon(c.icon)}
               style={{
-                fontSize: '2rem',
+                fontSize:'0.9rem',
                 color: isSelected ? 'black' : 'var(--color-primary)',
               }}
             />

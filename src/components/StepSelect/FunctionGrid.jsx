@@ -224,7 +224,7 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
                 <span
                   style={{
                     fontWeight: 700,
-                    fontSize: '0.95rem',
+                    fontSize: 'var(--font-size-base)',
                     color: 'var(--color-primary-lighter)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
@@ -235,7 +235,8 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
                 </span>
                 <FontAwesomeIcon
                   icon={isCollapsed ? faChevronDown : faChevronUp}
-                  style={{ fontSize: '0.8rem', opacity: 0.7 }}
+                  
+                  style={{ fontSize:'0.9rem', opacity: 0.7 }}
                 />
               </div>
             )}
@@ -333,14 +334,14 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
         padding: '16px 12px',
         backgroundColor: isSelected
           ? 'var(--color-primary-darker)'
-          : 'rgba(0, 0, 0, 0.3)',
+          : 'rgba(0, 0, 0, 0.7)',
         color: isSelected ? 'black' : 'var(--color-primary-lighter)',
         border: isSelected
           ? '2px solid var(--color-primary)'
           : '1px solid var(--color-primary-darkest)',
         cursor: 'pointer',
         textTransform: 'uppercase',
-        fontSize: '0.75rem',
+        fontSize: 'var(--font-size-base)',
         letterSpacing: '0.05em',
         fontWeight: isSelected ? 700 : 400,
         transition: 'all 0.15s ease',
@@ -349,13 +350,13 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
       }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
           e.currentTarget.style.borderColor = 'var(--color-primary)'
         }
       }}
       onMouseLeave={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
+          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
           e.currentTarget.style.borderColor = 'var(--color-primary-darkest)'
         }
       }}
@@ -363,7 +364,7 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
       <FontAwesomeIcon
         icon={isGame ? (fn.icon && iconMap[fn.icon] ? iconMap[fn.icon] : faDice) : faCirclePlay}
         style={{
-          fontSize: '1.5rem',
+          fontSize:'0.9rem',
           color: isSelected ? 'black' : 'var(--color-primary)',
         }}
       />
@@ -375,7 +376,7 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
-          fontSize: '0.75rem',
+          fontSize: 'var(--font-size-base)',
           color: isSelected ? 'inherit' : 'var(--color-primary)',
           fontWeight: '600',
         }}>
@@ -386,16 +387,16 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
         <div style={{
           display: 'flex',
           gap: '10px',
-          fontSize: '0.7rem',
+          fontSize: 'var(--font-size-base)',
           opacity: 0.85,
           textTransform: 'lowercase',
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <FontAwesomeIcon icon={faUser} style={{ fontSize: '0.65rem' }} />
+            <FontAwesomeIcon icon={faUser} style={{ fontSize:'0.9rem', }} />
             {activeCount}
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <FontAwesomeIcon icon={faStore} style={{ fontSize: '0.65rem' }} />
+            <FontAwesomeIcon icon={faStore} style={{ fontSize:'0.9rem',}} />
             {lobbyCount}
           </span>
         </div>

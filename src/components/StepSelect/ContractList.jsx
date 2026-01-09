@@ -90,12 +90,12 @@ export default function ContractList({
               cursor: 'pointer',
               width: '100%',
               textTransform: 'uppercase',
-              fontSize: '0.85rem',
+              fontSize: 'var(--font-size-base)',
               letterSpacing: '0.05em',
               zIndex: 1,
             }}
           >
-            <FontAwesomeIcon icon={getContractIcon(c.icon)} style={{ marginRight: '10px' ,fontSize: '1.2rem', }} />
+            <FontAwesomeIcon icon={getContractIcon(c.icon)} style={{ marginRight: '10px' ,fontSize:'0.9rem', }} />
             {c.name}
           </ListButton>
         ))}
@@ -108,7 +108,7 @@ export default function ContractList({
             flex: '1 1 auto',
             padding: '10px',
             color: 'var(--color-primary)',
-            fontSize: '0.85rem',
+            fontSize: 'var(--font-size-base)',
             lineHeight: 1.4,
             textAlign: 'justify',
             overflowY: 'auto',
@@ -122,7 +122,7 @@ export default function ContractList({
               borderSpacing: '6px 2px',
               borderCollapse: 'separate',
               width: '100%',
-              fontSize: '0.8rem',
+              fontSize: 'var(--font-size-base)',
               marginBottom: '8px',
             }}
           >

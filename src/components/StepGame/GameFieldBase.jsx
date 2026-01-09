@@ -466,7 +466,7 @@ export default function GameField({
             textAlign: 'center',
             color: 'var(--color-primary-lighter)',
             marginBottom: '0px',
-            fontSize: isMobile ? '0.95rem' : '1.1rem',
+            // fontSize: isMobile ? '0.95rem' : '1.1rem',
             fontWeight: 600,
             letterSpacing: '0.04em',
             padding: isMobile ? '0px 0px' : '10px 16px',
@@ -477,17 +477,17 @@ export default function GameField({
         >
           <strong>Turn:</strong> {hasPendingTx ? (
             <>
-              <FontAwesomeIcon icon={faSpinner} spin style={{ marginLeft: '8px', marginRight: '6px' }} />
+              <FontAwesomeIcon icon={faSpinner} spin style={{ fontSize:'0.9rem', marginLeft: '8px', marginRight: '6px' }} />
               processing your move…
             </>
           ) : isMyTurn ? (
             <>
-              <FontAwesomeIcon icon={faCirclePlay} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              <FontAwesomeIcon icon={faCirclePlay} style={{ fontSize:'0.9rem',marginLeft: '8px', marginRight: '6px' }} />
               your turn
             </>
           ) : (
             <>
-              <FontAwesomeIcon icon={faHourglassStart} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem',marginLeft: '8px', marginRight: '6px' }} />
               {resolvedNextPlayer ? formatUserHandle(resolvedNextPlayer) : opponentName || 'opponent'}
             </>
           )}
@@ -500,7 +500,7 @@ export default function GameField({
         onClick={() => handleResignClick([])}
         style={{ flex: 1 }}
       >
-        <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
+        <FontAwesomeIcon icon={faFlag} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
             Resign
           </NeonButton>
 
@@ -518,7 +518,7 @@ export default function GameField({
             onClick={() => handleTimeoutClick([])}
             style={{ flex: 1 }}
           >
-        <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+        <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
         Claim Timeout
       </NeonButton>
     </div>
@@ -547,7 +547,7 @@ export default function GameField({
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 color: 'var(--color-primary-lighter)',
-                fontSize: '1.15rem',
+                fontSize: 'var(--font-size-base)',
                 fontWeight: 600,
                 textAlign: 'center',
                 textShadow: '0 0 12px rgba(0,0,0,0.85)',

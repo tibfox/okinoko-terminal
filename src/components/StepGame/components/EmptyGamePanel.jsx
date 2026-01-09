@@ -255,7 +255,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
     border: '1px solid var(--color-primary-darkest)',
     cursor: 'pointer',
     textTransform: 'uppercase',
-    fontSize: '0.85rem',
+    fontSize: 'var(--font-size-base)',
     letterSpacing: '0.05em',
   })
 
@@ -490,7 +490,7 @@ export default function EmptyGamePanel({ defaultGameTypeId, description }) {
                 background: leaderboardScope === key ? 'var(--color-primary-darker)' : 'transparent',
                 color: leaderboardScope === key ? 'black' : 'var(--color-primary-lightest)',
                 cursor: 'pointer',
-                fontSize: '0.8rem',
+                fontSize: 'var(--font-size-base)',
                 letterSpacing: '0.04em',
               }}
               onClick={() => handleScopeChange(key)}

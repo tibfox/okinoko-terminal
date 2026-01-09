@@ -188,7 +188,7 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
             border: '1px solid var(--color-warning)',
             background: 'rgba(255, 165, 0, 0.1)',
             color: 'var(--color-warning)',
-            fontSize: '0.85rem',
+            fontSize: 'var(--font-size-base)',
           }}
         >
           ⚠ Asset {validation.asset?.toUpperCase()} mixes percentage and fixed modes across winners. Each asset must use the same mode for all winners.
@@ -201,7 +201,7 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
           style={{
             color: 'var(--color-primary-lighter)',
             opacity: 0.8,
-            fontSize: '0.9rem',
+            fontSize: 'var(--font-size-base)',
           }}
         >
           No winners defined yet. Add winners below.
@@ -244,7 +244,8 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
                 }}
                 title="Remove winner"
               >
-                <FontAwesomeIcon icon={faXmark} />
+                <FontAwesomeIcon icon={faXmark} style={
+                    {fontSize:'0.9rem'}}/>
               </button>
             </div>
 
@@ -259,7 +260,7 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
               }}
             >
               {winner.prizes?.length === 0 ? (
-                <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: 'var(--font-size-base)' }}>
                   No prizes defined
                 </span>
               ) : (
@@ -320,7 +321,7 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
                         width: '100px',
                       }}
                     />
-                    <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+                    <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
                       {prize.isFixed ? prize.asset.toUpperCase() : '%'}
                     </span>
 
@@ -337,7 +338,8 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
                       }}
                       title="Remove prize"
                     >
-                      <FontAwesomeIcon icon={faXmark} size="sm" />
+                      <FontAwesomeIcon icon={faXmark} style={
+                    {fontSize:'0.9rem'}}/>
                     </button>
                   </div>
                 ))
@@ -363,15 +365,16 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
                             color: 'var(--color-primary)',
                             cursor: 'pointer',
                             padding: '4px 8px',
-                            fontSize: '0.85rem',
+                            fontSize: 'var(--font-size-base)',
                           }}
                           title={`Add ${asset.toUpperCase()} prize`}
                         >
-                          <FontAwesomeIcon icon={faPlus} /> {asset.toUpperCase()}
+                          <FontAwesomeIcon icon={faPlus} style={
+                    {fontSize:'0.9rem'}}/> {asset.toUpperCase()}
                         </button>
                       ))
                     ) : (
-                      <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: 'var(--font-size-base)' }}>
                         All assets added
                       </span>
                     )}
@@ -419,11 +422,12 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
             color: newWinnerAddress.trim() ? 'var(--color-primary)' : 'gray',
             cursor: newWinnerAddress.trim() ? 'pointer' : 'not-allowed',
             padding: '6px 10px',
-            fontSize: '0.9rem',
+            fontSize: 'var(--font-size-base)',
           }}
           title="Add winner"
         >
-          <FontAwesomeIcon icon={faPlus} /> Add Winner
+          <FontAwesomeIcon icon={faPlus} style={
+                    {fontSize:'0.9rem'}}/> Add Winner
         </button>
       </div>
     </div>

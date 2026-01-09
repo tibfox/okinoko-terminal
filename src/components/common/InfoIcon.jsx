@@ -14,7 +14,7 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
         style={{
           color: 'var(--color-primary-lighter)',
           cursor: 'help',
-          fontSize: `${size}px`,
+          fontSize:'0.9rem',
           ...(style || {}),
         }}
         onMouseEnter={(e) => {
@@ -41,7 +41,7 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
             padding: '8px 10px',
             maxWidth: '280px',
             color: 'var(--color-primary-lighter)',
-            fontSize: '0.85rem',
+            fontSize: 'var(--font-size-base)',
             pointerEvents: 'none',
             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
             backdropFilter: 'blur(3px)',

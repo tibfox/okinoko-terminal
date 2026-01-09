@@ -66,7 +66,7 @@ export default function NeonListDropdown({
             transform: 'translateY(-50%)',
             pointerEvents: 'none',
             color: 'var(--color-primary)',
-            fontSize: '0.95rem',
+            fontSize:'0.9rem',
           }}
         />
       </button>
@@ -100,7 +100,7 @@ export default function NeonListDropdown({
                 padding: '0.4rem 0.5rem',
                 background: 'rgba(6, 6, 6, 0.9)',
                 color: 'var(--color-primary-lighter)',
-                fontSize: '0.9rem',
+                fontSize: 'var(--font-size-base)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -109,20 +109,20 @@ export default function NeonListDropdown({
               title={opt.title}
             >
               {showCheck && String(opt.value) === String(value) ? (
-                <FontAwesomeIcon icon={faCheck} style={{ color: 'var(--color-primary)' }} />
+                <FontAwesomeIcon icon={faCheck} style={{ fontSize:'0.9rem',color: 'var(--color-primary)' }} />
               ) : (
                 <span style={{ width: '16px' }} />
               )}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontWeight: 600 }}>{opt.label ?? opt.value}</div>
               {opt.subtitle ? (
-                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{opt.subtitle}</div>
+                <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>{opt.subtitle}</div>
               ) : null}
               </div>
             </button>
           ))}
           {!options.length && (
-            <div style={{ color: 'var(--color-primary-lighter)', opacity: 0.75, fontSize: '0.85rem' }}>
+            <div style={{ color: 'var(--color-primary-lighter)', opacity: 0.75, fontSize: 'var(--font-size-base)' }}>
               No options available.
             </div>
           )}

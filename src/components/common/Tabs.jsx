@@ -10,7 +10,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
     border: '1px solid var(--color-primary-darkest)',
     cursor: 'pointer',
     textTransform: 'uppercase',
-    fontSize: '0.85rem',
+    fontSize: 'var(--font-size-base)',
     letterSpacing: '0.05em',
     display: 'flex',
     justifyContent: 'center',

@@ -29,7 +29,7 @@ export function CyberContainer({ title, children, defaultCollapsed = false, maxC
         }}
       >
        {title}
-        <FontAwesomeIcon icon={collapseIcon} style={{ marginLeft: '8px', fontSize: '0.8rem' }} />
+        <FontAwesomeIcon icon={collapseIcon} style={{ fontSize:'0.9rem',marginLeft: '8px', fontSize: 'var(--font-size-base)' }} />
       </button>
 
       {/* Collapsible content */}

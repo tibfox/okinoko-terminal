@@ -29,8 +29,8 @@ export default function NeonSwitch({ name = '', checked, onChange, beep = true }
         <span
           style={{
             color: 'var(--color-primary)',
-            fontFamily: "'Share Tech Mono', monospace",
-            fontSize: '0.9em',
+            fontFamily: 'var(--font-family-base)',
+            fontSize: 'var(--font-size-base)',
             userSelect: 'none',
           }}
         >

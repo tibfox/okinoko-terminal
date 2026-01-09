@@ -311,7 +311,7 @@ function GameButton({ fn, fnName, setFnName, gameTypeId, user }) {
         width: 'auto',
         alignItems: 'center',
         textTransform: 'uppercase',
-        fontSize: '0.85rem',
+        fontSize: 'var(--font-size-base)',
         letterSpacing: '0.05em',
       } : undefined}
     >
@@ -319,13 +319,13 @@ function GameButton({ fn, fnName, setFnName, gameTypeId, user }) {
         display: 'flex',
         alignItems: 'center',
         gap: isGame && isMobile ? '4px' : '8px',
-        fontSize: isGame && isMobile ? '0.75rem' : undefined,
+        fontSize: 'var(--font-size-base)',
       }}>
         <FontAwesomeIcon
           icon={isGame ? faDice : faCirclePlay}
           style={{
             marginRight: isGame && isMobile ? '0' : '2px',
-            fontSize: isGame && isMobile ? '0.75rem' : undefined,
+            fontSize:'0.9rem',
           }}
         />
         {fn.friendlyName}
@@ -335,14 +335,15 @@ function GameButton({ fn, fnName, setFnName, gameTypeId, user }) {
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
-          fontSize: '0.72rem',
+          fontSize: 'var(--font-size-base)',
           opacity: 0.85,
           textTransform: 'lowercase',
           letterSpacing: '0.02em',
           color: isActive ? 'inherit' : 'var(--color-primary)',
           fontWeight: '600',
         }}>
-          <FontAwesomeIcon icon={faHourglassHalf} style={{ fontSize: '0.65rem' }} />
+          <FontAwesomeIcon icon={faHourglassHalf} 
+          style={{ fontSize:'0.9rem',}} />
           your turn: {myTurnCount}
         </div>
       )}
@@ -350,17 +351,17 @@ function GameButton({ fn, fnName, setFnName, gameTypeId, user }) {
         <div style={{
           display: 'flex',
           gap: '12px',
-          fontSize: '0.72rem',
+          fontSize: 'var(--font-size-base)',
           opacity: 0.85,
           textTransform: 'lowercase',
           letterSpacing: '0.02em',
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <FontAwesomeIcon icon={faUser} style={{ fontSize: '0.65rem' }} />
+            <FontAwesomeIcon icon={faUser} style={{ fontSize:'0.9rem', }} />
             {activeCount} active
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <FontAwesomeIcon icon={faStore} style={{ fontSize: '0.65rem' }} />
+            <FontAwesomeIcon icon={faStore} style={{ fontSize:'0.9rem', }} />
             {lobbyCount} lobby
           </span>
         </div>

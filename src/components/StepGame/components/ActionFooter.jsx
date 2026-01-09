@@ -32,7 +32,7 @@ export default function ActionFooter({
               ) : (
                 <>
                   Create Game
-                  <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+                  <FontAwesomeIcon icon={faChevronRight} style={{ fontSize:'0.9rem',marginLeft: '10px' }} />
                 </>
               )}
             </SparkleButton>
@@ -51,7 +51,7 @@ export default function ActionFooter({
               ) : (
                 <>
                   Join Game
-                  <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+                  <FontAwesomeIcon icon={faChevronRight} style={{ fontSize:'0.9rem',marginLeft: '10px' }} />
                 </>
               )}
             </SparkleButton>
@@ -70,7 +70,7 @@ export default function ActionFooter({
             ) : (
               <>
                 Send Move
-                <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+                <FontAwesomeIcon icon={faChevronRight} style={{ fontSize:'0.9rem',marginLeft: '10px' }} />
               </>
             )}
           </SparkleButton>
@@ -95,7 +95,7 @@ export default function ActionFooter({
       }}
     >
       <NeonButton onClick={backButtonHandler}>
-        <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
+        <FontAwesomeIcon icon={faChevronLeft} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
         {backButtonLabel}
       </NeonButton>
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>

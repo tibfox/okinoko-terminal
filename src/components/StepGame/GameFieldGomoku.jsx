@@ -779,7 +779,7 @@ export default function GameField({
       }}
     >
       <div style={{ fontWeight: 600, marginBottom: '12px' }}>Swap Decision</div>
-      <div style={{ fontSize: '0.85rem', marginBottom: '14px' }}>
+      <div style={{ fontSize: 'var(--font-size-base)', marginBottom: '14px' }}>
         Choose to stay, swap colors, or place two extra stones.
       </div>
       <div
@@ -844,7 +844,7 @@ export default function GameField({
       }}
     >
       <div style={{ fontWeight: 600, marginBottom: '12px' }}>Swap Final Decision</div>
-      <div style={{ fontSize: '0.85rem', marginBottom: '14px' }}>
+      <div style={{ fontSize: 'var(--font-size-base)', marginBottom: '14px' }}>
         The opponent added two stones. Choose your final color.
       </div>
       <div
@@ -954,17 +954,17 @@ export default function GameField({
         >
           <strong>Turn:</strong> {hasPendingTx ? (
             <>
-              <FontAwesomeIcon icon={faSpinner} spin style={{ marginLeft: '8px', marginRight: '6px' }} />
+              <FontAwesomeIcon icon={faSpinner} spin style={{ fontSize:'0.9rem',marginLeft: '8px', marginRight: '6px' }} />
               processing your move…
             </>
           ) : isMyTurn ? (
             <>
-              <FontAwesomeIcon icon={faCirclePlay} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              <FontAwesomeIcon icon={faCirclePlay} style={{ fontSize:'0.9rem',marginLeft: '8px', marginRight: '6px' }} />
               your turn
             </>
           ) : (
             <>
-              <FontAwesomeIcon icon={faHourglassStart} style={{ marginLeft: '8px', marginRight: '6px' }} />
+              <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem',marginLeft: '8px', marginRight: '6px' }} />
               {resolvedNextPlayer ? formatUserHandle(resolvedNextPlayer) : opponentName || 'opponent'}
             </>
           )}
@@ -977,7 +977,7 @@ export default function GameField({
             onClick={() => handleResignClick([])}
             style={{ marginBottom: '10px', flex: 1 }}
           >
-            <FontAwesomeIcon icon={faFlag} style={{ marginRight: '10px' }} />
+            <FontAwesomeIcon icon={faFlag} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
             Resign
           </NeonButton>
 
@@ -986,7 +986,7 @@ export default function GameField({
             onClick={() => handleTimeoutClick([])}
             style={{ marginBottom: '10px', flex: 1 }}
           >
-            <FontAwesomeIcon icon={faHourglassStart} style={{ marginRight: '10px' }} />
+            <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
             Claim Timeout
           </NeonButton>
         </div>
@@ -1017,7 +1017,7 @@ export default function GameField({
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 color: 'var(--color-primary-lighter)',
-                fontSize: '1.15rem',
+                fontSize: 'var(--font-size-base)',
                 fontWeight: 600,
                 textAlign: 'center',
                 textShadow: '0 0 12px rgba(0,0,0,0.85)',
@@ -1158,7 +1158,7 @@ function GomokuCell({
         transition: 'box-shadow 0.3s ease, background 0.3s ease',
       }}
     >
-      <span class="pixel-ttt-font" style={{ color: fgColor, fontSize: '1.2rem' }}>{glyph}</span>
+      <span class="pixel-ttt-font" style={{ color: fgColor, fontSize: 'var(--font-size-base)' }}>{glyph}</span>
     </div>
   )
 }

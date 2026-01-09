@@ -152,7 +152,7 @@ export function App() {
         <GameMoveBeepProvider>
           <>
             <div className="app-corner-logo" aria-hidden="true">
-              <span className="app-corner-logo__accent">ŌKIՈOKO</span>
+              <span className="app-corner-logo__accent">ŌKINOKO</span>
               <span className="app-corner-logo__muted">TERMINAL</span>
             </div>
             {showFooterCredit && (

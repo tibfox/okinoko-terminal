@@ -458,8 +458,8 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
         }}
         class="game-row"
       >
-        <td style={{ textAlign: 'center', fontSize: '0.8em' }}>
-          {isMyTurn && <FontAwesomeIcon icon={faPlay} style={{ color: 'var(--color-primary-lighter)' }} />}
+        <td style={{ textAlign: 'center', fontSize: 'var(--font-size-base)' }}>
+          {isMyTurn && <FontAwesomeIcon icon={faPlay} style={{ fontSize:'0.9rem',color: 'var(--color-primary-lighter)' }} />}
         </td>
         <td>
           {type === 'join'
@@ -683,7 +683,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
             <span
               style={{
                 flex: '0 0 auto',
-                fontSize: '0.8rem',
+                fontSize: 'var(--font-size-base)',
                 color: exceeds ? 'red' : 'var(--color-primary-lighter)',
               }}
             >
@@ -743,7 +743,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
                     <span
                       style={{
                         flex: '0 0 auto',
-                        fontSize: '0.8rem',
+                        fontSize: 'var(--font-size-base)',
                         color: fmpInvalid ? 'red' : 'var(--color-primary-lighter)',
                       }}
                     >

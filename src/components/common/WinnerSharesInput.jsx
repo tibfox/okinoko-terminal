@@ -202,7 +202,8 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
             }}
             title="Remove asset group"
           >
-            <FontAwesomeIcon icon={faXmark} />
+            <FontAwesomeIcon icon={faXmark} style={
+                    {fontSize:'0.9rem'}}/>
           </button>
         </div>
 
@@ -224,7 +225,7 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
               <span
                 style={{
                   color: 'var(--color-primary-lighter)',
-                  fontSize: '0.85rem',
+                  fontSize: 'var(--font-size-base)',
                   minWidth: '60px',
                 }}
               >
@@ -242,7 +243,7 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
                   width: '100px',
                 }}
               />
-              <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
                 %
               </span>
             </div>
@@ -251,7 +252,7 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
 
         {/* Summary for this group */}
         {!isFixed && amounts.length > 0 && (
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
+          <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
             {(() => {
               const total = amounts.reduce((sum, amt) => sum + (parseFloat(amt) || 0), 0)
               const isValid = Math.abs(total - 100) < 0.1
@@ -282,7 +283,7 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
           style={{
             color: 'var(--color-primary-lighter)',
             opacity: 0.8,
-            fontSize: '0.9rem',
+            fontSize: 'var(--font-size-base)',
           }}
         >
           No asset distributions defined. Add asset groups below or leave empty for equal distribution.
@@ -360,16 +361,17 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
                 color: canAddGroup ? 'var(--color-primary)' : 'gray',
                 cursor: canAddGroup ? 'pointer' : 'not-allowed',
                 padding: '6px 10px',
-                fontSize: '0.9rem',
+                fontSize: 'var(--font-size-base)',
                 marginLeft: 'auto',
               }}
               title={canAddGroup ? 'Add asset group' : 'All assets already added'}
             >
-              <FontAwesomeIcon icon={faPlus} /> Add Asset Group
+              <FontAwesomeIcon icon={faPlus} style={
+                    {fontSize:'0.9rem'}}/> Add Asset Group
             </button>
 
             {!canAddGroup && (
-              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: 'var(--font-size-base)' }}>
                 All assets (HIVE & HBD) already added
               </span>
             )}
@@ -381,7 +383,7 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
       {winnerCount > 0 && assetGroups.some(g => g.amounts.length !== winnerCount) && (
         <div
           style={{
-            fontSize: '0.85rem',
+            fontSize: 'var(--font-size-base)',
             color: 'var(--color-warning)',
             padding: '6px',
             border: '1px solid var(--color-warning)',

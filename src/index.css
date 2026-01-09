@@ -2,12 +2,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 :root {
---color-primary: hsl(180, 100%, 40%);
+  --color-primary: hsl(180, 100%, 40%);
   --color-primary-darker: hsl(180, 100%, 20%);
   --color-primary-darkest: hsl(180, 100%, 10%);
   --color-primary-lighter: hsl(180, 100%, 60%);
   --color-primary-lightest: hsl(180, 100%, 70%);
   --color-cyber-bg: color-mix(in srgb, var(--color-primary-darkest) 50%, black);
+
+  /* Font settings - adjust this value to change all font sizes */
+  --font-size-base: 1.55rem;
+  --font-family-base: 'm5x7', 'Share Tech Mono', monospace;
+  --line-height-base: 1;
 }
 
 @keyframes fadeToTransparent {

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'preact/hooks'
+import { useMemo } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faUserAstronaut, faVoteYea, faCalculator, faPlay, faLink } from '@fortawesome/free-solid-svg-icons'
+import { faVoteYea, faCalculator, faPlay, faLink } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import { formatUTC } from '../../lib/friendlyDates.js'
+import Avatar from '../common/Avatar.jsx'
 
 const PROPOSAL_DETAIL_QUERY = gql`
   query ProposalDetail($proposalId: numeric!) {
@@ -40,47 +41,6 @@ const PROPOSAL_DETAIL_QUERY = gql`
     }
   }
 `
-
-const ProposalAvatar = ({ creator }) => {
-  const [avatarError, setAvatarError] = useState(false)
-  const hiveUser = (creator || '').startsWith('hive:') ? (creator || '').replace(/^hive:/, '') : null
-  const avatarUrl = hiveUser ? `https://images.hive.blog/u/${hiveUser}/avatar` : null
-  const size = 140
-  if (avatarUrl && !avatarError) {
-    return (
-      <img
-        src={avatarUrl}
-        alt="Creator avatar"
-        onError={() => setAvatarError(true)}
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: '2px solid var(--color-primary)',
-          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-        }}
-      />
-    )
-  }
-  return (
-    <div
-      style={{
-        width: `${size}px`,
-        height: `${size}px`,
-        borderRadius: '50%',
-        border: '2px solid var(--color-primary)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--color-primary)',
-        boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-      }}
-    >
-      <FontAwesomeIcon icon={faUserAstronaut} size="3x" />
-    </div>
-  )
-}
 
 export default function ProposalDetailPopup({ proposal, isMember, onVote, onTally, onExecute }) {
   const proposalId = proposal?.proposal_id
@@ -181,7 +141,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
     color: 'var(--color-primary-lighter)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    fontSize: '0.85rem',
+    fontSize: 'var(--font-size-base)',
     padding: '0.35em 0.8em',
     cursor: 'pointer',
     border: '1px solid var(--color-primary-darkest)',
@@ -201,11 +161,11 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
         border: '1px solid var(--color-primary-darkest)',
       }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
+          <div style={{ fontWeight: 800, fontSize: 'var(--font-size-base)', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
             {detail.name || `Proposal #${detail.proposal_id}`}
           </div>
           {detail.description ? (
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.35, opacity: 0.9, textAlign: isMobile ? 'center' : 'left' }}>
+            <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.35, opacity: 0.9, textAlign: isMobile ? 'center' : 'left' }}>
               {detail.description}
             </div>
           ) : null}
@@ -219,25 +179,25 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
                 }}
                 style={popupButtonStyle}
               >
-                <FontAwesomeIcon icon={faLink} />
+                <FontAwesomeIcon icon={faLink}  style={{ fontSize: '0.9rem' }} />
                 <span>Open Proposal URL</span>
               </NeonButton>
             )}
             {isMember && (
               <NeonButton onClick={onVote} style={popupButtonStyle}>
-                <FontAwesomeIcon icon={faVoteYea} />
+                <FontAwesomeIcon icon={faVoteYea}  style={{ fontSize: '0.9rem' }}/>
                 <span>Vote</span>
               </NeonButton>
             )}
             {isMember && (
               <NeonButton disabled={tallyLocked} onClick={onTally} style={popupButtonStyle}>
-                <FontAwesomeIcon icon={faCalculator} />
+                <FontAwesomeIcon icon={faCalculator}  style={{ fontSize: '0.9rem' }}/>
                 <span>{tallyLocked ? 'Tally (locked)' : 'Tally'}</span>
               </NeonButton>
             )}
             {isMember && canExecute && (
               <NeonButton disabled={!executionReady} onClick={onExecute} style={popupButtonStyle}>
-                <FontAwesomeIcon icon={faPlay} />
+                <FontAwesomeIcon icon={faPlay}  style={{ fontSize: '0.9rem' }}/>
                 <span>{executionReady ? 'Execute' : 'Execute (wait)'}</span>
               </NeonButton>
             )}
@@ -253,8 +213,8 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
             order: isMobile ? -1 : 0,
           }}
         >
-          <ProposalAvatar creator={detail.created_by} />
-          <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+          <Avatar username={detail.created_by} size={140} />
+          <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.9 }}>
             {detail.created_by || 'Unknown creator'}
           </div>
         </div>
@@ -287,7 +247,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
             border: '1px solid var(--color-primary-darkest)',
           }}
         >
-          <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+          <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.9 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 <tr>
@@ -322,7 +282,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
             border: '1px solid var(--color-primary-darkest)',
           }}
         >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-base)' }}>
       {detail.is_poll ? (
         <div>
         <div style={{ fontWeight: 700 }}>Poll Options</div>
@@ -339,7 +299,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
       ) : (
         <div>
         <div style={{ fontWeight: 700 }}>Proposal Options</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-base)' }}>
         <div style={{ fontWeight: 700 }}>Payouts</div>
         {payouts.length === 0 ? (
           <div style={{ opacity: 0.8 }}>No payouts listed.</div>
@@ -381,7 +341,7 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
         )}
       </div>
       {metaEntries.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: 'var(--font-size-base)' }}>
           <div style={{ fontWeight: 700 }}>Outcome Meta</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>

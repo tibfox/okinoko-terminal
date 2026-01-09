@@ -105,7 +105,7 @@ export default function NeonListInput({
             style={{
               color: 'var(--color-primary-lighter)',
               opacity: 0.8,
-              fontSize: '0.9rem',
+              fontSize: 'var(--font-size-base)',
             }}
           >
             {emptyMessage}
@@ -139,7 +139,7 @@ export default function NeonListInput({
                     border: 'none',
                     color: editingValue.trim() ? 'var(--color-primary)' : 'gray',
                     cursor: editingValue.trim() ? 'pointer' : 'not-allowed',
-                    fontSize: '1rem',
+                    fontSize: 'var(--font-size-base)',
                   }}
                   title="Confirm"
                   disabled={!editingValue.trim()}
@@ -153,7 +153,7 @@ export default function NeonListInput({
                     border: 'none',
                     color: 'var(--color-primary-lighter)',
                     cursor: 'pointer',
-                    fontSize: '1rem',
+                    fontSize: 'var(--font-size-base)',
                   }}
                   title="Cancel"
                 >
@@ -198,7 +198,8 @@ export default function NeonListInput({
                   }}
                   title="Remove"
                 >
-                  <FontAwesomeIcon icon={faXmark} size="sm" />
+                  <FontAwesomeIcon icon={faXmark} style={
+                    {fontSize:'0.9rem'}} />
                 </button>
               </div>
             )
@@ -231,12 +232,13 @@ export default function NeonListInput({
             color: newItem.trim() ? 'var(--color-primary)' : 'gray',
             cursor: newItem.trim() ? 'pointer' : 'not-allowed',
             padding: '6px 10px',
-            fontSize: '0.9rem',
+            fontSize: 'var(--font-size-base)',
           }}
           title="Add item"
           disabled={!newItem.trim()}
         >
-          <FontAwesomeIcon icon={faPlus} />
+          <FontAwesomeIcon icon={faPlus} style={
+                    {fontSize:'0.9rem'}} />
         </button>
       </div>
     </div>

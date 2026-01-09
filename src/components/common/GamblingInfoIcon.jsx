@@ -31,7 +31,7 @@ export default function GamblingInfoIcon({ size = 18, style, context = 'lottery'
                 <FontAwesomeIcon
                   icon={faShieldHeart}
                   style={{
-                    fontSize: '64px',
+                    fontSize:'0.9rem',
                     color: 'var(--color-primary, #00f5ff)',
                     filter: 'drop-shadow(0 0 8px var(--color-primary, #00f5ff))'
                   }}
@@ -42,7 +42,7 @@ export default function GamblingInfoIcon({ size = 18, style, context = 'lottery'
                 textAlign: 'center',
                 lineHeight: 1.6,
                 color: 'var(--color-primary-lighter, #9be8ff)',
-                fontSize: '0.85rem'
+                fontSize: 'var(--font-size-base)'
               }}>
                 <p style={{ marginBottom: '12px' }}>
                   <strong>@tibfox does not endorse gambling</strong> and encourages responsible play.
@@ -66,7 +66,7 @@ export default function GamblingInfoIcon({ size = 18, style, context = 'lottery'
               }}>
                 <p style={{
                   marginBottom: '10px',
-                  fontSize: '0.95rem',
+                  fontSize: 'var(--font-size-base)',
                   color: 'var(--color-primary-lighter, #9be8ff)'
                 }}>
                   If you think you have a gambling problem:
@@ -79,7 +79,7 @@ export default function GamblingInfoIcon({ size = 18, style, context = 'lottery'
                     color: 'var(--color-primary, #00f5ff)',
                     textDecoration: 'none',
                     fontWeight: 600,
-                    fontSize: '1.05rem',
+                    fontSize: 'var(--font-size-base)',
                     display: 'inline-block',
                     padding: '8px 16px',
                     border: '1px solid var(--color-primary, #00f5ff)',
@@ -126,7 +126,7 @@ export default function GamblingInfoIcon({ size = 18, style, context = 'lottery'
           border: '1px solid var(--color-primary-lighter, #00f5ff)',
           background: 'transparent',
           color: 'var(--color-primary-lighter, #00f5ff)',
-          fontSize: size * 0.7,
+          fontSize: 'var(--font-size-base)',
           lineHeight: 1,
           display: 'inline-flex',
           alignItems: 'center',

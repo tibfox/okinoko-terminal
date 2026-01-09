@@ -423,7 +423,7 @@ export default function StepExecute({
         }}
       >
         <NeonButton onClick={() => setStep(1)}>
-          <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
+          <FontAwesomeIcon icon={faChevronLeft} style={{fontSize:'0.9rem', marginRight: '10px' }} />
           Back
         </NeonButton>
         <div className="next-button-glitter-wrapper">
@@ -444,7 +444,7 @@ export default function StepExecute({
               ) : (
                 <>
                   Send
-                  <FontAwesomeIcon icon={faBolt} style={{ marginLeft: '10px' }} />
+                  <FontAwesomeIcon icon={faBolt} style={{fontSize:'0.9rem', marginLeft: '10px' }} />
                 </>
               )}
             </span>

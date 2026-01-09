@@ -37,7 +37,8 @@ export default function ConnectWallet({ showModal, setShowModal, setStep }) {
     <>
       {/* --- Connect Wallet Button --- */}
       <center><NeonButton onClick={() => setShowModal(true)}>
-        <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
+        <FontAwesomeIcon icon={faChevronRight} style={{
+                    fontSize:'0.9rem', marginLeft: '10px'}} />
         Connect Wallet
       </NeonButton><br></br><br></br></center>
 

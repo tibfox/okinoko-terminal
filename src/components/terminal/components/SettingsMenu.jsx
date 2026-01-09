@@ -1,5 +1,5 @@
 import { h } from "preact";
-import { useContext, useRef, useState } from "preact/hooks";
+import { useContext, useRef } from "preact/hooks";
 import ColorPickerButton from "../headers/ColorPickerButton.jsx";
 import SoundToggleButton from "./SoundToggleButton.jsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -7,11 +7,10 @@ import { faBars, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 import Menu from "../../buttons/MenuButton.jsx";
 import { PopupContext } from "../../../popup/context.js";
 import { useDeviceBreakpoint } from "../../../hooks/useDeviceBreakpoint.js";
+import Avatar from "../../common/Avatar.jsx";
 
 export const AboutPopupContent = ({ isMobile }) => {
-  const [avatarError, setAvatarError] = useState(false);
   const creator = "tibfox";
-  const avatarUrl = `https://images.hive.blog/u/${creator}/avatar`;
   const profileUrl = `https://ecency.com/@${creator}`;
   const avatarSize = isMobile ? 120 : 160;
 
@@ -24,62 +23,31 @@ export const AboutPopupContent = ({ isMobile }) => {
         gap: "16px",
       }}
     >
-      <a
-        href={profileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: "8px",
           flexShrink: 0,
-          textDecoration: "none",
-          transition: "opacity 0.2s",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
       >
-        {!avatarError ? (
-          <img
-            src={avatarUrl}
-            alt={`${creator} avatar`}
-            onError={() => setAvatarError(true)}
-            style={{
-              width: `${avatarSize}px`,
-              height: `${avatarSize}px`,
-              borderRadius: "50%",
-              border: "2px solid var(--color-primary)",
-              objectFit: "cover",
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: `${avatarSize}px`,
-              height: `${avatarSize}px`,
-              borderRadius: "50%",
-              border: "2px solid var(--color-primary)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "var(--color-primary-darkest)",
-              fontSize: "2rem",
-            }}
-          >
-            {creator.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <Avatar
+          username={creator}
+          size={avatarSize}
+          link={profileUrl}
+          fallbackChar={creator.charAt(0).toUpperCase()}
+        />
         <div
           style={{
-            fontSize: "0.9rem",
+            fontSize: "var(--font-size-base)",
             fontWeight: "600",
             color: "var(--color-primary-lighter)",
           }}
         >
           @{creator}
         </div>
-      </a>
+      </div>
       <div style={{ flex: 1 }}>
         <p style={{ lineHeight: 1.5, margin: 0 }}>
           This terminal and the Ōkinoko smart contracts are created by <b>@{creator}</b>. If you want to
@@ -111,13 +79,13 @@ export default function SettingsMenu() {
           style={{
             cursor: "pointer",
             display: "flex",
-            fontSize: "1.5rem",
+            fontSize: "var(--font-size-base)",
             color: "var(--color-primary-darker)",
             background: "none",
             border: "none",
           }}
         >
-          <FontAwesomeIcon icon={faBars} />
+          <FontAwesomeIcon icon={faBars} style={{ fontSize: '0.9rem'}} />
         </button>
       }
     >
@@ -188,7 +156,7 @@ export default function SettingsMenu() {
                   }}
                   aria-label="About Ōkinoko"
                 >
-                  <FontAwesomeIcon icon={faCircleQuestion} />
+                  <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem'}}/>
                 </button>
               </td>
               <td style={{ padding: "4px 0" }}>About</td>

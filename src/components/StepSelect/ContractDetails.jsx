@@ -137,7 +137,7 @@ export default function ContractDetails({
             <span style={{ marginLeft: 'auto', paddingRight: '8px' }}>
               <FontAwesomeIcon
                 icon={isMetadataCollapsed ? faChevronDown : faChevronUp}
-                style={{ fontSize: '0.9rem' }}
+                style={{ fontSize:'0.9rem', }}
               />
             </span>
           </h3>
@@ -221,7 +221,7 @@ export default function ContractDetails({
             <span style={{ marginLeft: 'auto', paddingRight: '8px' }}>
               <FontAwesomeIcon
                 icon={isFunctionsCollapsed ? faChevronDown : faChevronUp}
-                style={{ fontSize: '0.9rem' }}
+                style={{ fontSize:'0.9rem', }}
               />
             </span>
           </h3>

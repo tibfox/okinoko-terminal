@@ -29,8 +29,8 @@ export const AiohaPage = () => {
           </div>
           <span style={{ position: 'relative', zIndex: 3, textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000' }}>
             {user != null ?
-            <FontAwesomeIcon icon={faUserAstronaut} style={{marginRight: '10px'}} /> :
-            <FontAwesomeIcon icon={faLink} style={{marginRight: '10px'}} />}
+            <FontAwesomeIcon icon={faUserAstronaut} style={{fontSize:'0.9rem',marginRight: '10px'}} /> :
+            <FontAwesomeIcon icon={faLink} style={{fontSize:'0.9rem',marginRight: '10px'}} />}
             {user ?? 'Connect Wallet'}
           </span>
         </NeonButton>

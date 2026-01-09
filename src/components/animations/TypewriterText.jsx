@@ -36,7 +36,8 @@ export default function TypewriterText({
         position: 'relative',
         width: '100%',
         boxSizing: 'border-box',
-        fontFamily: 'monospace',
+        fontFamily: 'var(--font-family-base)',
+        fontSize: 'var(--font-size-base)',
         whiteSpace: 'pre-line',
       }}
     >

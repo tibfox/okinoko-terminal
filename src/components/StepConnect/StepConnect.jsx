@@ -29,7 +29,7 @@ export default function StepConnect({ setStep }) {
   if (isMobile === null) {
     return null
   }
-  const terminalTitle = 'Welcome to the ŌKIՈOKO TERMINAL'
+  const terminalTitle = 'Welcome to the ŌKINOKO TERMINAL'
   return (
     <TerminalContainer
       title={terminalTitle}
@@ -99,7 +99,7 @@ export default function StepConnect({ setStep }) {
                 </div>
                 <span style={{ position: 'relative', zIndex: 3, textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000' }}>
                   Enter
-                  <FontAwesomeIcon icon={faChevronRight} style={{marginLeft: '10px'}} />
+                  <FontAwesomeIcon icon={faChevronRight} style={{fontSize:'0.9rem',marginLeft: '10px'}} />
                 </span>
               </NeonButton>
             </div>

@@ -1,5 +1,5 @@
 import { h } from 'preact'
-import { useEffect, useState, useContext } from 'preact/hooks'
+import { useEffect, useState, useContext, useRef } from 'preact/hooks'
 import RcCircleGraph from './RcCircleGraph.jsx'
 import Menu from "../../buttons/MenuButton.jsx"
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
@@ -16,6 +16,8 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
   const { openPopup, closePopup } = useContext(PopupContext)
   const [hovered, setHovered] = useState(false)
   const [fakePercent, setFakePercent] = useState(0)
+  const [compactButtons, setCompactButtons] = useState(false)
+  const buttonContainerRef = useRef(null)
 
   const showSkeleton = loading && (!bal || !rc)
 
@@ -29,6 +31,49 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
     }, 50)
     return () => clearInterval(interval)
   }, [showSkeleton])
+
+  // Detect when buttons don't fit and switch to compact mode (icons only)
+  useEffect(() => {
+    const container = buttonContainerRef.current
+    if (!container) return
+
+    const checkForWrap = () => {
+      const buttons = container.querySelectorAll('.account-action-btn')
+      if (buttons.length < 2) return
+
+      const textSpans = container.querySelectorAll('.button-text')
+
+      // First, show text and remove overflow hidden temporarily to measure true content width
+      textSpans.forEach((span) => { span.style.display = '' })
+      buttons.forEach((btn) => { btn.style.overflow = 'visible' })
+
+      // Check if any button's content overflows (scrollWidth > clientWidth)
+      let hasOverflow = false
+      buttons.forEach((btn) => {
+        if (btn.scrollWidth > btn.clientWidth) {
+          hasOverflow = true
+        }
+      })
+
+      // Restore overflow hidden
+      buttons.forEach((btn) => { btn.style.overflow = 'hidden' })
+
+      setCompactButtons(hasOverflow)
+
+      // Hide text if overflow detected
+      if (hasOverflow) {
+        textSpans.forEach((span) => { span.style.display = 'none' })
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(checkForWrap)
+    resizeObserver.observe(container)
+
+    // Initial check after a short delay to ensure layout is complete
+    requestAnimationFrame(checkForWrap)
+
+    return () => resizeObserver.disconnect()
+  }, [user])
 
   const handleMenuToggle = (isOpen) => {
     if (isOpen) {
@@ -100,7 +145,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
       menuStyle={{ background: "#000" }}
       onToggle={handleMenuToggle}
     >
-      <table style={{ borderCollapse: "collapse", color: "var(--color-primary)", fontSize: `${0.85 * fontMult}rem` }}>
+      <table style={{ borderCollapse: "collapse", color: "var(--color-primary)", fontSize: 'var(--font-size-base)' }}>
         <tbody>
           <tr>
             <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
@@ -131,7 +176,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
         </tbody>
       </table>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+      <div ref={buttonContainerRef} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
         <button
           type="button"
           onClick={handleDeposit}
@@ -144,15 +189,16 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
             color: 'var(--color-primary-lighter)',
             padding: '0.5rem 1rem',
             cursor: 'pointer',
-            fontSize: '0.75rem',
+            fontSize: 'var(--font-size-base)',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             flex: 1,
             transition: 'all 0.2s ease',
+            overflow: 'hidden',
           }}
         >
-          <FontAwesomeIcon icon={faArrowUp} style={{ marginRight: '0.5rem' }} />
-          Deposit
+          <FontAwesomeIcon icon={faArrowUp} style={{fontSize: '0.9rem', marginRight: compactButtons ? 0 : '0.5rem' }} />
+          <span className="button-text">Deposit</span>
         </button>
         <button
           type="button"
@@ -166,15 +212,16 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
             color: 'var(--color-primary-lighter)',
             padding: '0.5rem 1rem',
             cursor: 'pointer',
-            fontSize: '0.75rem',
+            fontSize: 'var(--font-size-base)',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             flex: 1,
             transition: 'all 0.2s ease',
+            overflow: 'hidden',
           }}
         >
-          <FontAwesomeIcon icon={faArrowDown} style={{ marginRight: '0.5rem' }} />
-          Withdraw
+          <FontAwesomeIcon icon={faArrowDown} style={{ fontSize: '0.9rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
+          <span className="button-text">Withdraw</span>
         </button>
       </div>
     </Menu>

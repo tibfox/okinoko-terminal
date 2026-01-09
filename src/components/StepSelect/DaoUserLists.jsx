@@ -23,6 +23,7 @@ import { PopupContext } from '../../popup/context.js'
 import ProposalDetailPopup from './ProposalDetailPopup.jsx'
 import ThresholdCircle from './ThresholdCircle.jsx'
 import PollPie from './PollPie.jsx'
+import Avatar from '../common/Avatar.jsx'
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 
 const sameUser = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase()
@@ -51,7 +52,7 @@ const baseButtonStyle = (active = false) => ({
   color: active ? 'black' : 'var(--color-primary-lighter)',
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
-  fontSize: '0.85rem',
+  fontSize: 'var(--font-size-base)',
   padding: '0.5em 1em',
   cursor: 'pointer',
   border: '1px solid var(--color-primary-darkest)',
@@ -125,48 +126,14 @@ const DAO_USER_QUERY = gql`
       stake_amount
       asset
     }
+    treasury: okinoko_dao_treasury_movements {
+      project_id
+      direction
+      amount
+      asset
+    }
   }`
 
-const ProposalAvatar = ({ creator }) => {
-  const [avatarError, setAvatarError] = useState(false)
-  const hiveUser = (creator || '').startsWith('hive:') ? (creator || '').replace(/^hive:/, '') : null
-  const avatarUrl = hiveUser ? `https://images.hive.blog/u/${hiveUser}/avatar` : null
-  const size = 140
-  if (avatarUrl && !avatarError) {
-    return (
-      <img
-        src={avatarUrl}
-        alt="Creator avatar"
-        onError={() => setAvatarError(true)}
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: '2px solid var(--color-primary)',
-          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-        }}
-      />
-    )
-  }
-  return (
-    <div
-      style={{
-        width: `${size}px`,
-        height: `${size}px`,
-        borderRadius: '50%',
-        border: '2px solid var(--color-primary)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--color-primary)',
-        boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-      }}
-    >
-      <FontAwesomeIcon icon={faUserAstronaut} size="3x" />
-    </div>
-  )
-}
 
   const DaoDetail = ({ projectId, client, onCreateProposal: detailCreate, onProposalClick, isMember, onJoin, joinPending, isMobile }) => {
     const [{ data: detailData, fetching: detailFetching, error: detailError }] = useQuery({
@@ -233,7 +200,7 @@ const ProposalAvatar = ({ creator }) => {
       color: 'var(--color-primary-lighter)',
       textTransform: 'uppercase',
       letterSpacing: '0.05em',
-      fontSize: '0.85rem',
+      fontSize: 'var(--font-size-base)',
       padding: '0.5em 1em',
       cursor: 'pointer',
       border: '1px solid var(--color-primary-darkest)',
@@ -253,9 +220,9 @@ const ProposalAvatar = ({ creator }) => {
           border: '1px solid var(--color-primary-darkest)',
         }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{base.name || `DAO #${projectId}`}</div>
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--font-size-base)' }}>{base.name || `DAO #${projectId}`}</div>
+            <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9, marginBottom: '6px' }}>by {base.created_by || 'n/a'}</div>
+            <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
             <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {daoUrl && (
                 <NeonButton
@@ -266,7 +233,7 @@ const ProposalAvatar = ({ creator }) => {
                   }}
                   style={popupButtonStyle}
                 >
-                  <FontAwesomeIcon icon={faLink} />
+                  <FontAwesomeIcon icon={faLink} style={{fontSize:'0.9rem'}} />
                   <span>Open DAO URL</span>
                 </NeonButton>
               )}
@@ -294,8 +261,8 @@ const ProposalAvatar = ({ creator }) => {
               gap: '6px',
             }}
           >
-            <ProposalAvatar creator={base.created_by} />
-            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+            <Avatar username={base.created_by} size={140} />
+            <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.9 }}>
               {base.created_by || 'Unknown owner'}
             </div>
           </div>
@@ -328,7 +295,7 @@ const ProposalAvatar = ({ creator }) => {
               border: '1px solid var(--color-primary-darkest)',
             }}
           >
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-base)' }}>
               <tbody>
                 <tr>
                   <td style={{ paddingRight: '12px', paddingBottom: '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>Voting</td>
@@ -378,9 +345,9 @@ const ProposalAvatar = ({ creator }) => {
                 Members ({members.length})
               </div>
               {members.length === 0 ? (
-                <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>No members listed.</div>
+                <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>No members listed.</div>
               ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.9rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: 'var(--font-size-base)' }}>
                   {members.map((m) => (
                     <span
                       key={m.name}
@@ -414,7 +381,7 @@ const ProposalAvatar = ({ creator }) => {
                 </span>
               </div>
               {proposals.length === 0 ? (
-                <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>No proposals yet.</div>
+                <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>No proposals yet.</div>
               ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {proposals.map((p) => (
@@ -434,7 +401,7 @@ const ProposalAvatar = ({ creator }) => {
                         {p.result?.toUpperCase() || p.state || 'pending'}
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>
+                    <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.85 }}>
                       ID {p.proposal_id} · Ready at {p.ready_at ?? 'n/a'} · Creator {p.created_by || 'n/a'}
                     </div>
                   </div>
@@ -503,7 +470,7 @@ export default function DaoUserLists({
   setContractId,
 }) {
   const [daosCollapsed, setDaosCollapsed] = useState(false)
-  const [expandedDaoIds, setExpandedDaoIds] = useState(new Set())
+  const [expandedDaoIds, setExpandedDaoIds] = useState([]) // Array to track expansion order
   const [joiningDaoId, setJoiningDaoId] = useState(null)
   const [groupCollapse, setGroupCollapse] = useState(getDaoGroupCollapseFromCookie)
 
@@ -522,13 +489,14 @@ export default function DaoUserLists({
 
   const toggleDaoExpand = useCallback((daoId) => {
     setExpandedDaoIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(daoId)) {
-        next.delete(daoId)
+      const idx = prev.indexOf(daoId)
+      if (idx !== -1) {
+        // Remove from array (collapse)
+        return prev.filter((id) => id !== daoId)
       } else {
-        next.add(daoId)
+        // Add to end of array (expand) - newest expanded items appear first
+        return [...prev, daoId]
       }
-      return next
     })
   }, [])
   const [daoStateTabs, setDaoStateTabs] = useState({}) // per dao: 'active' | 'closed'
@@ -584,6 +552,7 @@ export default function DaoUserLists({
   const proposalsRaw = data?.daoProposals ?? []
   const daoVotes = data?.daoVotes ?? []
   const stakeBalances = data?.stakeBalances ?? []
+  const treasuryMovements = data?.treasury ?? []
 
   const proposalsByDao = useMemo(() => {
     const map = new Map()
@@ -707,17 +676,26 @@ export default function DaoUserLists({
     return map
   }, [stakeBalances])
 
+  const treasuryByProject = useMemo(() => {
+    const map = new Map()
+    treasuryMovements.forEach((t) => {
+      const pid = Number(t.project_id)
+      if (!Number.isFinite(pid)) return
+      const existing = map.get(pid) || {}
+      const asset = (t.asset || '').toUpperCase()
+      if (!existing[asset]) existing[asset] = 0
+      const amt = Number(t.amount) || 0
+      existing[asset] += t.direction === 'out' ? -amt : amt
+      map.set(pid, existing)
+    })
+    return map
+  }, [treasuryMovements])
+
   const parseOptions = (str) =>
     (str || '')
       .split(';')
       .map((o) => o.trim())
       .filter(Boolean)
-
-  const relationLabel = useMemo(() => (dao) => {
-    if (membershipMap.get(dao.project_id)) return 'Member'
-    if (dao.created_by === user) return 'Creator'
-    return 'Public DAO'
-  }, [membershipMap, user])
 
   const matchesRelationFilter = useCallback(
     (dao) => {
@@ -779,7 +757,7 @@ export default function DaoUserLists({
         <span style={{ marginLeft: 'auto', paddingRight: '8px' }}>
           <FontAwesomeIcon
             icon={collapsed ? faChevronDown : faChevronUp}
-            style={{ fontSize: '0.9rem' }}
+            style={{ fontSize:'0.9rem', }}
           />
         </span>
       </h3>
@@ -794,11 +772,11 @@ export default function DaoUserLists({
         alignItems: 'center',
         gap: '8px',
         color: 'var(--color-primary-lighter)',
-        fontSize: '0.9rem',
+        fontSize: 'var(--font-size-base)',
         padding: '8px 2px',
       }}
     >
-      <FontAwesomeIcon icon={faCircleInfo} />
+      <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize:'0.9rem', }} />
       <span>{message}</span>
     </div>
   )
@@ -843,7 +821,7 @@ const renderDaoList = () => {
   }
 
   const renderDaoTile = (dao) => {
-        const isExpanded = expandedDaoIds.has(dao.project_id)
+        const isExpanded = expandedDaoIds.includes(dao.project_id)
         const daoProposals = proposalsByDao.get(Number(dao.project_id)) || []
         const totalStake = totalStakeByProject.get(Number(dao.project_id)) || 0
         const stateTab = daoStateTabs[dao.project_id] || 'active'
@@ -860,6 +838,11 @@ const renderDaoList = () => {
         const memberCount = (membersByDao.get(dao.project_id) || []).filter(m => m.active).length
         const proposalCount = daoProposals.length
         const activeProposalCount = daoProposals.filter(p => !isClosedProposal(p)).length
+        const treasury = treasuryByProject.get(Number(dao.project_id)) || {}
+        const treasuryStr = Object.entries(treasury)
+          .filter(([, amt]) => amt > 0)
+          .map(([asset, amt]) => `${Number(amt).toFixed(3)} ${asset}`)
+          .join(' · ') || null
 
         // Collapsed tile view
         if (!isExpanded) {
@@ -900,7 +883,7 @@ const renderDaoList = () => {
               {/* Name */}
               <div style={{
                 fontWeight: 700,
-                fontSize: '1rem',
+                fontSize: 'var(--font-size-base)',
                 color: 'var(--color-primary-lighter)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -910,7 +893,7 @@ const renderDaoList = () => {
               </div>
 
               {/* Creator */}
-              <div style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.85 }}>
                 <span style={{ opacity: 0.7 }}>by </span>
                 <span style={{ color: 'var(--color-primary-lighter)' }}>@{creatorName}</span>
               </div>
@@ -919,7 +902,7 @@ const renderDaoList = () => {
               <div style={{
                 display: 'flex',
                 gap: '12px',
-                fontSize: '0.75rem',
+                fontSize: 'var(--font-size-base)',
                 flexWrap: 'wrap',
               }}>
                 <span title="Member count">
@@ -932,27 +915,25 @@ const renderDaoList = () => {
                 </span>
               </div>
 
-              {/* Relation label at bottom */}
-              <div style={{ marginTop: 'auto' }}>
-                <span style={{
-                  color: 'var(--color-primary)',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
+              {/* Treasury */}
+              {treasuryStr && (
+                <div style={{
+                  fontSize: 'var(--font-size-base)',
+                  marginTop: 'auto',
                 }}>
-                  {relationLabel(dao)}
-                </span>
-              </div>
+                  <span style={{ opacity: 0.7 }}>Treasury: </span>
+                  <span style={{ color: 'var(--color-primary-lighter)' }}>{treasuryStr}</span>
+                </div>
+              )}
 
               {/* Expand hint */}
               <div style={{
-                fontSize: '0.7rem',
+                fontSize: 'var(--font-size-base)',
                 opacity: 0.5,
                 textAlign: 'center',
                 marginTop: '4px',
               }}>
-                <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: '0.6rem' }} /> Click to expand
+                <FontAwesomeIcon icon={faChevronDown} style={{ fontSize:'0.9rem' }} /> Click to expand
               </div>
             </div>
           )
@@ -994,21 +975,11 @@ const renderDaoList = () => {
               >
                 <FontAwesomeIcon
                   icon={faChevronUp}
-                  style={{ fontSize: '0.8rem', opacity: 0.7 }}
+                  style={{fontSize:'0.9rem', opacity: 0.7 }}
                   title="Collapse"
                 />
-                <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                <span style={{ fontWeight: 700, fontSize: 'var(--font-size-base)' }}>
                   {dao.name || `DAO #${dao.project_id}`}
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.8rem',
-                    color: 'var(--color-primary)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  {relationLabel(dao)}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0, position: 'relative' }}>
@@ -1020,7 +991,7 @@ const renderDaoList = () => {
                   style={baseButtonStyle(false)}
                   title="DAO info"
                 >
-                  <FontAwesomeIcon icon={faCircleInfo} />
+                  <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize:'0.9rem', }}/>
                 </button>
                 {String(dao.created_by || '').toLowerCase() === String(user || '').toLowerCase() && (
                   <button
@@ -1031,7 +1002,7 @@ const renderDaoList = () => {
                     style={baseButtonStyle(ownerMenuOpen === dao.project_id)}
                     title="Owner actions"
                   >
-                    <FontAwesomeIcon icon={faBars} />
+                    <FontAwesomeIcon icon={faBars} style={{ fontSize:'0.9rem', }}/>
                   </button>
                 )}
                 <button
@@ -1042,7 +1013,7 @@ const renderDaoList = () => {
                   style={baseButtonStyle(false)}
                   title="Create proposal"
                 >
-                  <FontAwesomeIcon icon={faPlusCircle} />
+                  <FontAwesomeIcon icon={faPlusCircle} style={{ fontSize:'0.9rem', }}/>
                 </button>
                 {ownerMenuOpen === dao.project_id && (
                   <div
@@ -1070,7 +1041,7 @@ const renderDaoList = () => {
                       }}
                       style={{ ...baseButtonStyle(false), width: '100%', justifyContent: 'space-between' }}
                     >
-                      <FontAwesomeIcon icon={faPause} />
+                      <FontAwesomeIcon icon={faPause} style={{ fontSize:'0.9rem', }}/>
                       <span>Pause / Unpause</span>
                     </button>
                     <button
@@ -1080,7 +1051,7 @@ const renderDaoList = () => {
                       }}
                       style={{ ...baseButtonStyle(false), width: '100%', justifyContent: 'space-between' }}
                     >
-                      <FontAwesomeIcon icon={faUserShield} />
+                      <FontAwesomeIcon icon={faUserShield} style={{ fontSize:'0.9rem', }}/>
                       <span>Change owner</span>
                     </button>
                   </div>
@@ -1096,7 +1067,7 @@ const renderDaoList = () => {
                 }}
               >
                 {daoProposals.length === 0 ? (
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                  <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>
                     No proposals yet.
                   </div>
                 ) : (
@@ -1117,7 +1088,7 @@ const renderDaoList = () => {
                           style={baseButtonStyle(showProposalFilterRow)}
                           title="Toggle proposal filters"
                         >
-                          <FontAwesomeIcon icon={showProposalFilterRow ? faChevronLeft : faFilter} />
+                          <FontAwesomeIcon icon={showProposalFilterRow ? faChevronLeft : faFilter} style={{ fontSize:'0.9rem', }}/>
                         </button>
                             {showProposalFilterRow && (
                               <>
@@ -1154,7 +1125,7 @@ const renderDaoList = () => {
                       )
                     })()}
                     {filteredProposals.length === 0 ? (
-                      <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                      <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>
                         No proposals in this filter.
                       </div>
                     ) : (
@@ -1195,14 +1166,14 @@ const renderDaoList = () => {
                         <span style={{ fontWeight: 700 }}>
                           {p.name || `Proposal #${p.proposal_id}`}
                           {userVotedProposals.has(Number(p.proposal_id)) ? (
-                            <span style={{ marginLeft: '8px', fontSize: '0.8rem', color: 'var(--color-primary)' }}>
+                            <span style={{ marginLeft: '8px', fontSize: 'var(--font-size-base)', color: 'var(--color-primary)' }}>
                               • Voted
                             </span>
                           ) : null}
                         </span>
                         <span
                           style={{
-                            fontSize: '0.8rem',
+                            fontSize: 'var(--font-size-base)',
                             color: 'var(--color-primary)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.04em',
@@ -1211,7 +1182,7 @@ const renderDaoList = () => {
                           {p.result?.toUpperCase() || p.state || 'pending'}
                         </span>
                       </div>
-                        <div style={{ fontSize: '0.85rem', opacity: 0.85, whiteSpace: 'normal' }}>
+                        <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.85, whiteSpace: 'normal' }}>
                           {(() => {
                             const summary = payoutSummary(p, dao.funds_asset)
                             const hasMetaUpdate = (p.metadata || '').trim()
@@ -1307,7 +1278,7 @@ const renderDaoList = () => {
                         return p.is_poll ? (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
                             <PollPie parts={opts} size={120} />
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: 'var(--font-size-base)', alignItems: 'flex-start' }}>
                               {opts.map((o, i) => (
                                 <div key={`opt-${pid}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
@@ -1341,7 +1312,6 @@ const renderDaoList = () => {
                   </>
                 )}
               </div>
-            )}
           </div>
         )
       }
@@ -1349,6 +1319,19 @@ const renderDaoList = () => {
   const renderGroupSection = (title, daoList, icon, groupKey) => {
     if (daoList.length === 0) return null
     const isCollapsed = groupCollapse[groupKey]
+
+    // Sort: expanded items first (in order of expansion), then collapsed items
+    const sortedDaoList = [...daoList].sort((a, b) => {
+      const aExpIdx = expandedDaoIds.indexOf(a.project_id)
+      const bExpIdx = expandedDaoIds.indexOf(b.project_id)
+      const aExpanded = aExpIdx !== -1
+      const bExpanded = bExpIdx !== -1
+      if (aExpanded && !bExpanded) return -1
+      if (!aExpanded && bExpanded) return 1
+      if (aExpanded && bExpanded) return aExpIdx - bExpIdx // Earlier expanded = first
+      return 0 // Both collapsed, keep original order
+    })
+
     return (
       <div key={title} style={{ marginBottom: '16px' }}>
         <div
@@ -1372,10 +1355,12 @@ const renderDaoList = () => {
             }
           }}
         >
-          <FontAwesomeIcon icon={icon} style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }} />
+          <FontAwesomeIcon icon={icon} style={{ color: 'var(--color-primary)', fontSize:'0.9rem',  }} 
+          
+          />
           <span style={{
             fontWeight: 700,
-            fontSize: '0.95rem',
+            fontSize: 'var(--font-size-base)',
             color: 'var(--color-primary-lighter)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
@@ -1385,7 +1370,7 @@ const renderDaoList = () => {
           </span>
           <FontAwesomeIcon
             icon={isCollapsed ? faChevronDown : faChevronUp}
-            style={{ fontSize: '0.8rem', opacity: 0.7 }}
+            style={{ fontSize:'0.9rem',  opacity: 0.7 }}
           />
         </div>
         {!isCollapsed && (
@@ -1396,7 +1381,7 @@ const renderDaoList = () => {
             justifyContent: 'center',
             paddingRight: '12px',
           }}>
-            {daoList.map(renderDaoTile)}
+            {sortedDaoList.map(renderDaoTile)}
           </div>
         )}
       </div>
@@ -1414,10 +1399,10 @@ const renderDaoList = () => {
           alignItems: 'center',
           gap: '8px',
           color: 'var(--color-primary-lighter)',
-          fontSize: '0.9rem',
+          fontSize: 'var(--font-size-base)',
           padding: '8px 2px',
         }}>
-          <FontAwesomeIcon icon={faCircleInfo} />
+          <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize:'0.9rem'}} />
           <span>No DAOs match the current filter.</span>
         </div>
       )}
@@ -1510,7 +1495,7 @@ const renderDaoList = () => {
                 <div style={{ fontWeight: 700 }}>{dao.name || `DAO #${dao.project_id}`}</div>
                 <div
                   style={{
-                    fontSize: '0.8rem',
+                    fontSize: 'var(--font-size-base)',
                     color: 'var(--color-primary)',
                     letterSpacing: '0.05em',
                     textTransform: 'uppercase',
@@ -1520,11 +1505,11 @@ const renderDaoList = () => {
                 </div>
               </div>
               {dao.description && (
-                <div style={{ fontSize: '0.85rem', opacity: 0.8, lineHeight: 1.3 }}>
+                <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8, lineHeight: 1.3 }}>
                   {dao.description}
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: 'var(--font-size-base)' }}>
                 <div>Voting: {dao.voting_system === '1' ? 'Stake-weighted' : 'Democratic'}</div>
                 <div>Stake min: {formatNumber(dao.stake_min_amount) ?? '?'} {dao.funds_asset || 'HIVE'}</div>
                 <div>Proposal cost: {formatNumber(dao.proposal_cost) ?? '?'} {dao.funds_asset || 'HIVE'}</div>
@@ -1545,10 +1530,10 @@ const renderDaoList = () => {
                     }
                   }
                   if (!members.length) {
-                    return <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>No members listed yet.</div>
+                    return <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>No members listed yet.</div>
                   }
                   return (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: 'var(--font-size-base)' }}>
                       {members.map((m) => (
                         <span
                           key={`${dao.project_id}-${m.name}`}
@@ -1708,7 +1693,7 @@ const renderDaoList = () => {
           style={baseButtonStyle(false)}
           title="Join DAO"
         >
-          <FontAwesomeIcon icon={faUserPlus} />
+          <FontAwesomeIcon icon={faUserPlus} style={{ fontSize:'0.9rem'}}/>
           <span>Join DAO</span>
         </button>
         <button
@@ -1717,7 +1702,7 @@ const renderDaoList = () => {
           style={baseButtonStyle(false)}
           title="Create DAO"
         >
-          <FontAwesomeIcon icon={faPlusCircle} />
+          <FontAwesomeIcon icon={faPlusCircle} style={{ fontSize:'0.9rem'}}/>
           <span>New DAO</span>
         </button>
         </div>

@@ -209,45 +209,7 @@ export default function StepSelect({
     backgroundColor="rgba(0, 0, 0, 0.5)"
     >
       
-      <p
-        style={{
-          textAlign: 'justify',
-          lineHeight: 1.5,
-          // color: '#0ff',
-          marginBottom: '0.8rem',
-          fontSize: isMobile ? '0.9rem' : '1rem',
-          padding: isMobile ? '0 1rem' : 0,
-        }}
-      >
-        These are{' '}
-        <span
-          onClick={() =>
-            popup?.openPopup?.({
-              title: 'Currently Supported Contracts',
-              body: () => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', lineHeight: 1.5 }}>
-                  <p>
-                    If you’re a developer with your own creations on-chain, drop a signal to{' '}
-                    <a href="https://discord.gg/mG5tUWWXB3" target="_blank" rel="noreferrer">
-                      @tibfox
-                    </a>
-                    . He’ll sync your contract metadata into the system so it becomes available via the Ōkinoko
-                    terminal soon.
-                  </p>
-                </div>
-              ),
-            })
-          }
-          style={{
-            color: 'var(--color-primary)',
-            fontStyle: 'italic',
-            cursor: 'pointer',
-          }}
-        >
-          currently supported
-        </span>{' '}
-        smart contracts running on the Magi blockchain.
-      </p>
+     
 
       <MobileTabs
         visible={isMobile}
@@ -353,7 +315,7 @@ export default function StepSelect({
         }}
       >
         <NeonButton onClick={() => setStep(0)}>
-          <FontAwesomeIcon icon={faChevronLeft} style={{ marginRight: '10px' }} />
+          <FontAwesomeIcon icon={faChevronLeft} style={{  fontSize: '0.9rem', marginRight: '10px' }} />
           Back
         </NeonButton>
         <div className="next-button-glitter-wrapper">
@@ -376,7 +338,7 @@ export default function StepSelect({
             </div>
             <span style={{ position: 'relative', zIndex: 3 }}> */}
               Next
-              <FontAwesomeIcon icon={faChevronRight} style={{ marginLeft: '10px' }} />
+              <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '0.9rem', marginLeft: '10px' }} />
             {/* </span> */}
             </SparkleButton>
           </NeonButton>

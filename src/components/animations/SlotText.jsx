@@ -71,7 +71,7 @@ export default function SlotText({
         verticalAlign: 'top',
         margin: 0,
         padding: 0,
-        fontFamily: "'Share Tech Mono',monospace",
+        fontFamily: 'var(--font-family-base)',
         letterSpacing: '0.05em',
         lineHeight: 1.2,
         overflow: 'hidden',

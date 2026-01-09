@@ -39,12 +39,13 @@ export default function TxQueueIndicator({ isMobile }) {
             display: "inline-flex",
             alignItems: "center",
             cursor: "pointer",
-            fontSize: "22px",
+            fontSize: "var(--font-size-base)",
           }}
         >
           <FontAwesomeIcon
             icon={faLayerGroup}
-            style={{ color: "var(--color-primary-darker)", fontSize: "1.6rem" }}
+            
+            style={{ color: "var(--color-primary-darker)",fontSize: '0.9rem'  }}
           />
 
           {/* ✅ Completed left badge */}

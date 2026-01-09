@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowUpRightFromSquare, faTicket, faTrophy, faUserAstronaut, faChevronDown, faChevronUp, faInfoCircle, faTable, faChartPie } from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpRightFromSquare, faTicket, faTrophy, faChevronDown, faChevronUp, faInfoCircle, faTable, faChartPie } from '@fortawesome/free-solid-svg-icons'
 import { faStar } from '@fortawesome/free-regular-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import PollPie from './PollPie.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
+import Avatar from '../common/Avatar.jsx'
 
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
@@ -95,7 +96,7 @@ const baseButtonStyle = {
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
   fontStyle: 'normal',
-  fontSize: '0.85rem',
+  fontSize: 'var(--font-size-base)',
   padding: '0.5em 1em',
   cursor: 'pointer',
   border: '1px solid var(--color-primary-darkest)',
@@ -110,7 +111,7 @@ const tabButtonStyle = (active = false) => ({
   ...baseButtonStyle,
   backgroundColor: active ? 'var(--color-primary-darker)' : 'transparent',
   color: active ? 'black' : 'var(--color-primary-lighter)',
-  fontSize: '0.75rem',
+  fontSize: 'var(--font-size-base)',
   padding: '0.35em 0.8em',
 })
 
@@ -195,61 +196,14 @@ export default function LotteryDetailPopup({
     ? { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }
     : { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', alignItems: 'center' }
 
-  const LotteryAvatar = ({ creator, userName, userUrl }) => {
-    const [avatarError, setAvatarError] = useState(false)
-    const hiveUser = (creator || '').startsWith('hive:') ? (creator || '').replace(/^hive:/, '') : null
-    const avatarUrl = hiveUser ? `https://images.hive.blog/u/${hiveUser}/avatar` : null
-    const size = isMobile ? 105 : 140
-
-    const avatarContent = avatarUrl && !avatarError ? (
-      <img
-        src={avatarUrl}
-        alt="Creator avatar"
-        onError={() => setAvatarError(true)}
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: '2px solid var(--color-primary)',
-          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-        }}
-      />
-    ) : (
-      <div
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          borderRadius: '50%',
-          border: '2px solid var(--color-primary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--color-primary)',
-          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-        }}
-      >
-        <FontAwesomeIcon icon={faUserAstronaut} size={isMobile ? "2x" : "3x"} />
-      </div>
-    )
-
-    if (userName && userUrl) {
-      return (
-        <a href={userUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-          {avatarContent}
-        </a>
-      )
-    }
-
-    return avatarContent
-  }
+  const avatarSize = isMobile ? 105 : 140
 
   const popupButtonStyle = {
     backgroundColor: 'transparent',
     color: 'var(--color-primary-lighter)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    fontSize: '0.85rem',
+    fontSize: 'var(--font-size-base)',
     padding: '0.35em 0.8em',
     cursor: 'pointer',
     border: '1px solid var(--color-primary-darkest)',
@@ -294,24 +248,24 @@ export default function LotteryDetailPopup({
             role="button"
             tabIndex={0}
           >
-            <FontAwesomeIcon icon={faInfoCircle} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <FontAwesomeIcon icon={faInfoCircle} style={{ color: 'var(--color-primary-darker)',fontSize:'0.9rem', }} />
+            <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Info
             </div>
             <FontAwesomeIcon
               icon={headerCollapsed ? faChevronDown : faChevronUp}
-              style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
+              style={{ marginLeft: 'auto', fontSize:'0.9rem', color: 'var(--color-primary-lighter)' }}
             />
           </div>
         )}
         {(!isMobile || !headerCollapsed) && (
         <div style={headerLayoutStyle}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1.15rem', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
+          <div style={{ fontWeight: 800, fontSize: 'var(--font-size-base)', fontFamily: 'var(--font-family-base)', marginBottom: '6px', textAlign: isMobile ? 'center' : 'left' }}>
             {lottery.name || `Lottery #${lottery.id}`}
           </div>
           {description && (
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, color: 'var(--color-primary-lighter)', marginBottom: '8px', textAlign: isMobile ? 'center' : 'left' }}>
+            <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, color: 'var(--color-primary-lighter)', marginBottom: '8px', textAlign: isMobile ? 'center' : 'left' }}>
               {description}
             </div>
           )}
@@ -325,7 +279,9 @@ export default function LotteryDetailPopup({
                 style={popupButtonStyle}
                 title="Open lottery post"
               >
-                <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                <FontAwesomeIcon icon={faArrowUpRightFromSquare} 
+                  style={{ fontSize:'0.9rem' }}
+                  />
                 <span>Open Post</span>
               </NeonButton>
             )}
@@ -338,13 +294,13 @@ export default function LotteryDetailPopup({
                   color: 'black',
                 }}
               >
-                <FontAwesomeIcon icon={faTicket} />
+                <FontAwesomeIcon icon={faTicket}    style={{ fontSize:'0.9rem' }}/>
                 <span>Buy Tickets</span>
               </NeonButton>
             )}
             {canExecute && onExecute && (
               <NeonButton onClick={onExecute} style={popupButtonStyle}>
-                <FontAwesomeIcon icon={faTrophy} />
+                <FontAwesomeIcon icon={faTrophy}    style={{ fontSize:'0.9rem' }}/>
                 <span>Execute Lottery</span>
               </NeonButton>
             )}
@@ -360,14 +316,14 @@ export default function LotteryDetailPopup({
             order: isMobile ? -1 : 0,
           }}
         >
-          <LotteryAvatar creator={lottery.creator} userName={creatorName} userUrl={creatorUrl} />
+          <Avatar username={lottery.creator} size={avatarSize} link={creatorUrl} />
           {creatorName ? (
             <a
               href={creatorUrl}
               target="_blank"
               rel="noreferrer"
               style={{
-                fontSize: '0.9rem',
+                fontSize: 'var(--font-size-base)',
                 opacity: 0.9,
                 color: 'var(--color-primary-lighter)',
                 textDecoration: 'none',
@@ -376,7 +332,7 @@ export default function LotteryDetailPopup({
               @{creatorName}
             </a>
           ) : (
-            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Unknown creator</div>
+            <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.9 }}>Unknown creator</div>
           )}
         </div>
         </div>
@@ -409,14 +365,14 @@ export default function LotteryDetailPopup({
               }
             }}
           >
-            <FontAwesomeIcon icon={faStar} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <FontAwesomeIcon icon={faStar} style={{ color: 'var(--color-primary-darker)', fontSize: '0.9rem' }} />
+            <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               {shares.length === 1 ? 'Winner' : 'Winners'}
             </div>
             {isMobile && (
               <FontAwesomeIcon
                 icon={winnersCollapsed ? faChevronDown : faChevronUp}
-                style={{ marginLeft: 'auto', fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
+                style={{ marginLeft: 'auto',fontSize: '0.9rem', color: 'var(--color-primary-lighter)' }}
               />
             )}
           </div>
@@ -443,7 +399,7 @@ export default function LotteryDetailPopup({
                     >
                       <div
                         style={{
-                          fontSize: '0.8rem',
+                          fontSize: 'var(--font-size-base)',
                           fontWeight: 700,
                           color: idx === 0 ? 'var(--color-primary-darker)' : 'var(--color-primary-lighter)',
                           textTransform: 'uppercase',
@@ -452,7 +408,7 @@ export default function LotteryDetailPopup({
                       >
                         #{idx + 1}
                       </div>
-                      <LotteryAvatar creator={winner} userName={winnerName} userUrl={winnerUrl} />
+                      <Avatar username={winner} size={avatarSize} link={winnerUrl} />
                       {winnerName ? (
                         <a
                           href={winnerUrl}
@@ -461,18 +417,18 @@ export default function LotteryDetailPopup({
                           style={{
                             color: 'var(--color-primary-lightest)',
                             textDecoration: 'none',
-                            fontSize: '0.9rem',
+                            fontSize: 'var(--font-size-base)',
                             fontWeight: 600,
                           }}
                         >
                           @{winnerName}
                         </a>
                       ) : (
-                        <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>Unknown</span>
+                        <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>Unknown</span>
                       )}
                       <div
                         style={{
-                          fontSize: '0.95rem',
+                          fontSize: 'var(--font-size-base)',
                           fontWeight: 700,
                           color: 'var(--color-primary)',
                         }}
@@ -501,7 +457,7 @@ export default function LotteryDetailPopup({
                     >
                       <div
                         style={{
-                          fontSize: '0.8rem',
+                          fontSize: 'var(--font-size-base)',
                           fontWeight: 700,
                           color: idx === 0 ? 'var(--color-primary-darker)' : 'var(--color-primary-lighter)',
                           textTransform: 'uppercase',
@@ -510,27 +466,11 @@ export default function LotteryDetailPopup({
                       >
                         #{idx + 1}
                       </div>
+                      <Avatar username="" size={avatarSize} fallbackChar="?" />
+                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>TBD</span>
                       <div
                         style={{
-                          width: isMobile ? '105px' : '140px',
-                          height: isMobile ? '105px' : '140px',
-                          borderRadius: '50%',
-                          border: '2px solid var(--color-primary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'var(--color-primary)',
-                          fontSize: isMobile ? '2.25rem' : '3rem',
-                          fontWeight: 700,
-                          boxShadow: '0 0 10px rgba(0,0,0,0.6)',
-                        }}
-                      >
-                        ?
-                      </div>
-                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>TBD</span>
-                      <div
-                        style={{
-                          fontSize: '0.95rem',
+                          fontSize: 'var(--font-size-base)',
                           fontWeight: 700,
                           color: 'var(--color-primary)',
                         }}
@@ -555,7 +495,7 @@ export default function LotteryDetailPopup({
               >
                 <div
                   style={{
-                    fontSize: '0.8rem',
+                    fontSize: 'var(--font-size-base)',
                     fontWeight: 700,
                     color: 'var(--color-primary-lighter)',
                     textTransform: 'uppercase',
@@ -564,7 +504,7 @@ export default function LotteryDetailPopup({
                 >
                   Donation
                 </div>
-                <LotteryAvatar creator={lottery.donation_account} userName={donationName} userUrl={donationUrl} />
+                <Avatar username={lottery.donation_account} size={avatarSize} link={donationUrl} />
                 <a
                   href={donationUrl}
                   target="_blank"
@@ -572,7 +512,7 @@ export default function LotteryDetailPopup({
                   style={{
                     color: 'var(--color-primary-lightest)',
                     textDecoration: 'none',
-                    fontSize: '0.9rem',
+                    fontSize: 'var(--font-size-base)',
                     fontWeight: 600,
                   }}
                 >
@@ -580,7 +520,7 @@ export default function LotteryDetailPopup({
                 </a>
                 <div
                   style={{
-                    fontSize: '0.95rem',
+                    fontSize: 'var(--font-size-base)',
                     fontWeight: 700,
                     color: 'var(--color-primary)',
                   }}
@@ -641,8 +581,8 @@ export default function LotteryDetailPopup({
                 role="button"
                 tabIndex={0}
               >
-                <FontAwesomeIcon icon={faTable} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <FontAwesomeIcon icon={faTable} style={{ color: 'var(--color-primary-darker)', fontSize: '0.9rem' }} />
+                <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   Details
                 </div>
                 <FontAwesomeIcon
@@ -652,7 +592,7 @@ export default function LotteryDetailPopup({
               </div>
             )}
             {(!isMobile || !detailsCollapsed) && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-base)' }}>
               <tbody>
                 <tr>
                   <td style={{ paddingRight: '12px', paddingBottom: isMobile ? '3px' : '6px', opacity: 0.85, whiteSpace: 'nowrap', width: '1%' }}>
@@ -744,12 +684,12 @@ export default function LotteryDetailPopup({
                           rel="noreferrer"
                           style={{
                             ...baseButtonStyle,
-                            fontSize: '0.75rem',
+                            fontSize: 'var(--font-size-base)',
                             padding: '0.2em 0.6em',
                           }}
                           title="Open donation post"
                         >
-                          <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                          <FontAwesomeIcon icon={faArrowUpRightFromSquare}   style={{ fontSize: '0.9rem'}} />
                           <span>Open Post</span>
                         </a>
                       )}
@@ -789,8 +729,8 @@ export default function LotteryDetailPopup({
                 role="button"
                 tabIndex={0}
               >
-                <FontAwesomeIcon icon={faChartPie} style={{ color: 'var(--color-primary-darker)', fontSize: '1.2rem' }} />
-                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <FontAwesomeIcon icon={faChartPie} style={{ color: 'var(--color-primary-darker)', fontSize: 'var(--font-size-base)' }} />
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary-lightest)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   Charts
                 </div>
                 <FontAwesomeIcon
@@ -827,7 +767,7 @@ export default function LotteryDetailPopup({
             {activeChart === 'prize' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
                 <PollPie parts={distributionParts} size={150} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: 'var(--font-size-base)', alignItems: 'flex-start' }}>
                   {distributionParts.map((o, i) => (
                     <div key={`dist-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
@@ -843,7 +783,7 @@ export default function LotteryDetailPopup({
             {activeChart === 'tickets' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
                 <PollPie parts={ticketParts} size={150} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: 'var(--font-size-base)', alignItems: 'flex-start' }}>
                   {ticketParts.map((o, i) => (
                     <div key={`tickets-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
@@ -860,7 +800,7 @@ export default function LotteryDetailPopup({
                 {allBuyerParts.length > 0 && totalTickets > 0 ? (
                   <>
                     <PollPie parts={allBuyerParts} size={150} />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: 'var(--font-size-base)', alignItems: 'flex-start' }}>
                       {allBuyerParts.map((o, i) => (
                         <div key={`buyers-${lottery.id}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
@@ -872,7 +812,7 @@ export default function LotteryDetailPopup({
                     </div>
                   </>
                 ) : (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
+                  <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)', opacity: 0.8 }}>
                     No ticket buyer data.
                   </div>
                 )}

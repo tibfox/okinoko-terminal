@@ -5,7 +5,12 @@
   font-style: normal;
 }
 
-
+@font-face {
+  font-family: 'm5x7';
+  src: url('/fonts/m5x7.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 /* === Base Styles === */
 
@@ -15,8 +20,9 @@ html {
 }
 
 body {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 1rem;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
   /* inherits from html (16px) */
   margin: 0;
   padding: 0;
@@ -24,7 +30,15 @@ body {
   height: 100vh;
   overflow: hidden;
   cursor: crosshair;
+}
 
+/* Ensure m5x7 font is applied everywhere */
+*, *::before, *::after {
+  font-family: inherit;
+}
+
+input, button, select, textarea {
+  font-family: var(--font-family-base);
 }
 
 h1 {
@@ -41,7 +55,7 @@ h2 {
 }
 
 h3 {
-  font-size: 1em;
+  font-size: 1.05em;
   color: var(--color-primary-lighter);
   letter-spacing: 0.3em !important;
   text-transform: uppercase;
@@ -56,13 +70,13 @@ h3 {
 }
 
 h4 {
-  font-size: 1em;
+  font-size: 1.05em;
   text-shadow: 0 0 3px var(--color-primary-lighter);
   color: var(--color-primary);
 }
 
 h5 {
-  font-size: 1em;
+  font-size: 1.05em;
   color: var(--color-primary);
   margin-left: 1em;
 }

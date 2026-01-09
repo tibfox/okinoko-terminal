@@ -90,7 +90,8 @@ const formatWeight = (value) => {
 const cellStyle = {
   padding: '0.35rem 0.5rem',
   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-  fontSize: '0.85rem',
+  fontSize: 'var(--font-size-base)',
+  fontFamily: 'var(--font-family-base)',
   textAlign: 'left',
 }
 
@@ -108,12 +109,12 @@ const renderStatusIcon = (status) => {
   const normalized = status?.toUpperCase?.() ?? ''
   switch (normalized) {
     case 'CONFIRMED':
-      return <FontAwesomeIcon icon={faCheckCircle} />
+      return <FontAwesomeIcon icon={faCheckCircle} style={{ fontSize: '0.9rem' }} />
     case 'FAILED':
-      return <FontAwesomeIcon icon={faCircleXmark} />
+      return <FontAwesomeIcon icon={faCircleXmark} style={{ fontSize: '0.9rem' }} />
     case 'INCLUDED':
     default:
-      return <FontAwesomeIcon icon={faHourglass} />
+      return <FontAwesomeIcon icon={faHourglass} style={{ fontSize: '0.9rem' }} />
   }
 }
 
@@ -473,7 +474,7 @@ export default function MonitorPanel() {
   const renderTxTable = () => {
     if (error) {
       return (
-        <div style={{ color: '#ff6464', fontSize: '0.9rem' }}>
+        <div style={{ color: '#ff6464', fontSize: 'var(--font-size-base)' }}>
           Failed to load transactions. Retrying...
         </div>
       )
@@ -482,11 +483,11 @@ export default function MonitorPanel() {
     const rows = transactions
 
     if (!rows.length && fetching) {
-      return <div style={{ fontSize: '0.9rem' }}>Loading latest transactions...</div>
+      return <div style={{ fontSize: 'var(--font-size-base)' }}>Loading latest transactions...</div>
     }
 
     if (!rows.length) {
-      return <div style={{ fontSize: '0.9rem' }}>No transactions yet. Monitoring...</div>
+      return <div style={{ fontSize: 'var(--font-size-base)' }}>No transactions yet. Monitoring...</div>
     }
 
     const pageRows = rows
@@ -576,7 +577,7 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '8px 0',
-          fontSize: '0.85rem',
+          fontSize: 'var(--font-size-base)',
         }}
       >
         <button
@@ -586,7 +587,8 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
           style={{
             minWidth: '70px',
             padding: '4px 10px',
-            
+            fontFamily: 'var(--font-family-base)',
+            fontSize: 'var(--font-size-base)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             background: 'transparent',
             color: 'inherit',
@@ -605,7 +607,8 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
             style={{
               minWidth: '70px',
               padding: '4px 10px',
-              
+              fontFamily: 'var(--font-family-base)',
+              fontSize: 'var(--font-size-base)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               background: 'transparent',
               color: 'inherit',
@@ -623,18 +626,18 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
   const renderWitnessTable = () => {
     if (witnessError) {
       return (
-        <div style={{ color: '#ff6464', fontSize: '0.9rem' }}>
+        <div style={{ color: '#ff6464', fontSize: 'var(--font-size-base)' }}>
           Failed to load witness data. Retrying...
         </div>
       )
     }
 
     if (!witnesses.length && witnessLoading) {
-      return <div style={{ fontSize: '0.9rem' }}>Loading witness data...</div>
+      return <div style={{ fontSize: 'var(--font-size-base)' }}>Loading witness data...</div>
     }
 
     if (!witnesses.length) {
-      return <div style={{ fontSize: '0.9rem' }}>No witness data yet.</div>
+      return <div style={{ fontSize: 'var(--font-size-base)' }}>No witness data yet.</div>
     }
 
     const totalPages = Math.max(1, Math.ceil(witnesses.length / WITNESS_PAGE_SIZE))
@@ -688,18 +691,18 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
   const renderBlocksTable = () => {
     if (blocksError) {
       return (
-        <div style={{ color: '#ff6464', fontSize: '0.9rem' }}>
+        <div style={{ color: '#ff6464', fontSize: 'var(--font-size-base)' }}>
           Failed to load blocks. Retrying...
         </div>
       )
     }
 
     if (!blocks.length && blocksLoading) {
-      return <div style={{ fontSize: '0.9rem' }}>Loading latest blocks...</div>
+      return <div style={{ fontSize: 'var(--font-size-base)' }}>Loading latest blocks...</div>
     }
 
     if (!blocks.length) {
-      return <div style={{ fontSize: '0.9rem' }}>No block data yet.</div>
+      return <div style={{ fontSize: 'var(--font-size-base)' }}>No block data yet.</div>
     }
 
     const totalPages = Math.max(1, Math.ceil(blocks.length / BLOCK_PAGE_SIZE))

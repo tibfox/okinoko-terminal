@@ -11,10 +11,11 @@ export function PopupProvider({ children }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const isMobile = useDeviceBreakpoint();
 
-  const openPopup = ({ title, body }) => {
+  const openPopup = ({ title, body, width }) => {
     setPopup({
       title,
       body,
+      width,
       showCloseButton: true,
     })
     setPosition({ x: 0, y: 0 }); // Reset position when opening new popup
@@ -83,7 +84,7 @@ export function PopupProvider({ children }) {
           <div
             style={{
               position: "relative",
-              width: isMobile ? "90vw" : "min(95vw, 50vw)",
+              width: isMobile ? "90vw" : (popup.width || "min(95vw, 50vw)"),
               maxHeight: isMobile ? "90vh" : "95vh",
               display: "flex",
               flexDirection: "column",
@@ -113,7 +114,7 @@ export function PopupProvider({ children }) {
                   color: "var(--color-primary-lightest)",
                   textTransform: "uppercase",
                   letterSpacing: "0.2em",
-                  fontSize: "0.85rem",
+                  fontSize: "var(--font-size-base)",
                   cursor: isDragging ? "grabbing" : "grab",
                   userSelect: "none",
                 }}
@@ -136,7 +137,7 @@ export function PopupProvider({ children }) {
                   border: "1px solid var(--color-primary-darkest)",
                   background: "transparent",
                   color: "var(--color-primary-lighter)",
-                  fontFamily: "'Share Tech Mono', monospace",
+                  fontFamily: 'var(--font-family-base)',
                   letterSpacing: "0.2em",
                   padding: "10px",
                   cursor: "pointer",

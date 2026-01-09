@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useContext } from 'preact/hooks'
+import { useEffect, useMemo, useState, useContext, useRef } from 'preact/hooks'
 import { useAioha } from '@aioha/providers/react'
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
 import InfoIcon from '../../common/InfoIcon.jsx'
@@ -13,7 +13,7 @@ const panelStyle = {
   flexDirection: 'column',
   gap: '1rem',
   padding: '0.5rem',
-  fontSize: '0.9rem',
+  fontSize: 'var(--font-size-base)',
   color: 'var(--color-primary-lighter)',
   flex: 1,
   minHeight: 0,
@@ -22,7 +22,7 @@ const panelStyle = {
 const tableStyle = {
   width: '100%',
   borderCollapse: 'collapse',
-  fontSize: '0.85rem',
+  fontSize: 'var(--font-size-base)',
 }
 
 const cellLabelStyle = {
@@ -105,6 +105,8 @@ export default function AccountDataPanel() {
   const { balances, rc, loading, refresh } = useAccountBalances()
   const [fakePercent, setFakePercent] = useState(0)
   const { openPopup, closePopup } = useContext(PopupContext)
+  const [compactButtons, setCompactButtons] = useState(false)
+  const buttonContainerRef = useRef(null)
 
   const showSkeleton = loading && (!balances || !rc)
   const normalizedUser = useMemo(() => {
@@ -126,6 +128,49 @@ export default function AccountDataPanel() {
     }, 80)
     return () => clearInterval(interval)
   }, [showSkeleton])
+
+  // Detect when buttons don't fit and switch to compact mode (icons only)
+  useEffect(() => {
+    const container = buttonContainerRef.current
+    if (!container) return
+
+    const checkForWrap = () => {
+      const buttons = container.querySelectorAll('.account-action-btn')
+      if (buttons.length < 2) return
+
+      const textSpans = container.querySelectorAll('.button-text')
+
+      // First, show text and remove overflow hidden temporarily to measure true content width
+      textSpans.forEach((span) => { span.style.display = '' })
+      buttons.forEach((btn) => { btn.style.overflow = 'visible' })
+
+      // Check if any button's content overflows (scrollWidth > clientWidth)
+      let hasOverflow = false
+      buttons.forEach((btn) => {
+        if (btn.scrollWidth > btn.clientWidth) {
+          hasOverflow = true
+        }
+      })
+
+      // Restore overflow hidden
+      buttons.forEach((btn) => { btn.style.overflow = 'hidden' })
+
+      setCompactButtons(hasOverflow)
+
+      // Hide text if overflow detected
+      if (hasOverflow) {
+        textSpans.forEach((span) => { span.style.display = 'none' })
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(checkForWrap)
+    resizeObserver.observe(container)
+
+    // Initial check after a short delay to ensure layout is complete
+    requestAnimationFrame(checkForWrap)
+
+    return () => resizeObserver.disconnect()
+  }, [normalizedUser])
 
   const rcRatio = rc?.max_rcs ? rc.amount / rc.max_rcs : 0
   const rcPercent = showSkeleton ? fakePercent : Math.min(100, Math.max(0, rcRatio * 100))
@@ -176,7 +221,7 @@ export default function AccountDataPanel() {
   if (!normalizedUser) {
     return (
       <div style={panelStyle}>
-        <div style={{ color: 'var(--color-primary-lighter)', fontSize: '0.9rem' }}>
+        <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
           Sign in to view account data.
         </div>
       </div>
@@ -196,6 +241,7 @@ export default function AccountDataPanel() {
     openPopup({
       title: 'Deposit',
       body: () => <DepositPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
+      width: '33vw',
     })
   }
 
@@ -206,6 +252,7 @@ export default function AccountDataPanel() {
     openPopup({
       title: 'Withdraw',
       body: () => <WithdrawPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
+      width: '33vw',
     })
   }
 
@@ -222,7 +269,7 @@ export default function AccountDataPanel() {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.85rem' }}>
+            <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: 'var(--font-size-base)' }}>
               {normalizedUser}
             </div>
             <button
@@ -237,15 +284,15 @@ export default function AccountDataPanel() {
                 padding: '0.25rem 0.75rem',
 
                 cursor: 'pointer',
-                fontSize: '0.75rem',
+                fontSize: 'var(--font-size-base)',
                 letterSpacing: '0.1em',
               }}
             >
-              <FontAwesomeIcon icon={faRotateLeft} />
+              <FontAwesomeIcon icon={faRotateLeft}    style={{ fontSize: '0.9rem' }} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+          <div ref={buttonContainerRef} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
             <button
               type="button"
               onClick={handleDeposit}
@@ -258,14 +305,15 @@ export default function AccountDataPanel() {
                 color: 'var(--color-primary-lighter)',
                 padding: '0.5rem 1rem',
                 cursor: 'pointer',
-                fontSize: '0.75rem',
+                fontSize: 'var(--font-size-base)',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 flex: 1,
                 transition: 'all 0.2s ease',
+                overflow: 'hidden',
               }}
             >
-              <FontAwesomeIcon icon={faArrowUp} style={{ marginRight: '0.5rem' }} />
+              <FontAwesomeIcon icon={faArrowUp}   style={{ fontSize: '0.9rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
               <span className="button-text">Deposit</span>
             </button>
             <button
@@ -280,20 +328,21 @@ export default function AccountDataPanel() {
                 color: 'var(--color-primary-lighter)',
                 padding: '0.5rem 1rem',
                 cursor: 'pointer',
-                fontSize: '0.75rem',
+                fontSize: 'var(--font-size-base)',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 flex: 1,
                 transition: 'all 0.2s ease',
+                overflow: 'hidden',
               }}
             >
-              <FontAwesomeIcon icon={faArrowDown} style={{ marginRight: '0.5rem' }} />
+              <FontAwesomeIcon icon={faArrowDown}  style={{ fontSize: '0.9rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
               <span className="button-text">Withdraw</span>
             </button>
           </div>
 
           <div style={{ ...progressWrapperStyle, marginTop: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', letterSpacing: '0.1em' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-base)', letterSpacing: '0.1em' }}>
               <span style={{ color: 'var(--color-primary-lighter)' }}>RC</span>
               <span style={{ color: 'var(--color-primary-lighter)' }}>
                 {showSkeleton ? '—' : `${rcPercent.toFixed(1)}%`}

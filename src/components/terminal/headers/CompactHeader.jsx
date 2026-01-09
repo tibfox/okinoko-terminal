@@ -1,5 +1,4 @@
 import SlotText from '../../animations/SlotText.jsx'
-import { useResponsiveTitleSize } from '../../../hooks/useResponsiveTitleSize.js'
 
 export default function CompactHeader({
   title,
@@ -7,21 +6,9 @@ export default function CompactHeader({
   isMinimized = false,
 }) {
   const normalizedTitle = title?.toUpperCase().replace(/Ō/g, 'ō') ?? ''
-  const { wrapperRef, fontSize, isClamped } = useResponsiveTitleSize({
-    text: normalizedTitle,
-    isMinimized,
-  })
-
-  const showGlyphFallback = isMinimized && isClamped
-
-  const commonStyle = {
-    fontSize: `${fontSize}px`,
-    lineHeight: 1.05,
-  }
 
   return (
     <div
-      ref={wrapperRef}
       onPointerDown={onDragPointerDown}
       style={{
         cursor: 'grab',
@@ -31,7 +18,25 @@ export default function CompactHeader({
         marginBottom: '1.5rem',
       }}
     >
-      {showGlyphFallback ? (
+      {isMinimized ? (
+        <h1
+          className="cyber-tile"
+          style={{
+            margin: 0,
+            marginRight: '15px',
+            fontSize: 'var(--font-size-base)',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            letterSpacing: '0.15em',
+            display: 'inline-block',
+          }}
+          title={normalizedTitle}
+        >
+          {normalizedTitle}
+        </h1>
+      ) : (
         <SlotText
           text={normalizedTitle}
           tag="h1"
@@ -42,35 +47,16 @@ export default function CompactHeader({
           className="cyber-tile"
           style={{
             margin: 0,
-            marginRight: '75px',
-            fontFamily: "'Share Tech Mono',monospace",
+            marginRight: '15px',
+            fontFamily: 'var(--font-family-base)',
+            fontSize: 'var(--font-size-base)',
             letterSpacing: '0.15em',
             display: 'inline-block',
             whiteSpace: 'nowrap',
             textOverflow: 'ellipsis',
             overflow: 'hidden',
-            ...commonStyle,
           }}
         />
-      ) : (
-        <h1
-          className="cyber-tile"
-          style={{
-            margin: 0,
-            marginRight: '15px',
-            // fontFamily: "'Share Tech Mono',monospace",
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-            overflow: 'hidden',
-            letterSpacing: '0.15em',
-            display: 'inline-block',
-            ...commonStyle,
-          }}
-          title={isClamped ? normalizedTitle : undefined}
-        >
-          {normalizedTitle}
-        </h1>
       )}
     </div>
   )

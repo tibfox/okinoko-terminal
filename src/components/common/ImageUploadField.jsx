@@ -89,7 +89,7 @@ export default function ImageUploadField({ paramName, user, params, setParams })
             style={{
               marginTop: '4px',
               color: '#0ff',
-              fontSize: '0.75rem',
+              fontSize: 'var(--font-size-base)',
               wordBreak: 'break-all',
               textAlign: 'center',
             }}

@@ -44,8 +44,8 @@ export default function ThresholdCircle({ label, value, total, targetPercent }) 
         </text>
       </svg>
       <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-        <span style={{ fontSize: '0.8rem', color: 'var(--color-primary-lighter)' }}>{label}</span>
-        <span style={{ fontSize: '0.75rem', color: reached ? 'var(--color-primary)' : 'var(--color-primary-lighter)' }}>
+        <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)' }}>{label}</span>
+        <span style={{ fontSize: 'var(--font-size-base)', color: reached ? 'var(--color-primary)' : 'var(--color-primary-lighter)' }}>
           <span style={{ color: targetColor }}>
             {Number.isFinite(target) ? `${target}% target` : 'n/a'}
           </span>
