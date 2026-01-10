@@ -1,5 +1,7 @@
 /* Retro pixel font for TicTacToe stones */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+/* Japanese pixel font for contract kanji */
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
 :root {
   --color-primary: hsl(180, 100%, 40%);

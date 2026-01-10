@@ -6,7 +6,7 @@ import {
   faTicket,
   faPeopleGroup,
   faDharmachakra
-} from '@fortawesome/free-solid-svg-icons';
+} from '@fortawesome/free-solid-svg-icons'
 
 // Icon mapping: string name to FontAwesome icon object
 const iconMap = {
@@ -16,14 +16,14 @@ const iconMap = {
   faTicket,
   faPeopleGroup,
   faDharmachakra
-};
+}
 
 /**
  * Get the icon for a contract, falling back to default if not found
  */
 const getContractIcon = (iconName) => {
-  return iconMap[iconName] || faFileContract;
-};
+  return iconMap[iconName] || faFileContract
+}
 
 /**
  * ContractGrid
@@ -100,13 +100,26 @@ export default function ContractGrid({
               }
             }}
           >
-            <FontAwesomeIcon
-              icon={getContractIcon(c.icon)}
-              style={{
-                fontSize:'0.9rem',
-                color: isSelected ? 'black' : 'var(--color-primary)',
-              }}
-            />
+            {c.kanji ? (
+              <span
+                style={{
+                  fontFamily: '"DotGothic16", sans-serif',
+                  fontSize: c.kanji.length > 1 ? '1.25rem' : '1.5rem',
+                  lineHeight: 1,
+                  color: isSelected ? 'black' : 'var(--color-primary)',
+                }}
+              >
+                {c.kanji}
+              </span>
+            ) : (
+              <FontAwesomeIcon
+                icon={getContractIcon(c.icon)}
+                style={{
+                  fontSize: '1.35rem',
+                  color: isSelected ? 'black' : 'var(--color-primary)',
+                }}
+              />
+            )}
             <span style={{ textAlign: 'center', lineHeight: 1.3 }}>
               {c.name}
             </span>

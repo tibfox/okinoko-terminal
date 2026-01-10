@@ -5,12 +5,19 @@ import { useEffect, useState } from 'preact/hooks'
  * Returns true when the viewport is below the given breakpoint (defaults to 900px).
  */
 export function useDeviceBreakpoint(breakpoint = 900) {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') {
-      return null
+  // Defensive initial state calculation to avoid issues with corrupted cache
+  const getInitialState = () => {
+    try {
+      if (typeof window === 'undefined') {
+        return false
+      }
+      return window.innerWidth < breakpoint
+    } catch {
+      return false
     }
-    return window.innerWidth < breakpoint
-  })
+  }
+
+  const [isMobile, setIsMobile] = useState(getInitialState)
 
   useEffect(() => {
     if (typeof window === 'undefined') {

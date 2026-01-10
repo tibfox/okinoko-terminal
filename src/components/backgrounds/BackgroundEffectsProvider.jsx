@@ -1,4 +1,4 @@
-import { createContext } from 'preact'
+import { createContext, Component } from 'preact'
 import { useContext, useEffect, useMemo, useState } from 'preact/hooks'
 import ColorBendsEffect from './ColorBendsEffect.jsx'
 import LetterGlitchEffect from './LetterGlitchEffect.jsx'
@@ -9,6 +9,34 @@ import FaultyTerminalEffect from './FaultyTerminalEffect.jsx'
 import GlitterEffect from './GlitterEffect.jsx'
 import TwinkleGridEffect from './TwinkleGridEffect.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
+
+// Error boundary to catch and recover from hooks initialization errors
+class BackgroundErrorBoundary extends Component {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error, info) {
+    // Log the error but don't crash the app
+    console.warn('[BackgroundEffectsProvider] Caught error, rendering without effects:', error?.message || error)
+    // Clear any potentially corrupted cache
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.clear()
+      } catch {}
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Render children without the background effects
+      return this.props.children
+    }
+    return this.props.fallback
+  }
+}
 
 export const BACKGROUND_EFFECTS = [
   {
@@ -96,7 +124,7 @@ const BackgroundEffectsContext = createContext({
   setActiveEffectId: () => {},
 })
 
-export function BackgroundEffectsProvider({ children }) {
+function BackgroundEffectsProviderInner({ children }) {
   const isMobile = useDeviceBreakpoint()
   const [activeEffectId, setActiveEffectId] = useState(() => getValidEffectId(readEffectFromCookie()) ?? getDefaultEffectId())
 
@@ -131,6 +159,17 @@ export function BackgroundEffectsProvider({ children }) {
       {EffectComponent ? <EffectComponent /> : null}
       {children}
     </BackgroundEffectsContext.Provider>
+  )
+}
+
+// Wrap with error boundary to gracefully handle hooks initialization errors
+// that can occur with corrupted browser cache
+export function BackgroundEffectsProvider({ children }) {
+  return (
+    <BackgroundErrorBoundary
+      children={children}
+      fallback={<BackgroundEffectsProviderInner>{children}</BackgroundEffectsProviderInner>}
+    />
   )
 }
 

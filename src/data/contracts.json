@@ -10,6 +10,7 @@
       "verifiedOn": "2025-10-20T08:37:05",
       "description": "This contract acts as an on-chain escrow between two parties, optionally including an arbitrator for dispute resolution. Deposit funds securely and choose whether to release them or request a refund.",
       "icon": "faHandshake",
+      "kanji": "供託",
       "functions": [
         {
           "name": "e_create",
@@ -125,6 +126,7 @@
       "verifiedOn": "2025-12-11 20:42:13",
       "description": "Play games on-chain!",
       "icon": "faGamepad",
+      "kanji": "列",
       "functions": [
         {
           "name": "1",
@@ -199,6 +201,7 @@
       "verifiedOn": "unverified",
       "description": "Create your own DAO with your own rules!",
       "icon": "faPeopleGroup",
+      "kanji": "真道",
       "devOnly": true,
       "functions": [
         {
@@ -784,6 +787,7 @@
       "owner": "tibfox.vsc",
       "deployedOn": "2025-10-31T15:12:33",
       "verifiedOn": "unverified",
+      "icon": "faCode",
       "description": "All currently supported sdk functions",
       "devOnly": true,
       "functions": [
@@ -1061,6 +1065,7 @@
       "verifiedOn": "2025-12-20T13:12:30",
       "description": "Create and participate in on-chain lotteries with customizable prize distributions, burn rates, and optional donations.",
       "icon": "faTicket",
+      "kanji": "宝",
       "functions": [
         {
           "name": "create_lottery",
@@ -1288,6 +1293,7 @@
       "verifiedOn": "unverified",
       "description": "Transparent on-chain prize distribution. Split prizes among random winners or predefined recipients with flexible multi-asset support.",
       "icon": "faDharmachakra",
+      "kanji": "戦果",
       "devOnly": true,
       "functions": [
         {
