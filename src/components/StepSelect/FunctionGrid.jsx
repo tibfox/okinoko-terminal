@@ -2,7 +2,7 @@ import { useMemo, useEffect, useContext, useState, useCallback } from 'preact/ho
 import { createContext } from 'preact'
 import { useQuery, gql, useSubscription } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDice, faCirclePlay, faUser, faStore, faChevronDown, faChevronUp, faHashtag, faCircleDot, faTableCells, faTableCellsLarge } from '@fortawesome/free-solid-svg-icons'
+import { faDice, faCirclePlay, faUser, faStore, faChevronDown, faChevronUp, faHashtag, faCircleDot, faTableCells, faTableCellsLarge, faArrowUp } from '@fortawesome/free-solid-svg-icons'
 
 // Map icon names from contracts.json to actual FontAwesome icons
 const iconMap = {
@@ -11,6 +11,7 @@ const iconMap = {
   faTableCells,
   faTableCellsLarge,
   faDice,
+  faArrowUp,
 }
 import { useAioha } from '@aioha/react-ui'
 import { deriveGameTypeId } from '../StepGame/gameTypes.js'

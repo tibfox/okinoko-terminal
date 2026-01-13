@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Frontend application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8082:80"
+    depends_on:
+      - tracking-api
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # Tracking API server
+  tracking-api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3332:3332"
+    volumes:
+      # Persist tracking data outside the container
+      - tracking-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - TRACKING_PORT=3332
+    restart: unless-stopped
+
+volumes:
+  tracking-data:
+    driver: local

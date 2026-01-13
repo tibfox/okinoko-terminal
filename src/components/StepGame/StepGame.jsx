@@ -242,11 +242,15 @@ export default function StepGame({
     }
   }, [draggingDivider])
 
-  const leftCollapsed = !isMobile && dividerPosition <= 0.05
+  // Games 2 / Yūgi contract - single-player games, hide left panel
+  const GAMES2_CONTRACT_ID = 'vsc1PLACEHOLDER_GAMES2'
+  const isSinglePlayerContract = contractId === GAMES2_CONTRACT_ID
+
+  const leftCollapsed = isSinglePlayerContract || (!isMobile && dividerPosition <= 0.05)
   const rightCollapsed = !isMobile && dividerPosition >= 0.95
   const leftFraction = dividerPosition
   const rightFraction = Math.max(0, 1 - dividerPosition)
-  const gridTemplateColumns = isMobile
+  const gridTemplateColumns = isMobile || isSinglePlayerContract
     ? '1fr'
     : leftCollapsed
       ? `0px ${SPLITTER_WIDTH_PX}px 1fr`
@@ -261,7 +265,7 @@ export default function StepGame({
       backgroundColor="rgba(0, 0, 0, 0.5)"
     >
       <LobbySubscriptionProvider gameTypeId={derivedGameTypeId}>
-        {isMobile && (
+        {isMobile && !isSinglePlayerContract && (
           <div style={{ marginBottom: '8px' }}>
             <Tabs
               tabs={mobileTabs}
@@ -289,49 +293,51 @@ export default function StepGame({
           }}
           ref={layoutRef}
         >
-        {/** Desktop keeps both columns mounted so grid columns remain stable; mobile still toggles */} 
-        <div
-          style={{
-            display: isMobile ? (activePage === 'form' ? 'flex' : 'none') : 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            overflowY: 'auto',
-            flex: 1,
-            minWidth: 0,
-            pointerEvents: leftCollapsed ? 'none' : 'auto',
-            visibility: leftCollapsed ? 'hidden' : 'visible',
-          }}
-        >
-          {!showingGameDetails ? (
-            <GameSelect
-              user={user}
-              contract={contract}
-              fn={fn}
-              params={params}
-              setParams={setParams}
-              pending={pending}
-              onSend={handleSend}
-              setStep={setStep}
-              allMandatoryFilled={allMandatoryFilled}
-              onGameSelected={selectGame}
-              isMobile={isMobile}
-            />
-          ) : (
-            <GameDetails
-              game={activeGame}
-              opponentName={opponentName}
-              formattedAgo={formattedAgo}
-              isMyTurn={isMyTurn}
-              nextTurnPlayer={nextPlayer}
-              swapInfo={swapInfo}
-              onResign={handleSend}
-              onTimeout={handleSend}
-            />
-          )}
+        {/** Desktop keeps both columns mounted so grid columns remain stable; mobile still toggles */}
+        {!isSinglePlayerContract && (
+          <div
+            style={{
+              display: isMobile ? (activePage === 'form' ? 'flex' : 'none') : 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              overflowY: 'auto',
+              flex: 1,
+              minWidth: 0,
+              pointerEvents: leftCollapsed ? 'none' : 'auto',
+              visibility: leftCollapsed ? 'hidden' : 'visible',
+            }}
+          >
+            {!showingGameDetails ? (
+              <GameSelect
+                user={user}
+                contract={contract}
+                fn={fn}
+                params={params}
+                setParams={setParams}
+                pending={pending}
+                onSend={handleSend}
+                setStep={setStep}
+                allMandatoryFilled={allMandatoryFilled}
+                onGameSelected={selectGame}
+                isMobile={isMobile}
+              />
+            ) : (
+              <GameDetails
+                game={activeGame}
+                opponentName={opponentName}
+                formattedAgo={formattedAgo}
+                isMyTurn={isMyTurn}
+                nextTurnPlayer={nextPlayer}
+                swapInfo={swapInfo}
+                onResign={handleSend}
+                onTimeout={handleSend}
+              />
+            )}
 
-        </div>
+          </div>
+        )}
 
-        {!isMobile && (
+        {!isMobile && !isSinglePlayerContract && (
           <ResizableDivider
             leftCollapsed={leftCollapsed}
             rightCollapsed={rightCollapsed}
@@ -341,7 +347,7 @@ export default function StepGame({
 
         <div
           style={{
-            display: isMobile ? (activePage === 'preview' ? 'flex' : 'none') : 'flex',
+            display: isMobile && !isSinglePlayerContract ? (activePage === 'preview' ? 'flex' : 'none') : 'flex',
             flexDirection: 'column',
             height: '100%',
             overflowY: 'auto',
@@ -374,6 +380,7 @@ export default function StepGame({
               onExecuteAction={handleSend}
               pendingAction={pending}
               onSwapInfoChange={setSwapInfo}
+              contractId={contractId}
             />)}
         </div>
       </div>
@@ -389,6 +396,7 @@ export default function StepGame({
         onBackToMode={() => setStep(1)}
         onBackToGameList={unselectGame}
         showGameListButton={showingGameDetails}
+        hideSendButton={isSinglePlayerContract}
       />
       </LobbySubscriptionProvider>
     </TerminalContainer>

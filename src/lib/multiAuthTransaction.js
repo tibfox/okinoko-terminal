@@ -7,6 +7,29 @@ const HIVE_NODES = [
 let dhiveModule = null
 let client = null
 
+/**
+ * Convert hex string to Uint8Array (browser-compatible alternative to Buffer.from)
+ */
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
+  }
+  return bytes
+}
+
+/**
+ * Read a 32-bit little-endian unsigned integer from Uint8Array at offset
+ */
+function readUInt32LE(bytes, offset) {
+  return (
+    bytes[offset] |
+    (bytes[offset + 1] << 8) |
+    (bytes[offset + 2] << 16) |
+    (bytes[offset + 3] << 24)
+  ) >>> 0
+}
+
 async function getDhive() {
   if (!dhiveModule) {
     dhiveModule = await import('@hiveio/dhive')
@@ -59,10 +82,10 @@ export async function createMultiAuthTransfer({
     },
   ]
 
-  // Build the transaction
-  const transaction = {
+  // Build the unsigned transaction
+  const unsignedTransaction = {
     ref_block_num: props.head_block_number & 0xFFFF,
-    ref_block_prefix: Buffer.from(props.head_block_id, 'hex').readUInt32LE(4),
+    ref_block_prefix: readUInt32LE(hexToBytes(props.head_block_id), 4),
     expiration: expireTime.toISOString().slice(0, -5),
     operations: [operation],
     extensions: [],
@@ -70,10 +93,16 @@ export async function createMultiAuthTransfer({
 
   // Sign with the first authority's key
   const privateKey = dhive.PrivateKey.fromString(firstSignerActiveKey)
-  const signedTransaction = client.broadcast.sign(transaction, privateKey)
+  const signedTransaction = client.broadcast.sign(unsignedTransaction, privateKey)
+
+  // Extract just our signature
+  const firstSignature = signedTransaction.signatures[0]
 
   return {
-    transaction: signedTransaction,
+    // Return both unsigned (for aioha) and our signature (to add after)
+    unsignedTransaction,
+    firstSignature,
+    signedTransaction,
     requiredAuths: [firstSignerUsername, secondSignerUsername],
   }
 }

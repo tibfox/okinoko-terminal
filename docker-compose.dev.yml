@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Frontend development server with hot reload
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 8083"
+    ports:
+      - "8083:8083"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - tracking-api
+    environment:
+      - NODE_ENV=development
+
+  # Tracking API server with hot reload
+  tracking-api:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3333:3333"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - tracking-data-dev:/app/data
+    environment:
+      - NODE_ENV=development
+      - TRACKING_PORT=3333
+
+volumes:
+  tracking-data-dev:
+    driver: local

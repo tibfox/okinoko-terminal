@@ -1284,6 +1284,61 @@
       ]
     },
     {
+      "name": "Ōkinoko Yūgi (Games 2)",
+      "id": 7,
+      "sortIndex": 0,
+      "vscId": "vsc1PLACEHOLDER_GAMES2",
+      "owner": "tibfox.vsc",
+      "deployedOn": "2026-01-10",
+      "verifiedOn": "unverified",
+      "description": "A new collection of on-chain games!",
+      "icon": "faGamepad",
+      "kanji": "遊戯",
+      "devOnly": true,
+      "functions": [
+        {
+          "name": "1",
+          "friendlyName": "Neko Jump",
+          "description": "Help the cat avoid flying fish and sake bottles! A side-scrolling action game where you jump over obstacles to score points.",
+          "parse": "game",
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": "Action",
+          "icon": "faArrowUp"
+        },
+        {
+          "name": "2",
+          "friendlyName": "Hebi (Snake)",
+          "description": "Classic snake game with a Japanese twist! Collect sushi and other treats to grow. Reach the target length to win!",
+          "parse": "game",
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": "Arcade",
+          "icon": "faWorm"
+        },
+        {
+          "name": "3",
+          "friendlyName": "Yokai Invaders",
+          "description": "Defend against waves of yokai! A space invaders style shooter where you battle oni, kappa, and tengu.",
+          "parse": "game",
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": "Arcade",
+          "icon": "faSpaceShuttle"
+        },
+        {
+          "name": "4",
+          "friendlyName": "Kanji Tetris",
+          "description": "Stack kanji blocks and clear lines! Classic tetris gameplay with Japanese characters as falling pieces.",
+          "parse": "game",
+          "parameters": [],
+          "hintText": "",
+          "groupHeader": "Puzzle",
+          "icon": "faCubes"
+        }
+      ]
+    },
+    {
       "name": "Ōkinoko Senka (Prizes)",
       "id": 6,
       "sortIndex": 5,

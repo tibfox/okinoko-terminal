@@ -6,8 +6,6 @@ export default defineConfig({
   plugins: [preact()],
   server: {
     port: 8083,
- 
-  allowedHosts: ['.okinoko.io'],
-
-  } 
+    allowedHosts: ['.okinoko.io'],
+  }
 })

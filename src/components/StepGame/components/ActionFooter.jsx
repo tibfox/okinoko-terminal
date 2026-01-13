@@ -16,9 +16,10 @@ export default function ActionFooter({
   onBackToMode,
   onBackToGameList,
   showGameListButton = false,
+  hideSendButton = false,
 }) {
   const renderActionButton = () => {
-    if (!displayMode) {
+    if (!displayMode || hideSendButton) {
       return <span />
     }
 

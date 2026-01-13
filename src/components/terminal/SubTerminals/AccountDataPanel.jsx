@@ -305,7 +305,7 @@ export default function AccountDataPanel() {
                 color: 'var(--color-primary-lighter)',
                 padding: '0.5rem 1rem',
                 cursor: 'pointer',
-                fontSize: 'var(--font-size-base)',
+                fontSize: 'calc(var(--font-size-base) / 1.5)',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 flex: 1,
@@ -313,7 +313,7 @@ export default function AccountDataPanel() {
                 overflow: 'hidden',
               }}
             >
-              <FontAwesomeIcon icon={faArrowUp}   style={{ fontSize: '0.9rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
+              <FontAwesomeIcon icon={faArrowUp}   style={{ fontSize: '0.6rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
               <span className="button-text">Deposit</span>
             </button>
             <button
@@ -328,7 +328,7 @@ export default function AccountDataPanel() {
                 color: 'var(--color-primary-lighter)',
                 padding: '0.5rem 1rem',
                 cursor: 'pointer',
-                fontSize: 'var(--font-size-base)',
+                fontSize: 'calc(var(--font-size-base) / 1.5)',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 flex: 1,
@@ -336,7 +336,7 @@ export default function AccountDataPanel() {
                 overflow: 'hidden',
               }}
             >
-              <FontAwesomeIcon icon={faArrowDown}  style={{ fontSize: '0.9rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
+              <FontAwesomeIcon icon={faArrowDown}  style={{ fontSize: '0.6rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
               <span className="button-text">Withdraw</span>
             </button>
           </div>

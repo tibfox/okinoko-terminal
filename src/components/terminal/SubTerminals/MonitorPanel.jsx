@@ -133,16 +133,24 @@ const getFirstOpData = (tx) => {
   return opData
 }
 
+const mapOperationName = (name) => {
+  if (name === 'consensus_unstake') {
+    return 'cons_unstake'
+  }
+  return name
+}
+
 const getOperationLabel = (tx) => {
   const primaryType = tx?.op_types?.[0]
   if (typeof primaryType === 'string' && primaryType.toLowerCase() === 'call_contract') {
     const parsedData = getFirstOpData(tx)
     if (parsedData?.action) {
-      return parsedData.action
+      return mapOperationName(parsedData.action)
     }
   }
 
-  return primaryType ?? tx?.type ?? '—'
+  const result = primaryType ?? tx?.type ?? '—'
+  return typeof result === 'string' ? mapOperationName(result) : result
 }
 
 const getNormalizedOperation = (tx) => {
@@ -164,6 +172,26 @@ const getAccountLabel = (tx) => {
   return tx?.required_auths?.[0] ?? null
 }
 
+const formatAssetName = (asset) => {
+  if (!asset) return ''
+  const normalized = String(asset).toLowerCase()
+  if (normalized === 'hbd_savings') {
+    return 'sHBD'
+  }
+  return String(asset).toUpperCase()
+}
+
+const formatAmount = (value) => {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return value
+  // If it's a whole number, don't show decimals
+  if (num === Math.floor(num)) {
+    return String(Math.floor(num))
+  }
+  // Otherwise show 3 decimal places
+  return num.toFixed(3)
+}
+
 const getAmountLabel = (tx) => {
   const data = getFirstOpData(tx)
   if (!data) {
@@ -174,12 +202,12 @@ const getAmountLabel = (tx) => {
   if (op === 'deposit' && data.amount != null) {
     const numericAmount = Number(data.amount)
     if (Number.isFinite(numericAmount)) {
-      const assetSuffix = data.asset ? ` ${String(data.asset).toUpperCase()}` : ''
-      return `${(numericAmount / 1000).toFixed(3)}${assetSuffix}`
+      const assetSuffix = data.asset ? ` ${formatAssetName(data.asset)}` : ''
+      return `${formatAmount(numericAmount / 1000)}${assetSuffix}`
     }
   } else if (data.amount != null) {
-    const assetSuffix = data.asset ? ` ${String(data.asset).toUpperCase()}` : ''
-    return `${data.amount}${assetSuffix}`
+    const assetSuffix = data.asset ? ` ${formatAssetName(data.asset)}` : ''
+    return `${formatAmount(data.amount)}${assetSuffix}`
   }
 
   const intentsSource = data.intents
@@ -193,8 +221,8 @@ const getAmountLabel = (tx) => {
     if (transferAllowIntent) {
       const { limit, token } = transferAllowIntent.args ?? transferAllowIntent
       if (limit != null) {
-        const tokenSuffix = token ? ` ${String(token).toUpperCase()}` : ''
-        return `${limit}${tokenSuffix}`
+        const tokenSuffix = token ? ` ${formatAssetName(token)}` : ''
+        return `${formatAmount(limit)}${tokenSuffix}`
       }
     }
   }
@@ -504,7 +532,7 @@ export default function MonitorPanel() {
               <th style={{ ...headerCellStyle, width: '2rem' }} aria-label="status" />
               <th style={headerCellStyle}>Account</th>
               <th style={headerCellStyle}>Operation</th>
-              <th style={headerCellStyle}>Amount</th>
+              <th style={{ ...headerCellStyle, minWidth: '9rem' }}>Amount</th>
               <th style={headerCellStyle}>Anchored</th>
               <th style={headerCellStyle}>Height</th>
             </tr>
@@ -528,8 +556,12 @@ export default function MonitorPanel() {
                     if (!accountLabel) {
                       return '—'
                     }
+                    // Remove hive: prefix for display
+                    const displayName = accountLabel.startsWith('hive:')
+                      ? accountLabel.slice(5)
+                      : accountLabel
                     const displayLabel =
-                      accountLabel.length > 23 ? `${accountLabel.slice(0, 23)}...` : accountLabel
+                      displayName.length > 23 ? `${displayName.slice(0, 23)}...` : displayName
                     return (
                       <a
                         href={`https://vsc.techcoderx.com/address/${accountLabel}`}
@@ -542,7 +574,7 @@ export default function MonitorPanel() {
                   })()}
                 </td>
                 <td style={cellStyle}>{getOperationLabel(tx)}</td>
-                <td style={cellStyle}>{getAmountLabel(tx)}</td>
+                <td style={{ ...cellStyle, minWidth: '9rem' }}>{getAmountLabel(tx)}</td>
                 <td style={cellStyle}>{formatUTC(tx.anchr_ts)}</td>
                 <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
               </tr>
