@@ -1,49 +1,50 @@
-import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'preact/hooks'
+import { memo } from 'preact/compat'
 import {
   useGameLoop,
   useKeyInput,
-  useResponsiveFontSize,
-  createGrid,
+  useCountdown,
+  useIsMobile,
   drawSprite,
-  fillRowWithPattern,
-  renderGrid,
-  checkCollision,
+  drawChar,
   getSpriteSize,
   randomPick,
+  randomInt,
   KEY_MAPS,
   GAME_STYLES,
 } from './lib/asciiGameEngine.js'
+import GameLayout from './GameLayout.jsx'
 
-// ASCII Art for the cat (normal and jumping) - compact emoticon style
+// ASCII Art for the cat (normal and jumping) - thin style
 const CAT_NORMAL = [
-  '/\\_/\\',
-  '(o.o)',
-  '(> <)',
+  '/\\',
+  'oo',
+  '><',
 ]
 
 const CAT_JUMP = [
-  '/\\_/\\',
-  '(^.^)',
-  ' / \\ ',
+  '/\\',
+  '^^',
+  '/\\',
 ]
 
-// Obstacles - Ground
+// Obstacles - Ground (ASCII-only for consistent width)
 const SAKE_BOTTLE = [
   ' _ ',
-  '|酒|',
+  '|S|',
   '|_|',
 ]
 
 const ONIGIRI = [
   ' /\\ ',
-  '/海\\',
+  '/oo\\',
   '----',
 ]
 
 const DARUMA = [
   ' __ ',
   '(@@)',
-  '|福|',
+  '|##|',
   '(--)',
 ]
 
@@ -66,76 +67,151 @@ const SHURIKEN = [
   ' / \\ ',
 ]
 
+// Coin character
+const COIN_CHAR = '$'
+
 // Obstacle configs
 const GROUND_OBSTACLES = [SAKE_BOTTLE, ONIGIRI, DARUMA]
 const FLYING_OBSTACLES = [FISH, DANGO, SHURIKEN]
 
-const GAME_WIDTH = 60
-const GAME_HEIGHT = 16
-const GROUND_Y = 13
-const CAT_X = 5
+const GAME_WIDTH = 50
+const GAME_HEIGHT = 50
+const GROUND_Y = 47
+const CAT_X = 8
 const GRAVITY = 0.1
 const JUMP_VELOCITY = -1.5
+const MAX_JUMPS = 3 // Triple jump
 const OBSTACLE_SPEED_INITIAL = 0.4
 const SPAWN_INTERVAL_INITIAL = 2000
+const COIN_SPAWN_INTERVAL = 1500
 const GRASS_PATTERN = ',."\'`'
 
+// Pre-compute cat sprite sizes
+const CAT_NORMAL_SIZE = getSpriteSize(CAT_NORMAL)
+const CAT_JUMP_SIZE = getSpriteSize(CAT_JUMP)
+
+// Pre-allocate reusable grid buffer (avoid allocations every frame)
+const gridBuffer = []
+for (let y = 0; y < GAME_HEIGHT; y++) {
+  gridBuffer.push(new Array(GAME_WIDTH))
+}
+
+// Pre-allocate row strings array for join
+const rowStrings = new Array(GAME_HEIGHT)
+
+// Fast grid clear and render functions
+function clearGrid() {
+  for (let y = 0; y < GAME_HEIGHT; y++) {
+    const row = gridBuffer[y]
+    for (let x = 0; x < GAME_WIDTH; x++) {
+      row[x] = ' '
+    }
+  }
+}
+
+function renderGridFast() {
+  for (let y = 0; y < GAME_HEIGHT; y++) {
+    rowStrings[y] = gridBuffer[y].join('')
+  }
+  return rowStrings.join('\n')
+}
+
+// Memoized Info Panel
+const InfoPanel = memo(({ score, coinsCollected, jumpsRemaining }) => (
+  <div style={GAME_STYLES.infoPanelMobile}>
+    <div style={GAME_STYLES.infoPanelMobileItem}>
+      <span style={GAME_STYLES.infoPanelLabel}>SCORE</span>
+      <span style={GAME_STYLES.infoPanelValue}>{score}</span>
+    </div>
+    <div style={GAME_STYLES.infoPanelMobileItem}>
+      <span style={GAME_STYLES.infoPanelLabel}>COINS</span>
+      <span style={GAME_STYLES.infoPanelValue}>{coinsCollected}</span>
+    </div>
+    <div style={GAME_STYLES.infoPanelMobileItem}>
+      <span style={GAME_STYLES.infoPanelLabel}>JUMPS</span>
+      <span style={GAME_STYLES.infoPanelValue}>{jumpsRemaining}/{MAX_JUMPS}</span>
+    </div>
+  </div>
+))
+
 /**
- * GameFieldJump - ASCII side-scroller game
- * Cat jumps over obstacles to win!
- * Pass 10 obstacles to win!
+ * GameFieldJump - ASCII side-scroller endless runner
+ * Triple jump to collect coins and avoid obstacles!
+ * Game ends when the cat hits an obstacle.
  */
 export default function GameFieldJump({ onGameComplete }) {
-  const [gameState, setGameState] = useState('ready') // ready, playing, won, lost
-  const [catY, setCatY] = useState(GROUND_Y)
-  const [catVelocity, setCatVelocity] = useState(0)
-  const [isJumping, setIsJumping] = useState(false)
-  const [obstacles, setObstacles] = useState([])
-  const [score, setScore] = useState(0)
-  const [obstaclesPassed, setObstaclesPassed] = useState(0)
-  const [grassOffset, setGrassOffset] = useState(0)
+  const [gameState, setGameState] = useState('ready') // ready, countdown, playing, lost
+  // Single render trigger - increment to force re-render
+  const [renderTick, setRenderTick] = useState(0)
 
-  const containerRef = useRef(null)
+  // Use refs for all frequently-updated game state to avoid re-renders
+  const gameRef = useRef({
+    catY: GROUND_Y,
+    catVelocity: 0,
+    jumpsRemaining: MAX_JUMPS,
+    obstacles: [],
+    coins: [],
+    score: 0,
+    coinsCollected: 0,
+    obstaclesPassed: 0,
+    grassOffset: 0,
+    obstacleSpeed: OBSTACLE_SPEED_INITIAL,
+    spawnInterval: SPAWN_INTERVAL_INITIAL,
+  })
+
   const spawnTimerRef = useRef(null)
-  const obstacleSpeedRef = useRef(OBSTACLE_SPEED_INITIAL)
-  const spawnIntervalRef = useRef(SPAWN_INTERVAL_INITIAL)
+  const coinSpawnTimerRef = useRef(null)
 
-  // Calculate responsive font size based on container
-  const fontSize = useResponsiveFontSize(containerRef, GAME_WIDTH, GAME_HEIGHT)
+  // Check if on mobile device
+  const isMobile = useIsMobile()
 
   // Reset game state
   const resetGame = useCallback(() => {
-    setCatY(GROUND_Y)
-    setCatVelocity(0)
-    setIsJumping(false)
-    setObstacles([])
-    setScore(0)
-    setObstaclesPassed(0)
-    setGrassOffset(0)
-    obstacleSpeedRef.current = OBSTACLE_SPEED_INITIAL
-    spawnIntervalRef.current = SPAWN_INTERVAL_INITIAL
+    const g = gameRef.current
+    g.catY = GROUND_Y
+    g.catVelocity = 0
+    g.jumpsRemaining = MAX_JUMPS
+    g.obstacles = []
+    g.coins = []
+    g.score = 0
+    g.coinsCollected = 0
+    g.obstaclesPassed = 0
+    g.grassOffset = 0
+    g.obstacleSpeed = OBSTACLE_SPEED_INITIAL
+    g.spawnInterval = SPAWN_INTERVAL_INITIAL
+    setRenderTick(t => t + 1)
   }, [])
 
-  // Start the game
+  // Actually start playing after countdown
+  const beginPlaying = useCallback(() => {
+    setGameState('playing')
+  }, [])
+
+  // Countdown hook
+  const { countdown, startCountdown } = useCountdown(3, beginPlaying)
+
+  // Start the game (triggers countdown)
   const startGame = useCallback(() => {
     resetGame()
-    setGameState('playing')
-  }, [resetGame])
+    setGameState('countdown')
+    startCountdown()
+  }, [resetGame, startCountdown])
 
-  // Jump action
+  // Jump action - supports double/triple jump
   const jump = useCallback(() => {
     if (gameState !== 'playing') {
-      if (gameState === 'ready' || gameState === 'won' || gameState === 'lost') {
+      if (gameState === 'ready' || gameState === 'lost') {
         startGame()
       }
       return
     }
 
-    if (!isJumping) {
-      setCatVelocity(JUMP_VELOCITY)
-      setIsJumping(true)
+    const g = gameRef.current
+    if (g.jumpsRemaining > 0) {
+      g.catVelocity = JUMP_VELOCITY
+      g.jumpsRemaining--
     }
-  }, [gameState, isJumping, startGame])
+  }, [gameState, startGame])
 
   // Handle keyboard input using the engine
   const handleInput = useCallback((action) => {
@@ -151,6 +227,7 @@ export default function GameFieldJump({ onGameComplete }) {
     if (gameState !== 'playing') return
 
     const spawnObstacle = () => {
+      const g = gameRef.current
       const isFlying = Math.random() > 0.5
       const obstaclePool = isFlying ? FLYING_OBSTACLES : GROUND_OBSTACLES
       const sprite = randomPick(obstaclePool)
@@ -160,187 +237,260 @@ export default function GameFieldJump({ onGameComplete }) {
         y: isFlying ? GROUND_Y - 1 - Math.floor(Math.random() * 3) : GROUND_Y,
         type: isFlying ? 'flying' : 'ground',
         sprite,
+        size: getSpriteSize(sprite),
         passed: false,
       }
-      setObstacles(prev => [...prev, newObstacle])
-      spawnIntervalRef.current = Math.max(800, spawnIntervalRef.current - 50)
+      g.obstacles.push(newObstacle)
+      g.spawnInterval = Math.max(800, g.spawnInterval - 50)
     }
 
     spawnObstacle()
-    spawnTimerRef.current = setInterval(spawnObstacle, spawnIntervalRef.current)
+    spawnTimerRef.current = setInterval(spawnObstacle, gameRef.current.spawnInterval)
 
     return () => {
       if (spawnTimerRef.current) clearInterval(spawnTimerRef.current)
     }
   }, [gameState])
 
-  // Game loop using the engine
-  useGameLoop((deltaTime) => {
-    // Update cat position (gravity)
-    setCatVelocity(prevVel => {
-      const newVel = prevVel + GRAVITY * deltaTime
-
-      setCatY(prevY => {
-        const newY = prevY + newVel * deltaTime
-
-        if (newY >= GROUND_Y) {
-          setIsJumping(false)
-          setCatVelocity(0)
-          return GROUND_Y
-        }
-        return newY
-      })
-
-      return newVel
-    })
-
-    // Update obstacles
-    setObstacles(prev => {
-      const updated = prev
-        .map(obs => ({
-          ...obs,
-          x: obs.x - obstacleSpeedRef.current * deltaTime,
-        }))
-        .filter(obs => obs.x > -15)
-
-      // Check for passed obstacles
-      updated.forEach(obs => {
-        if (!obs.passed && obs.x < CAT_X - 5) {
-          obs.passed = true
-          setObstaclesPassed(p => {
-            const newPassed = p + 1
-            if (newPassed >= 10) {
-              setGameState('won')
-            }
-            return newPassed
-          })
-          setScore(s => s + 100)
-        }
-      })
-
-      return updated
-    })
-
-    // Update grass offset for scrolling effect
-    setGrassOffset(prev => (prev + obstacleSpeedRef.current * deltaTime) % GAME_WIDTH)
-
-    // Increase speed over time
-    obstacleSpeedRef.current = Math.min(1.0, obstacleSpeedRef.current + 0.002 * deltaTime)
-  }, gameState === 'playing')
-
-  // Collision detection
+  // Spawn coins in the sky
   useEffect(() => {
     if (gameState !== 'playing') return
 
-    const catSprite = isJumping ? CAT_JUMP : CAT_NORMAL
-    const catSize = getSpriteSize(catSprite)
-    const catRect = {
-      x: CAT_X,
-      y: Math.floor(catY),
-      width: catSize.width,
-      height: catSize.height,
+    const spawnCoin = () => {
+      const g = gameRef.current
+      const newCoin = {
+        id: Date.now() + Math.random(),
+        x: GAME_WIDTH + 5,
+        y: randomInt(GROUND_Y - 20, GROUND_Y - 5),
+      }
+      g.coins.push(newCoin)
     }
 
-    for (const obs of obstacles) {
-      const obsSize = getSpriteSize(obs.sprite)
-      const obsRect = {
-        x: Math.floor(obs.x),
-        y: obs.y,
-        width: obsSize.width,
-        height: obsSize.height,
+    spawnCoin()
+    coinSpawnTimerRef.current = setInterval(spawnCoin, COIN_SPAWN_INTERVAL)
+
+    return () => {
+      if (coinSpawnTimerRef.current) clearInterval(coinSpawnTimerRef.current)
+    }
+  }, [gameState])
+
+  // Game loop - all updates in one place, single render trigger
+  useGameLoop((deltaTime) => {
+    const g = gameRef.current
+
+    // Update cat physics
+    g.catVelocity += GRAVITY * deltaTime
+    g.catY += g.catVelocity * deltaTime
+
+    // Ground collision
+    if (g.catY >= GROUND_Y) {
+      g.catY = GROUND_Y
+      g.catVelocity = 0
+      g.jumpsRemaining = MAX_JUMPS
+    }
+
+    // Update obstacles (mutate in place for performance)
+    const speed = g.obstacleSpeed * deltaTime
+    for (let i = g.obstacles.length - 1; i >= 0; i--) {
+      const obs = g.obstacles[i]
+      obs.x -= speed
+
+      // Check if passed
+      if (!obs.passed && obs.x < CAT_X - 5) {
+        obs.passed = true
+        g.obstaclesPassed++
+        g.score += 100
       }
 
-      if (checkCollision(catRect, obsRect)) {
+      // Remove off-screen
+      if (obs.x < -15) {
+        g.obstacles.splice(i, 1)
+      }
+    }
+
+    // Update coins (mutate in place)
+    for (let i = g.coins.length - 1; i >= 0; i--) {
+      const coin = g.coins[i]
+      coin.x -= speed
+
+      // Remove off-screen
+      if (coin.x < -5) {
+        g.coins.splice(i, 1)
+      }
+    }
+
+    // Update grass offset
+    g.grassOffset = (g.grassOffset + speed) % GAME_WIDTH
+
+    // Increase speed over time
+    g.obstacleSpeed = Math.min(1.0, g.obstacleSpeed + 0.002 * deltaTime)
+
+    // Collision detection (integrated into game loop)
+    const isInAir = g.catY < GROUND_Y
+    const catSize = isInAir ? CAT_JUMP_SIZE : CAT_NORMAL_SIZE
+    const catLeft = CAT_X
+    const catRight = CAT_X + catSize.width
+    const catTop = Math.floor(g.catY) - catSize.height + 1
+    const catBottom = Math.floor(g.catY)
+
+    // Check obstacle collisions
+    for (const obs of g.obstacles) {
+      const obsLeft = Math.floor(obs.x)
+      const obsRight = obsLeft + obs.size.width
+      const obsTop = obs.y - obs.size.height + 1
+      const obsBottom = obs.y
+
+      if (catRight > obsLeft && catLeft < obsRight &&
+          catBottom >= obsTop && catTop <= obsBottom) {
         setGameState('lost')
-        break
+        return
       }
     }
-  }, [obstacles, catY, gameState, isJumping])
 
-  // Render the game
-  const renderGame = () => {
-    const grid = createGrid(GAME_WIDTH, GAME_HEIGHT)
+    // Check coin collisions
+    for (let i = g.coins.length - 1; i >= 0; i--) {
+      const coin = g.coins[i]
+      const coinX = Math.floor(coin.x)
 
-    // Draw ground with scrolling grass
-    fillRowWithPattern(grid, GROUND_Y + 1, GRASS_PATTERN, grassOffset)
+      if (catRight > coinX && catLeft < coinX + 1 &&
+          catBottom >= coin.y && catTop <= coin.y) {
+        g.coins.splice(i, 1)
+        g.score += 5
+        g.coinsCollected++
+      }
+    }
+
+    // Trigger single render
+    setRenderTick(t => t + 1)
+  }, gameState === 'playing')
+
+  // Render the game using pre-allocated buffer
+  const renderGame = useCallback(() => {
+    const g = gameRef.current
+
+    // Clear grid (reuse buffer)
+    clearGrid()
+
+    // Draw ground with scrolling grass (inline for performance)
+    const grassRow = gridBuffer[GROUND_Y + 1]
+    if (grassRow) {
+      const patternLen = GRASS_PATTERN.length
+      const offset = g.grassOffset
+      for (let x = 0; x < GAME_WIDTH; x++) {
+        const idx = Math.floor((x + offset) % patternLen)
+        grassRow[x] = GRASS_PATTERN[idx]
+      }
+    }
+
+    // Draw coins
+    for (const coin of g.coins) {
+      drawChar(gridBuffer, COIN_CHAR, coin.x, coin.y)
+    }
 
     // Draw cat
-    const catSprite = isJumping ? CAT_JUMP : CAT_NORMAL
-    drawSprite(grid, catSprite, CAT_X, Math.floor(catY))
+    const isInAir = g.catY < GROUND_Y
+    const catSprite = isInAir ? CAT_JUMP : CAT_NORMAL
+    drawSprite(gridBuffer, catSprite, CAT_X, Math.floor(g.catY))
 
     // Draw obstacles
-    obstacles.forEach(obs => {
-      drawSprite(grid, obs.sprite, obs.x, obs.y)
-    })
+    for (const obs of g.obstacles) {
+      drawSprite(gridBuffer, obs.sprite, obs.x, obs.y)
+    }
 
-    return renderGrid(grid)
-  }
+    return renderGridFast()
+  }, [])
 
-  // Dynamic field style with calculated font size
-  const fieldStyle = {
-    ...GAME_STYLES.field,
-    fontSize: `${fontSize}px`,
+  // Memoized Mobile Controls
+  const MobileControls = useMemo(() => {
+    const Controls = () => (
+      <div style={GAME_STYLES.gamepad}>
+        {/* D-Pad (Left) - not used for Jump, just placeholder */}
+        <div style={{ ...GAME_STYLES.dpad, opacity: 0.2 }}>
+          <div />
+          <div style={GAME_STYLES.dpadCenter} />
+          <div />
+          <div style={GAME_STYLES.dpadCenter} />
+          <div style={GAME_STYLES.dpadCenter} />
+          <div style={GAME_STYLES.dpadCenter} />
+          <div />
+          <div style={GAME_STYLES.dpadCenter} />
+          <div />
+        </div>
+
+        {/* Action Button (Right) - JUMP button */}
+        <div style={GAME_STYLES.actionButtons}>
+          <button
+            style={GAME_STYLES.actionButtonLarge}
+            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); jump() }}
+            onClick={(e) => { e.stopPropagation(); jump() }}
+          >JUMP</button>
+        </div>
+      </div>
+    )
+    return Controls
+  }, [jump])
+
+  // Info panel wrapper that reads from ref
+  const InfoPanelWrapper = useCallback(() => {
+    const g = gameRef.current
+    return <InfoPanel score={g.score} coinsCollected={g.coinsCollected} jumpsRemaining={g.jumpsRemaining} />
+  }, [])
+
+  // Overlay content for different game states
+  const getOverlayContent = () => {
+    if (gameState === 'playing') return null
+
+    if (gameState === 'countdown') {
+      return (
+        <div style={{ fontSize: '48px', color: 'var(--color-primary)' }}>
+          {countdown}
+        </div>
+      )
+    }
+
+    if (gameState === 'ready') {
+      return (
+        <>
+          <div style={{ fontSize: '20px', marginBottom: '10px' }}>NEKO JUMP</div>
+          <div style={{ marginBottom: '5px' }}>Triple jump to collect coins!</div>
+          <div style={{ marginBottom: '5px' }}>Avoid obstacles!</div>
+          <div style={{ marginBottom: '15px', fontSize: '12px' }}>Survive as long as you can!</div>
+          <div style={{ color: 'var(--color-primary)' }}>
+            [SPACE] or [CLICK] to START
+          </div>
+        </>
+      )
+    }
+
+    if (gameState === 'lost') {
+      const g = gameRef.current
+      return (
+        <>
+          <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
+            GAME OVER
+          </div>
+          <div style={{ marginBottom: '5px' }}>Score: {g.score} | Coins: {g.coinsCollected}</div>
+          <div style={{ marginBottom: '5px' }}>Obstacles Passed: {g.obstaclesPassed}</div>
+          <div style={{ marginBottom: '15px' }}>The cat got hit!</div>
+          <div style={{ color: 'var(--color-primary)' }}>
+            [SPACE] or [CLICK] to TRY AGAIN
+          </div>
+        </>
+      )
+    }
+
+    return null
   }
 
   return (
-    <div ref={containerRef} onClick={jump} style={GAME_STYLES.container}>
-      {/* Header */}
-      <div style={GAME_STYLES.header}>
-        <span>SCORE: {score}</span>
-        <span>OBSTACLES: {obstaclesPassed}/10</span>
-      </div>
-
-      {/* Game Field */}
-      <div style={fieldStyle}>
-        {renderGame()}
-
-        {/* Overlay for game states */}
-        {gameState !== 'playing' && (
-          <div style={GAME_STYLES.overlay}>
-            {gameState === 'ready' && (
-              <>
-                <div style={{ fontSize: '20px', marginBottom: '10px' }}>NEKO JUMP</div>
-                <div style={{ marginBottom: '5px' }}>Help the cat avoid</div>
-                <div style={{ marginBottom: '5px' }}>flying fish and sake bottles!</div>
-                <div style={{ marginBottom: '15px', fontSize: '12px' }}>Pass 10 obstacles to win</div>
-                <div style={{ color: 'var(--color-primary)' }}>
-                  [SPACE] or [CLICK] to START
-                </div>
-              </>
-            )}
-            {gameState === 'won' && (
-              <>
-                <div style={{ fontSize: '24px', marginBottom: '10px', color: 'var(--color-primary)' }}>
-                  YOU WIN!
-                </div>
-                <div style={{ marginBottom: '5px' }}>Final Score: {score}</div>
-                <div style={{ marginBottom: '15px' }}>The cat is safe!</div>
-                <div style={{ color: 'var(--color-primary)' }}>
-                  [SPACE] or [CLICK] to PLAY AGAIN
-                </div>
-              </>
-            )}
-            {gameState === 'lost' && (
-              <>
-                <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
-                  GAME OVER
-                </div>
-                <div style={{ marginBottom: '5px' }}>Score: {score}</div>
-                <div style={{ marginBottom: '5px' }}>Obstacles Passed: {obstaclesPassed}/10</div>
-                <div style={{ marginBottom: '15px' }}>The cat got hit!</div>
-                <div style={{ color: 'var(--color-primary)' }}>
-                  [SPACE] or [CLICK] to TRY AGAIN
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Instructions */}
-      <div style={GAME_STYLES.instructions}>
-        Press SPACE, W, UP ARROW, or CLICK to jump
-      </div>
-    </div>
+    <GameLayout
+      gameWidth={GAME_WIDTH}
+      gameHeight={GAME_HEIGHT}
+      renderGame={renderGame}
+      InfoPanel={InfoPanelWrapper}
+      MobileControls={MobileControls}
+      onFieldClick={jump}
+      overlayContent={getOverlayContent()}
+    />
   )
 }

@@ -17,6 +17,9 @@ export default function ActionFooter({
   onBackToGameList,
   showGameListButton = false,
   hideSendButton = false,
+  isSinglePlayerContract = false,
+  yugiView,
+  onBackToLeaderboard,
 }) {
   const renderActionButton = () => {
     if (!displayMode || hideSendButton) {
@@ -80,9 +83,23 @@ export default function ActionFooter({
     )
   }
 
+  // Determine back button behavior based on context
+  const isYugiInGame = isSinglePlayerContract && yugiView === 'game'
   const useGameListAction = Boolean(showGameListButton && onBackToGameList)
-  const backButtonLabel = useGameListAction ? 'Game List' : 'Game Mode'
-  const backButtonHandler = useGameListAction ? onBackToGameList : onBackToMode
+
+  let backButtonLabel
+  let backButtonHandler
+
+  if (isYugiInGame) {
+    backButtonLabel = 'Leaderboard'
+    backButtonHandler = onBackToLeaderboard
+  } else if (useGameListAction) {
+    backButtonLabel = 'Game List'
+    backButtonHandler = onBackToGameList
+  } else {
+    backButtonLabel = 'Game Mode'
+    backButtonHandler = onBackToMode
+  }
 
   return (
     <div

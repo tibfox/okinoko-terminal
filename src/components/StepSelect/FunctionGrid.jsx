@@ -2,7 +2,7 @@ import { useMemo, useEffect, useContext, useState, useCallback } from 'preact/ho
 import { createContext } from 'preact'
 import { useQuery, gql, useSubscription } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDice, faCirclePlay, faUser, faStore, faChevronDown, faChevronUp, faHashtag, faCircleDot, faTableCells, faTableCellsLarge, faArrowUp } from '@fortawesome/free-solid-svg-icons'
+import { faDice, faCirclePlay, faUser, faStore, faChevronDown, faChevronUp, faHashtag, faCircleDot, faTableCells, faTableCellsLarge, faArrowUp, faDragon, faCubes } from '@fortawesome/free-solid-svg-icons'
 
 // Map icon names from contracts.json to actual FontAwesome icons
 const iconMap = {
@@ -12,6 +12,8 @@ const iconMap = {
   faTableCellsLarge,
   faDice,
   faArrowUp,
+  faDragon,
+  faCubes,
 }
 import { useAioha } from '@aioha/react-ui'
 import { deriveGameTypeId } from '../StepGame/gameTypes.js'
@@ -157,6 +159,8 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
     return groups
   }, [selectedContract])
 
+  const isGoraku = selectedContract?.name?.toLowerCase().includes('goraku')
+
   const renderTiles = (fns) =>
     fns.map((fn) => {
       const isGame = fn.parse === 'game'
@@ -170,6 +174,7 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
           setFnName={setFnName}
           gameTypeId={gameTypeId}
           user={normalizedUser}
+          isGoraku={isGoraku}
         />
       )
     })
@@ -269,7 +274,7 @@ export default function FunctionGrid(props) {
   )
 }
 
-function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
+function FunctionTile({ fn, fnName, setFnName, gameTypeId, user, isGoraku }) {
   const isGame = fn.parse === 'game'
   const isSelected = fnName === fn.name
 
@@ -372,7 +377,7 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
       <span style={{ textAlign: 'center', lineHeight: 1.2 }}>
         {fn.friendlyName}
       </span>
-      {isGame && myTurnCount > 0 && (
+      {isGame && !isGoraku && myTurnCount > 0 && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -384,7 +389,7 @@ function FunctionTile({ fn, fnName, setFnName, gameTypeId, user }) {
           your turn: {myTurnCount}
         </div>
       )}
-      {isGame && (
+      {isGame && !isGoraku && (
         <div style={{
           display: 'flex',
           gap: '10px',

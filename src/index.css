@@ -13,6 +13,7 @@
 
   /* Font settings - adjust this value to change all font sizes */
   --font-size-base: 1.55rem;
+  --font-size-subtitle: 1.3rem;
   --font-family-base: 'm5x7', 'Share Tech Mono', monospace;
   --line-height-base: 1;
 }

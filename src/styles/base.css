@@ -132,6 +132,19 @@ body {
   background: linear-gradient(180deg, var(--color-primary-darker), rgba(0, 0, 0, 0.3));
 }
 
+/* Game mode dropdown styling */
+.game-mode-dropdown option {
+  background: black;
+  color: var(--color-primary-lightest);
+  font-size: var(--font-size-base);
+  padding: 8px 12px;
+  border: none;
+  border-radius: 0;
+}
+
+.game-mode-dropdown:focus {
+  border-color: var(--color-primary-darker);
+}
 
 /* src/styles/aioha-modal.css */
 .aioha-modal-theme .text-gray-900,

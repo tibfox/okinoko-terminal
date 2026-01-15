@@ -1284,7 +1284,7 @@
       ]
     },
     {
-      "name": "Ōkinoko Yūgi (Games 2)",
+      "name": "Ōkinoko Goraku (Games)",
       "id": 7,
       "sortIndex": 0,
       "vscId": "vsc1PLACEHOLDER_GAMES2",
@@ -1293,47 +1293,25 @@
       "verifiedOn": "unverified",
       "description": "A new collection of on-chain games!",
       "icon": "faGamepad",
-      "kanji": "遊戯",
+      "kanji": "娯楽",
       "devOnly": true,
       "functions": [
         {
-          "name": "1",
-          "friendlyName": "Neko Jump",
-          "description": "Help the cat avoid flying fish and sake bottles! A side-scrolling action game where you jump over obstacles to score points.",
-          "parse": "game",
-          "parameters": [],
-          "hintText": "",
-          "groupHeader": "Action",
-          "icon": "faArrowUp"
-        },
-        {
           "name": "2",
-          "friendlyName": "Hebi (Snake)",
-          "description": "Classic snake game with a Japanese twist! Collect sushi and other treats to grow. Reach the target length to win!",
+          "friendlyName": "Jashoku",
+          "description": "Eat the food to grow longer, but avoid running into yourself or the walls. Watch out for the power-ups that let you pass through walls! Do not forget - in every game, there is a high score to beat and a chance to win the season prize!",
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": "Arcade",
-          "icon": "faWorm"
-        },
-        {
-          "name": "3",
-          "friendlyName": "Yokai Invaders",
-          "description": "Defend against waves of yokai! A space invaders style shooter where you battle oni, kappa, and tengu.",
-          "parse": "game",
-          "parameters": [],
-          "hintText": "",
-          "groupHeader": "Arcade",
-          "icon": "faSpaceShuttle"
+          "icon": "faDragon"
         },
         {
           "name": "4",
-          "friendlyName": "Kanji Tetris",
-          "description": "Stack kanji blocks and clear lines! Classic tetris gameplay with Japanese characters as falling pieces.",
+          "friendlyName": "Tsumiki",
+          "description": "Stack blocks and clear lines! Just like the classic game we all know but with another name and a season prize pot!",
           "parse": "game",
           "parameters": [],
           "hintText": "",
-          "groupHeader": "Puzzle",
           "icon": "faCubes"
         }
       ]

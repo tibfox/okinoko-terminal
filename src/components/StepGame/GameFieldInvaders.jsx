@@ -1,21 +1,21 @@
-import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
+import { useState, useRef, useCallback } from 'preact/hooks'
 import {
   useGameLoop,
-  useKeyInput,
-  useResponsiveFontSize,
+  useHeldKeys,
+  useCountdown,
   useIsMobile,
   createGrid,
   drawSprite,
   drawChar,
   renderGrid,
   checkCollision,
-  getSpriteSize,
   clamp,
   GAME_STYLES,
 } from './lib/asciiGameEngine.js'
+import GameLayout from './GameLayout.jsx'
 
 const GAME_WIDTH = 50
-const GAME_HEIGHT = 28
+const GAME_HEIGHT = 50
 const PLAYER_Y = GAME_HEIGHT - 3
 const PLAYER_SPEED = 0.5
 const BULLET_SPEED = 0.8
@@ -50,7 +50,10 @@ const ENEMY_SPRITES = [
 
 // Bullet
 const BULLET_CHAR = '|'
-const ENEMY_BULLET_CHAR = 'v'
+const ENEMY_BULLET_CHAR = '.'
+
+// Speed increases more gradually for endless mode
+const SPEED_INCREMENT_PER_WAVE = 0.008
 
 /**
  * GameFieldInvaders - Space Invaders with Japanese yokai theme
@@ -67,16 +70,11 @@ export default function GameFieldInvaders({ onGameComplete }) {
   const [wave, setWave] = useState(1)
   const [lives, setLives] = useState(3)
 
-  const containerRef = useRef(null)
   const shootCooldownRef = useRef(0)
   const enemySpeedRef = useRef(ENEMY_SPEED_INITIAL)
-  const keysHeldRef = useRef({ left: false, right: false, shoot: false })
 
   // Check if on mobile device
   const isMobile = useIsMobile()
-
-  // Calculate responsive font size based on container
-  const fontSize = useResponsiveFontSize(containerRef, GAME_WIDTH, GAME_HEIGHT)
 
   // Initialize enemies for a wave
   const initEnemies = useCallback((waveNum) => {
@@ -111,56 +109,34 @@ export default function GameFieldInvaders({ onGameComplete }) {
     setLives(3)
     shootCooldownRef.current = 0
     enemySpeedRef.current = ENEMY_SPEED_INITIAL
-    keysHeldRef.current = { left: false, right: false, shoot: false }
   }, [initEnemies])
 
-  // Start the game
+  // Actually start playing after countdown
+  const beginPlaying = useCallback(() => {
+    setGameState('playing')
+  }, [])
+
+  // Countdown hook
+  const { countdown, startCountdown, isCountingDown } = useCountdown(3, beginPlaying)
+
+  // Start the game (triggers countdown)
   const startGame = useCallback(() => {
     resetGame()
-    setGameState('playing')
-  }, [resetGame])
+    setGameState('countdown')
+    startCountdown()
+  }, [resetGame, startCountdown])
 
-  // Handle input
-  const handleKeyDown = useCallback((action) => {
-    if (gameState !== 'playing') {
-      if (action === 'SHOOT' || action === 'UP') {
-        startGame()
-      }
-      return
+  // Handle single-press actions (start game on shoot when not playing)
+  // Standard actions: 'up' and 'action' both used for shooting
+  const handleKeyAction = useCallback((action) => {
+    if ((action === 'up' || action === 'action') && gameState !== 'playing' && gameState !== 'countdown') {
+      startGame()
     }
-
-    if (action === 'LEFT') keysHeldRef.current.left = true
-    if (action === 'RIGHT') keysHeldRef.current.right = true
-    if (action === 'SHOOT' || action === 'UP') keysHeldRef.current.shoot = true
   }, [gameState, startGame])
 
-  // Track key releases
-  useEffect(() => {
-    if (gameState !== 'playing') return
-
-    const handleKeyUp = (e) => {
-      if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-        keysHeldRef.current.left = false
-      }
-      if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-        keysHeldRef.current.right = false
-      }
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-        keysHeldRef.current.shoot = false
-      }
-    }
-
-    window.addEventListener('keyup', handleKeyUp)
-    return () => window.removeEventListener('keyup', handleKeyUp)
-  }, [gameState])
-
-  const keyMap = {
-    ArrowLeft: 'LEFT', a: 'LEFT', A: 'LEFT',
-    ArrowRight: 'RIGHT', d: 'RIGHT', D: 'RIGHT',
-    Space: 'SHOOT', ArrowUp: 'UP', w: 'UP', W: 'UP',
-  }
-
-  useKeyInput(keyMap, handleKeyDown, true)
+  // Track held keys for continuous movement
+  // Uses standard actions: left, right (movement), up and action (shooting)
+  const keysHeldRef = useHeldKeys(['left', 'right', 'up', 'action'], { onKeyDown: handleKeyAction })
 
   // Game loop
   useGameLoop((deltaTime) => {
@@ -172,9 +148,10 @@ export default function GameFieldInvaders({ onGameComplete }) {
       setPlayerX(x => clamp(x + PLAYER_SPEED * deltaTime, 1, GAME_WIDTH - 6))
     }
 
-    // Shooting
+    // Shooting (both 'up' and 'action' keys trigger shooting)
     shootCooldownRef.current = Math.max(0, shootCooldownRef.current - deltaTime)
-    if (keysHeldRef.current.shoot && shootCooldownRef.current <= 0) {
+    const isShooting = keysHeldRef.current.up || keysHeldRef.current.action
+    if (isShooting && shootCooldownRef.current <= 0) {
       setBullets(prev => [...prev, {
         id: Date.now(),
         x: playerX + 2,
@@ -316,13 +293,10 @@ export default function GameFieldInvaders({ onGameComplete }) {
       if (aliveCount === 0 && prev.length > 0) {
         setWave(w => {
           const nextWave = w + 1
-          if (nextWave > 5) {
-            setGameState('won')
-            return w
-          }
+          // Endless mode - speed increases gradually
           setEnemies(initEnemies(nextWave))
           setEnemyBullets([])
-          enemySpeedRef.current = ENEMY_SPEED_INITIAL + (nextWave - 1) * 0.02
+          enemySpeedRef.current = ENEMY_SPEED_INITIAL + (nextWave - 1) * SPEED_INCREMENT_PER_WAVE
           return nextWave
         })
       }
@@ -362,109 +336,120 @@ export default function GameFieldInvaders({ onGameComplete }) {
   }
 
   const handleClick = useCallback(() => {
-    if (gameState !== 'playing') {
+    if (gameState !== 'playing' && gameState !== 'countdown') {
       startGame()
     }
   }, [gameState, startGame])
 
-  // Dynamic field style with calculated font size
-  const fieldStyle = {
-    ...GAME_STYLES.field,
-    fontSize: `${fontSize}px`,
+  // Info Panel component
+  const InfoPanel = () => (
+    <div style={GAME_STYLES.infoPanelMobile}>
+      <div style={GAME_STYLES.infoPanelMobileItem}>
+        <span style={GAME_STYLES.infoPanelLabel}>SCORE</span>
+        <span style={GAME_STYLES.infoPanelValue}>{score}</span>
+      </div>
+      <div style={GAME_STYLES.infoPanelMobileItem}>
+        <span style={GAME_STYLES.infoPanelLabel}>WAVE</span>
+        <span style={GAME_STYLES.infoPanelValue}>{wave}</span>
+      </div>
+      <div style={GAME_STYLES.infoPanelMobileItem}>
+        <span style={GAME_STYLES.infoPanelLabel}>TOKENS</span>
+        <span style={GAME_STYLES.infoPanelValue}>100</span>
+      </div>
+    </div>
+  )
+
+  // Mobile Controls component
+  const MobileControls = () => (
+    <div style={GAME_STYLES.gamepad}>
+      {/* D-Pad (Left) - only left/right for Invaders */}
+      <div style={GAME_STYLES.dpad}>
+        <div /> {/* Empty top-left */}
+        <div /> {/* Empty top - no up in invaders */}
+        <div /> {/* Empty top-right */}
+        <button
+          style={GAME_STYLES.dpadButton}
+          onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.left = true }}
+          onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.left = false }}
+          onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.left = false }}
+        >◀</button>
+        <div style={GAME_STYLES.dpadCenter} /> {/* Center */}
+        <button
+          style={GAME_STYLES.dpadButton}
+          onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.right = true }}
+          onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.right = false }}
+          onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.right = false }}
+        >▶</button>
+        <div /> {/* Empty bottom-left */}
+        <div /> {/* Empty bottom - no down in invaders */}
+        <div /> {/* Empty bottom-right */}
+      </div>
+
+      {/* Action Buttons (Right) - FIRE button */}
+      <div style={GAME_STYLES.actionButtons}>
+        <button
+          style={GAME_STYLES.actionButtonLarge}
+          onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.action = true }}
+          onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.action = false }}
+          onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.action = false }}
+        >FIRE</button>
+      </div>
+    </div>
+  )
+
+  // Overlay content for different game states
+  const getOverlayContent = () => {
+    if (gameState === 'playing') return null
+
+    if (gameState === 'countdown') {
+      return (
+        <div style={{ fontSize: '48px', color: 'var(--color-primary)' }}>
+          {countdown}
+        </div>
+      )
+    }
+
+    if (gameState === 'ready') {
+      return (
+        <>
+          <div style={{ fontSize: '20px', marginBottom: '10px' }}>YOKAI INVADERS</div>
+          <div style={{ marginBottom: '5px' }}>Defend against the yokai!</div>
+          <div style={{ marginBottom: '15px', fontSize: '12px' }}>Survive as long as you can</div>
+          <div style={{ color: 'var(--color-primary)' }}>
+            [SPACE] to START
+          </div>
+        </>
+      )
+    }
+
+    if (gameState === 'lost') {
+      return (
+        <>
+          <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
+            GAME ENDED
+          </div>
+          <div style={{ marginBottom: '5px' }}>Score: {score}</div>
+          <div style={{ marginBottom: '5px' }}>Wave: {wave}</div>
+          <div style={{ marginBottom: '15px' }}>The yokai won!</div>
+          <div style={{ color: 'var(--color-primary)' }}>
+            [SPACE] or [CLICK] to TRY AGAIN
+          </div>
+        </>
+      )
+    }
+
+    return null
   }
 
   return (
-    <div ref={containerRef} onClick={handleClick} style={GAME_STYLES.container}>
-      {/* Header */}
-      <div style={GAME_STYLES.header}>
-        <span>SCORE: {score}</span>
-        <span>WAVE: {wave}/5</span>
-      </div>
-
-      {/* Game Field */}
-      <div style={fieldStyle}>
-        {renderGame()}
-
-        {/* Overlay for game states */}
-        {gameState !== 'playing' && (
-          <div style={GAME_STYLES.overlay}>
-            {gameState === 'ready' && (
-              <>
-                <div style={{ fontSize: '20px', marginBottom: '10px' }}>YOKAI INVADERS</div>
-                <div style={{ marginBottom: '5px' }}>Defend against the yokai!</div>
-                <div style={{ marginBottom: '15px', fontSize: '12px' }}>Survive 5 waves to win</div>
-                <div style={{ color: 'var(--color-primary)' }}>
-                  [SPACE] to START
-                </div>
-              </>
-            )}
-            {gameState === 'won' && (
-              <>
-                <div style={{ fontSize: '24px', marginBottom: '10px', color: 'var(--color-primary)' }}>
-                  VICTORY!
-                </div>
-                <div style={{ marginBottom: '5px' }}>Final Score: {score}</div>
-                <div style={{ marginBottom: '15px' }}>The yokai are defeated!</div>
-                <div style={{ color: 'var(--color-primary)' }}>
-                  [SPACE] or [CLICK] to PLAY AGAIN
-                </div>
-              </>
-            )}
-            {gameState === 'lost' && (
-              <>
-                <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
-                  GAME OVER
-                </div>
-                <div style={{ marginBottom: '5px' }}>Score: {score}</div>
-                <div style={{ marginBottom: '5px' }}>Wave: {wave}/5</div>
-                <div style={{ marginBottom: '15px' }}>The yokai won!</div>
-                <div style={{ color: 'var(--color-primary)' }}>
-                  [SPACE] or [CLICK] to TRY AGAIN
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Instructions */}
-      <div style={GAME_STYLES.instructions}>
-        ARROWS/WASD to move, SPACE to shoot
-      </div>
-
-      {/* Mobile Controls - only shown on touch devices */}
-      {isMobile && (
-        <div style={{ ...GAME_STYLES.mobileControls, display: 'flex' }}>
-          <div style={GAME_STYLES.mobileControlRow}>
-            <button
-              style={GAME_STYLES.mobileButtonWide}
-              onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.shoot = true }}
-              onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.shoot = false }}
-              onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.shoot = false }}
-              onClick={() => handleKeyDown('SHOOT')}
-            >FIRE</button>
-          </div>
-          <div style={GAME_STYLES.mobileControlRow}>
-            <button
-              style={GAME_STYLES.mobileButton}
-              onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.left = true }}
-              onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.left = false }}
-              onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.left = false }}
-              onClick={() => handleKeyDown('LEFT')}
-            >◀</button>
-            <button
-              style={{ ...GAME_STYLES.mobileButton, width: '50px', visibility: 'hidden' }}
-            ></button>
-            <button
-              style={GAME_STYLES.mobileButton}
-              onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.right = true }}
-              onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.right = false }}
-              onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.right = false }}
-              onClick={() => handleKeyDown('RIGHT')}
-            >▶</button>
-          </div>
-        </div>
-      )}
-    </div>
+    <GameLayout
+      gameWidth={GAME_WIDTH}
+      gameHeight={GAME_HEIGHT}
+      renderGame={renderGame}
+      InfoPanel={InfoPanel}
+      MobileControls={MobileControls}
+      onFieldClick={handleClick}
+      overlayContent={getOverlayContent()}
+    />
   )
 }

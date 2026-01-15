@@ -823,7 +823,7 @@ export default function TerminalContainer({
                       >
                         <div style={{ fontWeight: 600 }}>{preset.label}</div>
                         {preset.description ? (
-                          <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.75 }}>{preset.description}</div>
+                          <div style={{ fontSize: 'var(--font-size-subtitle)', opacity: 0.75 }}>{preset.description}</div>
                         ) : null}
                       </button>
                     ))}
@@ -979,7 +979,7 @@ export default function TerminalContainer({
                         >
                           <div style={{ fontWeight: 600 }}>{effect.label}</div>
                           {effect.description ? (
-                            <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.75 }}>{effect.description}</div>
+                            <div style={{ fontSize: 'var(--font-size-subtitle)', opacity: 0.75 }}>{effect.description}</div>
                           ) : null}
                         </button>
                       ))}

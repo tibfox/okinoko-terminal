@@ -4,6 +4,40 @@
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
 
 /**
+ * Hook to calculate square container size based on available space
+ * Uses the smaller of width/height to create a square
+ * @param {Object} parentRef - React ref to the parent element
+ * @param {number} padding - Padding to subtract from available space (default 40)
+ * @returns {number} Square size in pixels
+ */
+export function useSquareSize(parentRef, padding = 40) {
+  const [size, setSize] = useState(400)
+
+  useEffect(() => {
+    const calculateSize = () => {
+      if (!parentRef.current) return
+
+      const rect = parentRef.current.getBoundingClientRect()
+      const availableWidth = rect.width - padding
+      const availableHeight = rect.height - padding
+      const squareSize = Math.min(availableWidth, availableHeight)
+      setSize(Math.max(200, squareSize)) // minimum 200px
+    }
+
+    calculateSize()
+
+    const resizeObserver = new ResizeObserver(calculateSize)
+    if (parentRef.current) {
+      resizeObserver.observe(parentRef.current)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [parentRef, padding])
+
+  return size
+}
+
+/**
  * Hook to calculate responsive font size based on container size and game dimensions
  * @param {Object} containerRef - React ref to the container element
  * @param {number} gameWidth - Number of characters wide
@@ -13,12 +47,10 @@ import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
  */
 export function useResponsiveFontSize(containerRef, gameWidth, gameHeight, options = {}) {
   const {
-    minFontSize = 8,
-    maxFontSize = 24,
+    minFontSize = 6,
+    maxFontSize = 32,
     charWidthRatio = 0.6, // monospace char width is roughly 0.6 of font size
-    lineHeightRatio = 1.2, // slightly more conservative line height
-    horizontalPadding = 60, // container padding + field padding + borders
-    verticalPadding = 120, // container padding + header + instructions + field padding
+    lineHeightRatio = 1.0, // line height for the game field
   } = options
 
   const [fontSize, setFontSize] = useState(14)
@@ -28,17 +60,18 @@ export function useResponsiveFontSize(containerRef, gameWidth, gameHeight, optio
       if (!containerRef.current) return
 
       const rect = containerRef.current.getBoundingClientRect()
-      const availableWidth = rect.width - horizontalPadding
-      const availableHeight = rect.height - verticalPadding
 
-      // Calculate max font size that fits width
-      const maxFontByWidth = availableWidth / (gameWidth * charWidthRatio)
+      // Account for borders and padding
+      const padding = 20 // border + any internal padding
+      const availableWidth = rect.width - padding
+      const availableHeight = rect.height - padding
 
-      // Calculate max font size that fits height
-      const maxFontByHeight = availableHeight / (gameHeight * lineHeightRatio)
+      // Calculate font size needed to fit the game grid
+      const fontByWidth = availableWidth / (gameWidth * charWidthRatio)
+      const fontByHeight = availableHeight / (gameHeight * lineHeightRatio)
 
-      // Use the smaller of the two, clamped to min/max
-      const optimalSize = Math.min(maxFontByWidth, maxFontByHeight)
+      // Use the smaller dimension as the limiting factor
+      const optimalSize = Math.min(fontByWidth, fontByHeight)
       const clampedSize = Math.max(minFontSize, Math.min(maxFontSize, optimalSize))
 
       setFontSize(Math.floor(clampedSize))
@@ -53,7 +86,7 @@ export function useResponsiveFontSize(containerRef, gameWidth, gameHeight, optio
     }
 
     return () => resizeObserver.disconnect()
-  }, [containerRef, gameWidth, gameHeight, minFontSize, maxFontSize, charWidthRatio, lineHeightRatio, horizontalPadding, verticalPadding])
+  }, [containerRef, gameWidth, gameHeight, minFontSize, maxFontSize, charWidthRatio, lineHeightRatio])
 
   return fontSize
 }
@@ -97,32 +130,262 @@ export function useGameLoop(callback, active = true) {
 }
 
 /**
- * Keyboard input hook
+ * Keyboard input hook (for single-press actions like direction changes)
  * @param {Object} keyMap - Map of key codes to action names
  * @param {function} handler - Called with (action, event) on keydown
  * @param {boolean} active - Whether to listen for input
  */
 export function useKeyInput(keyMap, handler, active = true) {
   const handlerRef = useRef(handler)
+  const keyMapRef = useRef(keyMap)
 
   useEffect(() => {
     handlerRef.current = handler
-  }, [handler])
+    keyMapRef.current = keyMap
+  })
 
   useEffect(() => {
     if (!active) return
 
     const handleKeyDown = (e) => {
-      const action = keyMap[e.code] || keyMap[e.key]
+      const action = keyMapRef.current[e.code] || keyMapRef.current[e.key]
       if (action) {
         e.preventDefault()
+        e.stopPropagation()
+        // For single-press actions, we actually want repeats for responsive feel
+        // But only call handler - let the game logic decide how to handle it
         handlerRef.current(action, e)
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [keyMap, active])
+    // Use capture phase on document to ensure we get events first
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [active])
+}
+
+/**
+ * Buffered keyboard input hook - queues keypresses for games that process input at fixed intervals
+ * @param {Object} keyMap - Map of key codes to action names
+ * @param {boolean} active - Whether to listen for input
+ * @param {number} maxBufferSize - Maximum number of buffered commands (default 5)
+ * @returns {{ buffer: Object, consumeOne: function, consumeAll: function, clear: function }}
+ */
+export function useBufferedKeyInput(keyMap, active = true, maxBufferSize = 5) {
+  const bufferRef = useRef([])
+  const keyMapRef = useRef(keyMap)
+
+  useEffect(() => {
+    keyMapRef.current = keyMap
+  })
+
+  useEffect(() => {
+    if (!active) {
+      bufferRef.current = []
+      return
+    }
+
+    const handleKeyDown = (e) => {
+      const action = keyMapRef.current[e.code] || keyMapRef.current[e.key]
+      if (action) {
+        e.preventDefault()
+        e.stopPropagation()
+        // Don't buffer repeated keys (held down)
+        if (!e.repeat && bufferRef.current.length < maxBufferSize) {
+          bufferRef.current.push(action)
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [active, maxBufferSize])
+
+  // Consume one action from the buffer
+  const consumeOne = useCallback(() => {
+    return bufferRef.current.shift() || null
+  }, [])
+
+  // Consume all actions from the buffer
+  const consumeAll = useCallback(() => {
+    const actions = [...bufferRef.current]
+    bufferRef.current = []
+    return actions
+  }, [])
+
+  // Clear the buffer
+  const clear = useCallback(() => {
+    bufferRef.current = []
+  }, [])
+
+  // Manually add an action to the buffer (for mobile controls)
+  const addAction = useCallback((action) => {
+    if (bufferRef.current.length < maxBufferSize) {
+      bufferRef.current.push(action)
+    }
+  }, [maxBufferSize])
+
+  return { buffer: bufferRef, consumeOne, consumeAll, clear, addAction }
+}
+
+/**
+ * Standard key bindings - maps e.code and e.key to action names
+ * Supports both arrow keys and WASD
+ * Includes both e.code values (like "KeyA") and e.key values (like "a")
+ */
+const STANDARD_KEY_BINDINGS = {
+  // Arrow keys (e.code and e.key are the same)
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  // WASD - e.code values
+  KeyA: 'left',
+  KeyD: 'right',
+  KeyW: 'up',
+  KeyS: 'down',
+  // WASD - e.key values (lowercase)
+  a: 'left',
+  d: 'right',
+  w: 'up',
+  s: 'down',
+  // WASD - e.key values (uppercase, in case caps lock)
+  A: 'left',
+  D: 'right',
+  W: 'up',
+  S: 'down',
+  // Space - e.code
+  Space: 'action',
+  // Space - e.key
+  ' ': 'action',
+}
+
+/**
+ * Hook for tracking held keys (for continuous movement)
+ * Returns a ref object with boolean flags for each action
+ * @param {string[]} actions - Array of action names the game supports (e.g., ['left', 'right', 'up', 'down', 'action'])
+ * @param {Object} options - Optional callbacks for key events
+ * @param {function} options.onKeyDown - Called with (action, event) on keydown (for single-press actions)
+ * @param {function} options.onKeyUp - Called with (action, event) on keyup
+ * @returns {Object} ref with held state for each action
+ */
+export function useHeldKeys(actions, options = {}) {
+  const heldRef = useRef({})
+  const actionsRef = useRef(actions)
+  const onKeyDownRef = useRef(options.onKeyDown)
+  const onKeyUpRef = useRef(options.onKeyUp)
+
+  // Keep refs updated
+  useEffect(() => {
+    actionsRef.current = actions
+    onKeyDownRef.current = options.onKeyDown
+    onKeyUpRef.current = options.onKeyUp
+  })
+
+  // Set up event listeners only once
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check both e.code and e.key for compatibility across platforms
+      const action = STANDARD_KEY_BINDINGS[e.code] || STANDARD_KEY_BINDINGS[e.key]
+      if (action && actionsRef.current.includes(action)) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const wasHeld = heldRef.current[action]
+        // Always set held state to true on keydown (catches missed events)
+        heldRef.current[action] = true
+
+        // Only trigger onKeyDown callback on initial press, not repeats
+        if (!wasHeld && !e.repeat && onKeyDownRef.current) {
+          onKeyDownRef.current(action, e)
+        }
+      }
+    }
+
+    const handleKeyUp = (e) => {
+      // Check both e.code and e.key for compatibility across platforms
+      const action = STANDARD_KEY_BINDINGS[e.code] || STANDARD_KEY_BINDINGS[e.key]
+      if (action && actionsRef.current.includes(action)) {
+        e.stopPropagation()
+        heldRef.current[action] = false
+        if (onKeyUpRef.current) {
+          onKeyUpRef.current(action, e)
+        }
+      }
+    }
+
+    // Clear all held keys when window loses focus (prevents stuck keys)
+    const handleBlur = () => {
+      Object.keys(heldRef.current).forEach(key => {
+        heldRef.current[key] = false
+      })
+    }
+
+    // Use capture phase on document to ensure we get events before other handlers
+    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('keyup', handleKeyUp, true)
+    window.addEventListener('blur', handleBlur)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('keyup', handleKeyUp, true)
+      window.removeEventListener('blur', handleBlur)
+    }
+  }, []) // Empty deps - only set up once
+
+  return heldRef
+}
+
+/**
+ * Hook for countdown before game starts
+ * @param {number} from - Starting number (default 3)
+ * @param {function} onComplete - Called when countdown reaches 0
+ * @returns {{ countdown: number|null, startCountdown: function, isCountingDown: boolean }}
+ */
+export function useCountdown(from = 3, onComplete) {
+  const [countdown, setCountdown] = useState(null)
+  const intervalRef = useRef(null)
+  const onCompleteRef = useRef(onComplete)
+
+  // Keep callback ref updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
+
+  const startCountdown = useCallback(() => {
+    // Clear any existing countdown
+    if (intervalRef.current) clearInterval(intervalRef.current)
+
+    setCountdown(from)
+
+    intervalRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+          // Call onComplete after state update
+          setTimeout(() => {
+            if (onCompleteRef.current) onCompleteRef.current()
+          }, 0)
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [from])
+
+  return {
+    countdown,
+    startCountdown,
+    isCountingDown: countdown !== null,
+  }
 }
 
 /**
@@ -422,14 +685,36 @@ export const KEY_MAPS = {
  * Standard game container styles
  */
 export const GAME_STYLES = {
+  // Wrapper that fills parent - used to measure available space
+  wrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  },
   container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: '10px',
+    width: '100%',
+    height: '100%',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+  },
+  // Mobile-specific container with minimal padding
+  containerMobile: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    width: '100%',
-    padding: '20px',
+    width: '99%',
+    padding: '5px',
     cursor: 'pointer',
     userSelect: 'none',
     boxSizing: 'border-box',
@@ -439,21 +724,26 @@ export const GAME_STYLES = {
     justifyContent: 'space-between',
     marginBottom: '10px',
     fontFamily: 'monospace',
-    fontSize: 'var(--font-size-base)',
+    fontSize: '1.05rem',
     color: 'var(--color-primary-lighter)',
   },
   field: {
     fontFamily: 'monospace',
-    fontSize: 'clamp(10px, min(2.5vw, 2.5vh), 18px)',
-    lineHeight: '1.1',
+    lineHeight: '1',
     whiteSpace: 'pre',
     background: 'rgba(0, 0, 0, 0.5)',
-    padding: '10px',
     border: '1px solid var(--color-primary-darkest)',
     color: 'var(--color-primary)',
     position: 'relative',
     boxSizing: 'border-box',
     overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: '1 1 auto',
+    minHeight: 0,
+    cursor: 'pointer',
+    userSelect: 'none',
   },
   overlay: {
     position: 'absolute',
@@ -517,5 +807,142 @@ export const GAME_STYLES = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Gamepad layout container
+  gamepad: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    padding: '0 16px',
+    boxSizing: 'border-box',
+  },
+  // D-pad (left side) - cross layout
+  dpad: {
+    display: 'grid',
+    gridTemplateColumns: '44px 44px 44px',
+    gridTemplateRows: '44px 44px 44px',
+    gap: '2px',
+  },
+  dpadButton: {
+    width: '44px',
+    height: '44px',
+    fontSize: '18px',
+    background: 'rgba(0, 0, 0, 0.7)',
+    border: '2px solid var(--color-primary-darker)',
+    color: 'var(--color-primary)',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dpadCenter: {
+    width: '44px',
+    height: '44px',
+    background: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: '6px',
+  },
+  // Action buttons (right side) - circular/diagonal layout like SNES
+  actionButtons: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  actionButtonRow: {
+    display: 'flex',
+    gap: '4px',
+  },
+  actionButton: {
+    width: '48px',
+    height: '48px',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    background: 'rgba(0, 0, 0, 0.7)',
+    border: '2px solid var(--color-primary-darker)',
+    color: 'var(--color-primary)',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textTransform: 'uppercase',
+  },
+  actionButtonLarge: {
+    width: '56px',
+    height: '56px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    background: 'rgba(0, 0, 0, 0.7)',
+    border: '2px solid var(--color-primary-darker)',
+    color: 'var(--color-primary)',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textTransform: 'uppercase',
+  },
+  // Game info panel with border
+  infoPanel: {
+    border: '1px solid var(--color-primary-darker)',
+    background: 'rgba(0, 0, 0, 0.5)',
+    padding: '10px 15px',
+    fontFamily: 'monospace',
+    fontSize: '0.9rem',
+    color: 'var(--color-primary-lighter)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    minWidth: '150px',
+  },
+  infoPanelRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '15px',
+  },
+  infoPanelLabel: {
+    color: 'var(--color-primary-darker)',
+  },
+  infoPanelValue: {
+    color: 'var(--color-primary-lighter)',
+    fontWeight: 'bold',
+  },
+  infoPanelInstructions: {
+    marginTop: '8px',
+    paddingTop: '8px',
+    borderTop: '1px solid var(--color-primary-darkest)',
+    fontSize: '0.8rem',
+    color: 'var(--color-primary-darker)',
+    lineHeight: '1.4',
+  },
+  // Mobile info panel (horizontal, single row)
+  infoPanelMobile: {
+    border: '1px solid var(--color-primary-darker)',
+    background: 'rgba(0, 0, 0, 0.5)',
+    padding: '8px 12px',
+    fontFamily: 'monospace',
+    fontSize: '0.85rem',
+    color: 'var(--color-primary-lighter)',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: '12px',
+    width: '100%',
+    boxSizing: 'border-box',
+    flex: '0 0 auto',
+  },
+  infoPanelMobileItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2px',
   },
 }

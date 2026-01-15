@@ -9,6 +9,7 @@ export default function NeonListDropdown({
   placeholder = 'Select…',
   title,
   style = {},
+  buttonStyle = {},
   menuOffsetY = '0.5rem',
   showCheck = false,
 }) {
@@ -52,6 +53,7 @@ export default function NeonListDropdown({
           letterSpacing: '0.03em',
           boxShadow: '0 0 8px rgba(0,0,0,0.4)',
           cursor: 'pointer',
+          ...buttonStyle,
         }}
       >
         <span style={{ opacity: selected ? 1 : 0.75 }}>

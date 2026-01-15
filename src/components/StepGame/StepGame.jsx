@@ -63,6 +63,7 @@ export default function StepGame({
     return clampPosition(saved, 0.5)
   })
   const [draggingDivider, setDraggingDivider] = useState(false)
+  const [yugiView, setYugiView] = useState('lobby') // 'lobby' or 'game' for Yugi single-player games
   const layoutRef = useRef(null)
 
   const {
@@ -381,6 +382,8 @@ export default function StepGame({
               pendingAction={pending}
               onSwapInfoChange={setSwapInfo}
               contractId={contractId}
+              yugiView={yugiView}
+              setYugiView={setYugiView}
             />)}
         </div>
       </div>
@@ -397,6 +400,9 @@ export default function StepGame({
         onBackToGameList={unselectGame}
         showGameListButton={showingGameDetails}
         hideSendButton={isSinglePlayerContract}
+        isSinglePlayerContract={isSinglePlayerContract}
+        yugiView={yugiView}
+        onBackToLeaderboard={() => setYugiView('lobby')}
       />
       </LobbySubscriptionProvider>
     </TerminalContainer>

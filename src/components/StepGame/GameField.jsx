@@ -1,9 +1,10 @@
 import GameFieldBase from './GameFieldBase.jsx'
 import GameFieldGomoku from './GameFieldGomoku.jsx'
 import GameFieldJump from './GameFieldJump.jsx'
-import GameFieldSnake from './GameFieldSnake.jsx'
+import GameFieldSnakePixel from './GameFieldSnakePixel.jsx'
 import GameFieldInvaders from './GameFieldInvaders.jsx'
-import GameFieldTetris from './GameFieldTetris.jsx'
+import GameFieldTetrisPixel from './GameFieldTetrisPixel.jsx'
+import YugiGameLobby from './YugiGameLobby.jsx'
 
 // Games 2 / Yugi contract ID
 const GAMES2_CONTRACT_ID = 'vsc1PLACEHOLDER_GAMES2'
@@ -14,17 +15,29 @@ export default function GameField(props) {
 
   if (isGames2) {
     const gameTypeId = props?.defaultGameTypeId
+    const { yugiView, setYugiView } = props
+
+    // Show lobby first, then game when Play Game is clicked
+    if (yugiView === 'lobby') {
+      return (
+        <YugiGameLobby
+          gameTypeId={gameTypeId}
+          gameDescription={props?.gameDescription}
+          onPlayGame={() => setYugiView('game')}
+        />
+      )
+    }
 
     // Route to appropriate game component
     switch (gameTypeId) {
       case 1:
         return <GameFieldJump {...props} />
       case 2:
-        return <GameFieldSnake {...props} />
+        return <GameFieldSnakePixel {...props} />
       case 3:
         return <GameFieldInvaders {...props} />
       case 4:
-        return <GameFieldTetris {...props} />
+        return <GameFieldTetrisPixel {...props} />
       default:
         // Fallback to base if unknown game type
         return <GameFieldBase {...props} />
