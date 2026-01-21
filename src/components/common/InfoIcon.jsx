@@ -10,7 +10,7 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
     <>
       <FontAwesomeIcon
         icon={faCircleInfo}
-        title={tooltip}
+        title={typeof tooltip === 'string' ? tooltip : undefined}
         style={{
           color: 'var(--color-primary-lighter)',
           cursor: 'help',
@@ -20,7 +20,7 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
         onMouseEnter={(e) => {
           const rect = e.currentTarget.getBoundingClientRect()
           setHintOverlay({
-            text: tooltip,
+            content: tooltip,
             x: rect.left + rect.width / 2,
             y: rect.top,
           })
@@ -39,15 +39,17 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
             background: 'black',
             border: '1px solid var(--color-primary-darker)',
             padding: '8px 10px',
-            maxWidth: '280px',
             color: 'var(--color-primary-lighter)',
             fontSize: 'var(--font-size-base)',
-            pointerEvents: 'none',
+            pointerEvents: 'auto',
             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
             backdropFilter: 'blur(3px)',
+            whiteSpace: 'nowrap',
           }}
+          onMouseEnter={() => setHintOverlay(hintOverlay)}
+          onMouseLeave={() => setHintOverlay(null)}
         >
-          {hintOverlay.text}
+          {hintOverlay.content}
         </div>,
         document.body
       )}

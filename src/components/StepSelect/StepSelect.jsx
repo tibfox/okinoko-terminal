@@ -72,6 +72,7 @@ export default function StepSelect({
     return clampPosition(saved, 0.33)
   })
   const [draggingDivider, setDraggingDivider] = useState(false)
+  const [backOverride, setBackOverride] = useState(null)
   const layoutRef = useRef(null)
 
   useEffect(() => {
@@ -299,6 +300,7 @@ export default function StepSelect({
             isDaoContract={isDaoContract}
             onCreateDao={handleCreateDao}
             onCreateProposal={handleCreateProposal}
+            setBackOverride={setBackOverride}
           />
         </div>
       </div>
@@ -314,7 +316,13 @@ export default function StepSelect({
           width: '100%',
         }}
       >
-        <NeonButton onClick={() => setStep(0)}>
+        <NeonButton onClick={() => {
+          if (backOverride) {
+            backOverride()
+          } else {
+            setStep(0)
+          }
+        }}>
           <FontAwesomeIcon icon={faChevronLeft} style={{  fontSize: '0.9rem', marginRight: '10px' }} />
           Back
         </NeonButton>

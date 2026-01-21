@@ -654,52 +654,46 @@ export default function LotteryUserLists({
         gap: '10px',
       }}
     >
-      
-      {!isMobile && renderHeader('Lotteries', lotteriesCollapsed, setLotteriesCollapsed)}
-      {(!isMobile && !lotteriesCollapsed) || isMobile ? (
-        <>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', position: 'relative', zIndex: 2, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setShowFilters((prev) => !prev)}
-              style={baseButtonStyle(showFilters)}
-              title="Toggle filters"
-            >
-              <FontAwesomeIcon icon={showFilters ? faChevronLeft : faFilter}  style={{ fontSize: '0.9rem' }} />
-            </button>
-            {showFilters && (
-              <>
-                {[
-                  { key: 'active', label: 'Active' },
-                  { key: 'closed', label: 'Closed' },
-                ].map((tab) => (
-                  <button
-                    key={`lot-${tab.key}`}
-                    onClick={() => setLotteryStatusFilter(tab.key)}
-                    style={baseButtonStyle(lotteryStatusFilter === tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </>
-            )}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-            <button
-              onClick={() => onCreateLottery?.()}
-              style={{
-                ...baseButtonStyle(false),
-                backgroundColor: 'var(--color-primary-darker)',
-                color: 'black',
-              }}
-              title="Host Lottery"
-            >
-              <FontAwesomeIcon icon={faPlusCircle}  style={{ fontSize: '0.9rem' }}/>
-              <span>Host Lottery</span>
-            </button>
-            </div>
-          </div>
-          {renderLotteryList()}
-        </>
-      ) : null}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', position: 'relative', zIndex: 2, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setShowFilters((prev) => !prev)}
+          style={baseButtonStyle(showFilters)}
+          title="Toggle filters"
+        >
+          <FontAwesomeIcon icon={showFilters ? faChevronLeft : faFilter}  style={{ fontSize: '0.9rem' }} />
+        </button>
+        {showFilters && (
+          <>
+            {[
+              { key: 'active', label: 'Active' },
+              { key: 'closed', label: 'Closed' },
+            ].map((tab) => (
+              <button
+                key={`lot-${tab.key}`}
+                onClick={() => setLotteryStatusFilter(tab.key)}
+                style={baseButtonStyle(lotteryStatusFilter === tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+        <button
+          onClick={() => onCreateLottery?.()}
+          style={{
+            ...baseButtonStyle(false),
+            backgroundColor: 'var(--color-primary-darker)',
+            color: 'black',
+          }}
+          title="Host Lottery"
+        >
+          <FontAwesomeIcon icon={faPlusCircle}  style={{ fontSize: '0.9rem' }}/>
+          <span>Host Lottery</span>
+        </button>
+        </div>
+      </div>
+      {renderLotteryList()}
     </div>
   )
 }
