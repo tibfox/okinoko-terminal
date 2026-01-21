@@ -18,6 +18,7 @@ import LotteryDropdown from '../common/LotteryDropdown.jsx'
 import EscrowDropdown from '../common/EscrowDropdown.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
+import FormField from '../common/FormField.jsx'
 import NeonListInput from '../common/NeonListInput.jsx'
 import WinnerSharesInput from '../common/WinnerSharesInput.jsx'
 import WinnerPrizesInput from '../common/WinnerPrizesInput.jsx'
@@ -3130,21 +3131,15 @@ export default function ExecuteForm({
       return null
     }
     if (isOptionsField && !forcePollActive) return null
-    const hint = (p.hintText || '').trim()
-    const labelText = `${p.name}${p.mandatory || p.displayAsMandatory ? ' *' : ''}`
     return (
-      <div key={p.name} style={{ marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          {renderParamInput(p)}
-        </div>
-        {hint && (
-          <InfoIcon
-            tooltip={hint}
-            size={16}
-            style={{ marginTop: '0' }}
-          />
-        )}
-      </div>
+      <FormField
+        key={p.name}
+        label={p.name}
+        mandatory={p.mandatory || p.displayAsMandatory}
+        hintText={p.hintText}
+      >
+        {renderParamInput(p)}
+      </FormField>
     )
   }
 

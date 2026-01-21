@@ -4,11 +4,12 @@ import {
   useHeldKeys,
   useBufferedKeyInput,
   useCountdown,
-  useIsMobile,
   randomInt,
   GAME_STYLES,
-} from './lib/asciiGameEngine.js'
-import PixelCanvas from './PixelCanvas.jsx'
+} from './shared/asciiGameEngine.js'
+import GameLayout from './shared/GameLayout.jsx'
+import GameInfoPanel from './shared/GameInfoPanel.jsx'
+import GameOverlay from './shared/GameOverlay.jsx'
 
 // Key map for buffered input (left/right movement)
 const TETRIS_MOVE_KEYS = {
@@ -18,77 +19,56 @@ const TETRIS_MOVE_KEYS = {
 
 const BOARD_WIDTH = 10
 const BOARD_HEIGHT = 20
-const CELL_SIZE = 8
 const INITIAL_DROP_SPEED = 2 // rows per second
 const SOFT_DROP_MULTIPLIER = 10
 const LINES_PER_LEVEL = 10
 const MAX_LEVEL = 10
 
-// Border thickness in pixels (half a cell)
-const BORDER_THICKNESS = Math.floor(CELL_SIZE / 2) // 4 pixels for 8px cells
-
-// Display dimensions - add 1 cell for borders (0.5 cell top + 0.5 cell bottom = 1 cell)
-const PREVIEW_WIDTH = 5
-const DISPLAY_WIDTH = BOARD_WIDTH + 1 + PREVIEW_WIDTH // board + border + preview area
-const DISPLAY_HEIGHT = BOARD_HEIGHT + 1 // board + border space (top + bottom)
-
-// Colors for pixel graphics (using CSS custom properties)
-const COLORS = {
-  background: '#000000',
-  border: 'var(--color-primary-darker, #1a4a1a)',
-  ghost: 'var(--color-primary-darker, #1a4a1a)',
-  block: 'var(--color-primary, #00ff00)',
-  blockLight: 'var(--color-primary-light, #66ff66)',
-  blockDark: 'var(--color-primary-dark, #00cc00)',
-}
-
-// Pixel art patterns for tetrominoes (8x8)
-const BLOCK_PATTERN = [
-  [1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,0,0],
-  [1,1,1,1,1,0,0,0],
-  [1,1,1,1,1,0,0,0],
-  [1,1,1,1,1,0,0,0],
-  [1,1,0,0,0,0,0,0],
-  [1,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-]
-
-const GHOST_PATTERN = [
-  [0,1,1,1,1,1,1,0],
-  [1,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,1],
-  [0,1,1,1,1,1,1,0],
-]
-
-// Small block pattern for preview (4x4 scaled to fit)
-const SMALL_BLOCK_PATTERN = [
-  [1,1,1,1,1,1,0,0],
-  [1,1,1,1,1,0,0,0],
-  [1,1,1,1,0,0,0,0],
-  [1,1,1,0,0,0,0,0],
-  [1,1,0,0,0,0,0,0],
-  [1,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-]
+// Block character for all pieces
+const BLOCK_CHAR = '#'
 
 // Tetromino shapes (relative coordinates from center)
 const TETROMINOS = {
-  I: { shape: [[0, -1], [0, 0], [0, 1], [0, 2]] },
-  O: { shape: [[0, 0], [1, 0], [0, 1], [1, 1]] },
-  T: { shape: [[-1, 0], [0, 0], [1, 0], [0, 1]] },
-  S: { shape: [[0, 0], [1, 0], [-1, 1], [0, 1]] },
-  Z: { shape: [[-1, 0], [0, 0], [0, 1], [1, 1]] },
-  J: { shape: [[-1, 0], [0, 0], [1, 0], [1, 1]] },
-  L: { shape: [[-1, 0], [0, 0], [1, 0], [-1, 1]] },
+  I: {
+    shape: [[0, -1], [0, 0], [0, 1], [0, 2]],
+    char: BLOCK_CHAR,
+  },
+  O: {
+    shape: [[0, 0], [1, 0], [0, 1], [1, 1]],
+    char: BLOCK_CHAR,
+  },
+  T: {
+    shape: [[-1, 0], [0, 0], [1, 0], [0, 1]],
+    char: BLOCK_CHAR,
+  },
+  S: {
+    shape: [[0, 0], [1, 0], [-1, 1], [0, 1]],
+    char: BLOCK_CHAR,
+  },
+  Z: {
+    shape: [[-1, 0], [0, 0], [0, 1], [1, 1]],
+    char: BLOCK_CHAR,
+  },
+  J: {
+    shape: [[-1, 0], [0, 0], [1, 0], [1, 1]],
+    char: BLOCK_CHAR,
+  },
+  L: {
+    shape: [[-1, 0], [0, 0], [1, 0], [-1, 1]],
+    char: BLOCK_CHAR,
+  },
 }
 
 const TETROMINO_KEYS = Object.keys(TETROMINOS)
+
+// Game configuration for overlay
+const GAME_CONFIG = {
+  title: 'TETRIS',
+  instructions: ['Stack the blocks!'],
+  subtitle: 'Clear lines to score',
+  lostTitle: 'GAME ENDED',
+  lostMessage: 'The blocks reached the top!',
+}
 
 // Rotate a piece clockwise
 const rotateShape = (shape) => {
@@ -110,13 +90,13 @@ const isValidPosition = (board, shape, x, y) => {
 }
 
 // Place piece on board
-const placePiece = (board, shape, x, y) => {
+const placePiece = (board, shape, x, y, char) => {
   const newBoard = board.map(row => [...row])
   shape.forEach(([dx, dy]) => {
     const newX = x + dx
     const newY = y + dy
     if (newY >= 0 && newY < BOARD_HEIGHT && newX >= 0 && newX < BOARD_WIDTH) {
-      newBoard[newY][newX] = true
+      newBoard[newY][newX] = char
     }
   })
   return newBoard
@@ -136,9 +116,9 @@ const clearLines = (board) => {
 }
 
 /**
- * GameFieldTetrisPixel - Classic Tetris with pixel graphics
+ * GameFieldTetris - Classic Tetris with Japanese kanji blocks
  */
-export default function GameFieldTetrisPixel({ onGameComplete }) {
+export default function GameFieldTetris({ onGameComplete }) {
   const [gameState, setGameState] = useState('ready')
   const [board, setBoard] = useState(() =>
     Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null))
@@ -146,15 +126,18 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
   const [currentPiece, setCurrentPiece] = useState(null)
   const [pieceX, setPieceX] = useState(4)
   const [pieceY, setPieceY] = useState(-1)
-  const [nextPieces, setNextPieces] = useState([]) // Queue of next 3 pieces
+  const [nextPiece, setNextPiece] = useState(null)
   const [score, setScore] = useState(0)
   const [lines, setLines] = useState(0)
   const [level, setLevel] = useState(1)
 
   const dropAccumulatorRef = useRef(0)
+  const moveAccumulatorRef = useRef(0)
 
-  // Check if on mobile device
-  const isMobile = useIsMobile()
+  // Board is 10 cells wide + border (2) + next piece area (8) = 20
+  // Height is BOARD_HEIGHT (20) + 2 for borders = 22
+  const displayWidth = 20
+  const displayHeight = 22
 
   // Generate random piece
   const getRandomPiece = useCallback(() => {
@@ -162,42 +145,33 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
     return { ...TETROMINOS[key], key }
   }, [])
 
-  // Spawn new piece from queue
+  // Spawn new piece
   const spawnPiece = useCallback(() => {
-    // Get piece from front of queue
-    const piece = nextPieces[0] || getRandomPiece()
+    const piece = nextPiece || getRandomPiece()
     setCurrentPiece(piece)
     setPieceX(4)
     setPieceY(-1)
-
-    // Shift queue and add new piece at the end
-    setNextPieces(prev => {
-      const newQueue = prev.length > 0 ? prev.slice(1) : []
-      while (newQueue.length < 3) {
-        newQueue.push(getRandomPiece())
-      }
-      return newQueue
-    })
+    setNextPiece(getRandomPiece())
 
     // Check game over
     if (!isValidPosition(board, piece.shape, 4, 0)) {
       setGameState('lost')
     }
-  }, [board, nextPieces, getRandomPiece])
+  }, [board, nextPiece, getRandomPiece])
 
   // Reset game
   const resetGame = useCallback(() => {
     const emptyBoard = Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null))
     setBoard(emptyBoard)
     setCurrentPiece(null)
-    // Initialize queue with 3 pieces
-    setNextPieces([getRandomPiece(), getRandomPiece(), getRandomPiece()])
+    setNextPiece(getRandomPiece())
     setPieceX(4)
     setPieceY(-1)
     setScore(0)
     setLines(0)
     setLevel(1)
     dropAccumulatorRef.current = 0
+    moveAccumulatorRef.current = 0
   }, [getRandomPiece])
 
   // Actually start playing after countdown
@@ -206,7 +180,7 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
   }, [])
 
   // Countdown hook
-  const { countdown, startCountdown } = useCountdown(3, beginPlaying)
+  const { countdown, startCountdown, isCountingDown } = useCountdown(3, beginPlaying)
 
   // Start game (triggers countdown)
   const startGame = useCallback(() => {
@@ -235,10 +209,11 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
     for (const kick of kicks) {
       if (isValidPosition(board, rotated, pieceX + kick, pieceY)) {
         setCurrentPiece(p => ({ ...p, shape: rotated }))
-        setPieceX(pieceX + kick)
-        return
+        setPieceX(pieceX + kick) // Use absolute value, not functional update
+        return // Exit after successful rotation
       }
     }
+    // If no valid position found, don't rotate
   }, [gameState, currentPiece, board, pieceX, pieceY])
 
   const handleHardDrop = useCallback(() => {
@@ -251,7 +226,7 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
     }
     setPieceY(newY)
     // Lock immediately
-    const newBoard = placePiece(board, currentPiece.shape, pieceX, newY)
+    const newBoard = placePiece(board, currentPiece.shape, pieceX, newY, currentPiece.char)
     const { board: clearedBoard, clearedCount } = clearLines(newBoard)
     setBoard(clearedBoard)
 
@@ -273,6 +248,7 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
   }, [gameState, currentPiece, board, pieceX, pieceY])
 
   // Handle single-press actions (rotate, hard drop, start game)
+  // Standard actions: 'up' = rotate, 'action' = hard drop
   const handleKeyAction = useCallback((action) => {
     if (action === 'up') {
       handleRotate()
@@ -286,9 +262,10 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
   }, [handleRotate, handleHardDrop, gameState, startGame])
 
   // Track held keys for continuous movement (down for soft drop)
+  // Uses standard actions: down (held), up (rotate), action (hard drop)
   const keysHeldRef = useHeldKeys(['down', 'up', 'action'], { onKeyDown: handleKeyAction })
 
-  // Buffered input for left/right movement
+  // Buffered input for left/right movement - ensures every press is registered
   const { consumeOne: consumeMoveInput, addAction: addMoveAction } = useBufferedKeyInput(TETRIS_MOVE_KEYS, gameState === 'playing')
 
   // Game loop
@@ -298,7 +275,8 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
       return
     }
 
-    // Process buffered movement input
+    // Process buffered movement input - consume all buffered moves for responsive feel
+    // We need to track the current position locally to avoid stale state issues
     let currentX = pieceX
     let moveAction = consumeMoveInput()
     while (moveAction) {
@@ -308,6 +286,7 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
       }
       moveAction = consumeMoveInput()
     }
+    // Apply final position if it changed
     if (currentX !== pieceX) {
       setPieceX(currentX)
     }
@@ -326,7 +305,7 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
         setPieceY(y => y + 1)
       } else {
         // Lock piece
-        const newBoard = placePiece(board, currentPiece.shape, pieceX, pieceY)
+        const newBoard = placePiece(board, currentPiece.shape, pieceX, pieceY, currentPiece.char)
         const { board: clearedBoard, clearedCount } = clearLines(newBoard)
         setBoard(clearedBoard)
 
@@ -349,43 +328,24 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
     }
   }, gameState === 'playing')
 
-  // Render callback for PixelCanvas
-  const handleRender = useCallback((ctx, helpers) => {
-    const ctx2d = helpers.getContext()
+  // Render game as ASCII string
+  const renderGame = () => {
+    const rows = []
+    const EMPTY = ' '
+    const GHOST = ':'
 
-    // Helper to draw a pattern with pixel offset for border
-    const drawBlockAt = (pattern, gridX, gridY, color) => {
-      const pixelX = BORDER_THICKNESS + gridX * CELL_SIZE
-      const pixelY = BORDER_THICKNESS + gridY * CELL_SIZE
-      helpers.setFillStyle(color)
-      for (let py = 0; py < pattern.length; py++) {
-        for (let px = 0; px < (pattern[0]?.length || 0); px++) {
-          if (pattern[py][px]) {
-            ctx2d.fillRect(pixelX + px, pixelY + py, 1, 1)
-          }
+    // Create a display board that includes current piece
+    const displayBoard = board.map(row => [...row])
+
+    // Add current piece to display
+    if (currentPiece) {
+      currentPiece.shape.forEach(([dx, dy]) => {
+        const x = pieceX + dx
+        const y = pieceY + dy
+        if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
+          displayBoard[y][x] = currentPiece.char
         }
-      }
-    }
-
-    // Draw thin borders around the board area
-    // Top border
-    helpers.setFillStyle(COLORS.border)
-    ctx2d.fillRect(0, 0, (BOARD_WIDTH + 1) * CELL_SIZE, BORDER_THICKNESS)
-    // Bottom border
-    ctx2d.fillRect(0, BORDER_THICKNESS + BOARD_HEIGHT * CELL_SIZE, (BOARD_WIDTH + 1) * CELL_SIZE, BORDER_THICKNESS)
-    // Left border
-    ctx2d.fillRect(0, 0, BORDER_THICKNESS, DISPLAY_HEIGHT * CELL_SIZE)
-    // Right border (at board edge, separating from preview)
-    ctx2d.fillRect(BORDER_THICKNESS + BOARD_WIDTH * CELL_SIZE, 0, BORDER_THICKNESS, DISPLAY_HEIGHT * CELL_SIZE)
-
-    // Draw board cells (offset by border thickness)
-    for (let y = 0; y < BOARD_HEIGHT; y++) {
-      for (let x = 0; x < BOARD_WIDTH; x++) {
-        const cell = board[y][x]
-        if (cell) {
-          drawBlockAt(BLOCK_PATTERN, x, y, COLORS.block)
-        }
-      }
+      })
     }
 
     // Calculate ghost piece position
@@ -394,40 +354,63 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
       while (isValidPosition(board, currentPiece.shape, pieceX, ghostY + 1)) {
         ghostY++
       }
-
-      // Draw ghost piece
-      if (ghostY > pieceY) {
-        currentPiece.shape.forEach(([dx, dy]) => {
-          const x = pieceX + dx
-          const y = ghostY + dy
-          if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
-            drawBlockAt(GHOST_PATTERN, x, y, COLORS.ghost)
-          }
-        })
-      }
-
-      // Draw current piece
-      currentPiece.shape.forEach(([dx, dy]) => {
-        const x = pieceX + dx
-        const y = pieceY + dy
-        if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
-          drawBlockAt(BLOCK_PATTERN, x, y, COLORS.blockLight)
-        }
-      })
     }
 
-    // Draw next 3 pieces preview (stacked vertically, in the preview area)
-    // Preview area starts after the board + right border
-    const previewStartX = BOARD_WIDTH + 1
-    nextPieces.forEach((piece, index) => {
-      if (!piece) return
-      const previewCenterX = previewStartX + 2
-      const previewCenterY = 1 + index * 5 // Stack with 5 cells spacing
-      piece.shape.forEach(([dx, dy]) => {
-        helpers.drawPattern(SMALL_BLOCK_PATTERN, previewCenterX + dx, previewCenterY + dy, COLORS.blockDark)
-      })
-    })
-  }, [board, currentPiece, pieceX, pieceY, nextPieces])
+    // Top border with NEXT label
+    rows.push('+' + '-'.repeat(BOARD_WIDTH) + '+ NEXT')
+
+    // Board rows with next piece preview on the side
+    for (let y = 0; y < BOARD_HEIGHT; y++) {
+      let rowStr = '|'
+
+      for (let x = 0; x < BOARD_WIDTH; x++) {
+        const cell = displayBoard[y][x]
+        if (cell) {
+          rowStr += cell
+        } else {
+          // Check if this is a ghost piece position
+          let isGhost = false
+          if (currentPiece && ghostY > pieceY) {
+            for (const [dx, dy] of currentPiece.shape) {
+              if (pieceX + dx === x && ghostY + dy === y) {
+                isGhost = true
+                break
+              }
+            }
+          }
+          rowStr += isGhost ? GHOST : EMPTY
+        }
+      }
+
+      // Add border and next piece preview on rows 1-5
+      rowStr += '|'
+      if (nextPiece && y >= 1 && y <= 5) {
+        const previewY = y - 2 // Center the piece vertically
+        let previewStr = ' '
+        for (let px = -2; px <= 2; px++) {
+          let found = false
+          for (const [dx, dy] of nextPiece.shape) {
+            if (dx === px && dy === previewY) {
+              previewStr += nextPiece.char
+              found = true
+              break
+            }
+          }
+          if (!found) {
+            previewStr += ' '
+          }
+        }
+        rowStr += previewStr
+      }
+
+      rows.push(rowStr)
+    }
+
+    // Bottom border
+    rows.push('+' + '-'.repeat(BOARD_WIDTH) + '+')
+
+    return rows.join('\n')
+  }
 
   const handleClick = useCallback(() => {
     if (gameState !== 'playing' && gameState !== 'countdown') {
@@ -436,52 +419,39 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
   }, [gameState, startGame])
 
   // Info Panel component
-  const InfoPanel = () => (
-    <div style={GAME_STYLES.infoPanelMobile}>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>SCORE</span>
-        <span style={GAME_STYLES.infoPanelValue}>{score}</span>
-      </div>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>LINES</span>
-        <span style={GAME_STYLES.infoPanelValue}>{lines}</span>
-      </div>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>LEVEL</span>
-        <span style={GAME_STYLES.infoPanelValue}>{level}</span>
-      </div>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>TOKENS</span>
-        <span style={GAME_STYLES.infoPanelValue}>100</span>
-      </div>
-    </div>
-  )
+  const InfoPanel = useCallback(() => (
+    <GameInfoPanel items={[
+      { label: 'SCORE', value: score },
+      { label: 'LINES', value: lines },
+      { label: 'TOKENS', value: 100 },
+    ]} />
+  ), [score, lines])
 
-  // Mobile Controls component
-  const MobileControls = () => (
+  // Mobile Controls component - Tetris has custom controls (left/right/down d-pad, ROT/DROP buttons)
+  const MobileControls = useCallback(() => (
     <div style={GAME_STYLES.gamepad}>
       {/* D-Pad (Left) */}
       <div style={GAME_STYLES.dpad}>
-        <div /> {/* Empty top-left */}
-        <div /> {/* Empty top - no up needed */}
-        <div /> {/* Empty top-right */}
+        <div />
+        <div />
+        <div />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); addMoveAction('LEFT') }}
         >◀</button>
-        <div style={GAME_STYLES.dpadCenter} /> {/* Center */}
+        <div style={GAME_STYLES.dpadCenter} />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); addMoveAction('RIGHT') }}
         >▶</button>
-        <div /> {/* Empty bottom-left */}
+        <div />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.down = true }}
           onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.down = false }}
           onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.down = false }}
         >▼</button>
-        <div /> {/* Empty bottom-right */}
+        <div />
       </div>
 
       {/* Action Buttons (Right) */}
@@ -500,75 +470,29 @@ export default function GameFieldTetrisPixel({ onGameComplete }) {
         </div>
       </div>
     </div>
-  )
+  ), [addMoveAction, handleRotate, handleHardDrop])
 
-  // Overlay content for different game states
-  const getOverlayContent = () => {
-    if (gameState === 'playing') return null
-
-    if (gameState === 'countdown') {
-      return (
-        <div style={{ fontSize: '48px', color: 'var(--color-primary)' }}>
-          {countdown}
-        </div>
-      )
+  // Get overlay config for lost state
+  const getOverlayConfig = useCallback(() => {
+    if (gameState !== 'lost') return GAME_CONFIG
+    return {
+      ...GAME_CONFIG,
+      lostStats: [
+        { label: 'Score', value: score },
+        { label: 'Level', value: `${level} | Lines: ${lines}` },
+      ],
     }
-
-    if (gameState === 'ready') {
-      return (
-        <>
-          <div style={{ fontSize: '20px', marginBottom: '10px' }}>TETRIS PIXEL</div>
-          <div style={{ marginBottom: '5px' }}>Stack the blocks!</div>
-          <div style={{ marginBottom: '15px', fontSize: '12px' }}>Clear lines to score</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] to START
-          </div>
-        </>
-      )
-    }
-
-    if (gameState === 'lost') {
-      return (
-        <>
-          <div style={{ fontSize: '24px', marginBottom: '10px', color: 'var(--color-primary)' }}>
-            GAME ENDED
-          </div>
-          <div style={{ marginBottom: '5px' }}>Score: {score}</div>
-          <div style={{ marginBottom: '5px' }}>Level: {level} | Lines: {lines}</div>
-          <div style={{ marginBottom: '15px' }}>The blocks reached the top!</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] or [CLICK] to TRY AGAIN
-          </div>
-        </>
-      )
-    }
-
-    return null
-  }
+  }, [gameState, score, level, lines])
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '10px',
-        width: '100%',
-        height: '100%',
-      }}
-    >
-      <InfoPanel />
-      <PixelCanvas
-        gridWidth={DISPLAY_WIDTH}
-        gridHeight={DISPLAY_HEIGHT}
-        cellSize={CELL_SIZE}
-        backgroundColor={COLORS.background}
-        onRender={handleRender}
-        onClick={handleClick}
-        renderDeps={[board, currentPiece, pieceX, pieceY, nextPieces]}
-        overlay={getOverlayContent()}
-      />
-      {isMobile && <MobileControls />}
-    </div>
+    <GameLayout
+      gameWidth={displayWidth}
+      gameHeight={displayHeight}
+      renderGame={renderGame}
+      InfoPanel={InfoPanel}
+      MobileControls={MobileControls}
+      onFieldClick={handleClick}
+      overlayContent={<GameOverlay gameState={gameState} countdown={countdown} gameConfig={getOverlayConfig()} />}
+    />
   )
 }

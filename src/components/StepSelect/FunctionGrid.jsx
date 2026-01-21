@@ -145,7 +145,7 @@ function FunctionGridInner({ selectedContract, fnName, setFnName }) {
   }, [])
 
   const grouped = useMemo(() => {
-    const fns = selectedContract?.functions || []
+    const fns = (selectedContract?.functions || []).filter(fn => !fn.hidden)
     const groups = []
     fns.forEach((fn) => {
       const key = (fn.groupHeader || '').trim()

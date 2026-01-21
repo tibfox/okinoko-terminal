@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'preact/hooks'
-import { memo } from 'preact/compat'
 import {
   useGameLoop,
   useKeyInput,
   useCountdown,
-  useIsMobile,
   drawSprite,
   drawChar,
   getSpriteSize,
@@ -12,8 +10,11 @@ import {
   randomInt,
   KEY_MAPS,
   GAME_STYLES,
-} from './lib/asciiGameEngine.js'
-import GameLayout from './GameLayout.jsx'
+} from './shared/asciiGameEngine.js'
+import GameLayout from './shared/GameLayout.jsx'
+import GameInfoPanel from './shared/GameInfoPanel.jsx'
+import GameOverlay from './shared/GameOverlay.jsx'
+import MobileGamepad from './shared/MobileGamepad.jsx'
 
 // ASCII Art for the cat (normal and jumping) - thin style
 const CAT_NORMAL = [
@@ -116,23 +117,13 @@ function renderGridFast() {
   return rowStrings.join('\n')
 }
 
-// Memoized Info Panel
-const InfoPanel = memo(({ score, coinsCollected, jumpsRemaining }) => (
-  <div style={GAME_STYLES.infoPanelMobile}>
-    <div style={GAME_STYLES.infoPanelMobileItem}>
-      <span style={GAME_STYLES.infoPanelLabel}>SCORE</span>
-      <span style={GAME_STYLES.infoPanelValue}>{score}</span>
-    </div>
-    <div style={GAME_STYLES.infoPanelMobileItem}>
-      <span style={GAME_STYLES.infoPanelLabel}>COINS</span>
-      <span style={GAME_STYLES.infoPanelValue}>{coinsCollected}</span>
-    </div>
-    <div style={GAME_STYLES.infoPanelMobileItem}>
-      <span style={GAME_STYLES.infoPanelLabel}>JUMPS</span>
-      <span style={GAME_STYLES.infoPanelValue}>{jumpsRemaining}/{MAX_JUMPS}</span>
-    </div>
-  </div>
-))
+// Game configuration for overlay
+const GAME_CONFIG = {
+  title: 'NEKO JUMP',
+  instructions: ['Triple jump to collect coins!', 'Avoid obstacles!'],
+  subtitle: 'Survive as long as you can!',
+  lostMessage: 'The cat got hit!',
+}
 
 /**
  * GameFieldJump - ASCII side-scroller endless runner
@@ -400,87 +391,47 @@ export default function GameFieldJump({ onGameComplete }) {
     return renderGridFast()
   }, [])
 
-  // Memoized Mobile Controls
-  const MobileControls = useMemo(() => {
-    const Controls = () => (
-      <div style={GAME_STYLES.gamepad}>
-        {/* D-Pad (Left) - not used for Jump, just placeholder */}
-        <div style={{ ...GAME_STYLES.dpad, opacity: 0.2 }}>
-          <div />
-          <div style={GAME_STYLES.dpadCenter} />
-          <div />
-          <div style={GAME_STYLES.dpadCenter} />
-          <div style={GAME_STYLES.dpadCenter} />
-          <div style={GAME_STYLES.dpadCenter} />
-          <div />
-          <div style={GAME_STYLES.dpadCenter} />
-          <div />
-        </div>
-
-        {/* Action Button (Right) - JUMP button */}
-        <div style={GAME_STYLES.actionButtons}>
-          <button
-            style={GAME_STYLES.actionButtonLarge}
-            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); jump() }}
-            onClick={(e) => { e.stopPropagation(); jump() }}
-          >JUMP</button>
-        </div>
-      </div>
-    )
-    return Controls
-  }, [jump])
+  // Mobile controls config
+  const mobileControlsConfig = useMemo(() => ({
+    showDpad: true,
+    showUp: false,
+    showDown: false,
+    showLeft: false,
+    showRight: false,
+    dpadOpacity: 0.2,
+    actionButtons: [{ label: 'JUMP', onPress: jump }],
+  }), [jump])
 
   // Info panel wrapper that reads from ref
   const InfoPanelWrapper = useCallback(() => {
     const g = gameRef.current
-    return <InfoPanel score={g.score} coinsCollected={g.coinsCollected} jumpsRemaining={g.jumpsRemaining} />
+    return <GameInfoPanel items={[
+      { label: 'SCORE', value: g.score },
+      { label: 'COINS', value: g.coinsCollected },
+      { label: 'JUMPS', value: `${g.jumpsRemaining}/${MAX_JUMPS}` },
+    ]} />
   }, [])
 
-  // Overlay content for different game states
-  const getOverlayContent = () => {
-    if (gameState === 'playing') return null
-
-    if (gameState === 'countdown') {
-      return (
-        <div style={{ fontSize: '48px', color: 'var(--color-primary)' }}>
-          {countdown}
-        </div>
-      )
+  // Get overlay config for lost state
+  const getOverlayConfig = useCallback(() => {
+    if (gameState !== 'lost') return GAME_CONFIG
+    const g = gameRef.current
+    return {
+      ...GAME_CONFIG,
+      lostStats: [
+        { label: 'Score', value: `${g.score} | Coins: ${g.coinsCollected}` },
+        { label: 'Obstacles Passed', value: g.obstaclesPassed },
+      ],
     }
+  }, [gameState])
 
-    if (gameState === 'ready') {
-      return (
-        <>
-          <div style={{ fontSize: '20px', marginBottom: '10px' }}>NEKO JUMP</div>
-          <div style={{ marginBottom: '5px' }}>Triple jump to collect coins!</div>
-          <div style={{ marginBottom: '5px' }}>Avoid obstacles!</div>
-          <div style={{ marginBottom: '15px', fontSize: '12px' }}>Survive as long as you can!</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] or [CLICK] to START
-          </div>
-        </>
-      )
-    }
+  // Dummy keysHeldRef for MobileGamepad (Jump only uses onPress)
+  const keysHeldRef = useRef({})
 
-    if (gameState === 'lost') {
-      const g = gameRef.current
-      return (
-        <>
-          <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
-            GAME OVER
-          </div>
-          <div style={{ marginBottom: '5px' }}>Score: {g.score} | Coins: {g.coinsCollected}</div>
-          <div style={{ marginBottom: '5px' }}>Obstacles Passed: {g.obstaclesPassed}</div>
-          <div style={{ marginBottom: '15px' }}>The cat got hit!</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] or [CLICK] to TRY AGAIN
-          </div>
-        </>
-      )
-    }
-
-    return null
-  }
+  // MobileControls component
+  const MobileControls = useCallback(() => (
+    <MobileGamepad keysHeldRef={keysHeldRef} config={mobileControlsConfig} />
+  ), [mobileControlsConfig])
 
   return (
     <GameLayout
@@ -490,7 +441,7 @@ export default function GameFieldJump({ onGameComplete }) {
       InfoPanel={InfoPanelWrapper}
       MobileControls={MobileControls}
       onFieldClick={jump}
-      overlayContent={getOverlayContent()}
+      overlayContent={<GameOverlay gameState={gameState} countdown={countdown} gameConfig={getOverlayConfig()} />}
     />
   )
 }

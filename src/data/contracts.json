@@ -1313,6 +1313,103 @@
           "parameters": [],
           "hintText": "",
           "icon": "faCubes"
+        },
+        {
+          "name": "buy_tokens",
+          "friendlyName": "Buy Tokens",
+          "description": "Purchase game tokens with HIVE. Each HIVE equals one token.",
+          "parse": "raw",
+          "hidden": true,
+          "parameters": [
+            {
+              "name": "Token Amount",
+              "payloadName": "amount",
+              "type": "int",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Number of tokens to purchase (1 HIVE = 1 token)",
+              "min": 1,
+              "sortIndex": 1
+            },
+            {
+              "name": "Payment",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "Amount of HIVE to spend on tokens",
+              "sortIndex": 2
+            }
+          ],
+          "hintText": "",
+          "groupHeader": "Token Management"
+        },
+        {
+          "name": "host_event",
+          "friendlyName": "Host Event",
+          "description": "Create a new gaming event with a prize pool. Select which games are included and set the event parameters.",
+          "parse": "csv",
+          "delimiter": "|",
+          "excludeKeys": true,
+          "hidden": true,
+          "parameters": [
+            {
+              "name": "Event Name",
+              "payloadName": "name",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "Name for your event (max 60 characters)",
+              "maxLength": 60,
+              "sortIndex": 1
+            },
+            {
+              "name": "Burn Percent",
+              "payloadName": "burn_percent",
+              "type": "int",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Percentage of prize pool to burn (0-50%)",
+              "min": 0,
+              "max": 50,
+              "sortIndex": 2
+            },
+            {
+              "name": "Event URL",
+              "payloadName": "event_url",
+              "type": "string",
+              "mandatory": false,
+              "hintText": "Optional URL for event details",
+              "sortIndex": 3
+            },
+            {
+              "name": "Duration (days)",
+              "payloadName": "duration_days",
+              "type": "int",
+              "asString": false,
+              "mandatory": true,
+              "hintText": "Event duration in days (1-30)",
+              "min": 1,
+              "max": 30,
+              "sortIndex": 4
+            },
+            {
+              "name": "Games",
+              "payloadName": "games",
+              "type": "string",
+              "mandatory": true,
+              "hintText": "Pick the games you want to include in this event.",
+              "sortIndex": 5
+            },
+            {
+              "name": "Prize Pool",
+              "payloadName": "vscIntent",
+              "type": "vscIntent",
+              "mandatory": true,
+              "hintText": "Initial HIVE amount for the prize pool. Other users can contribute later.",
+              "sortIndex": 6
+            }
+          ],
+          "hintText": "Events allow players to compete for a shared prize pool across selected games.",
+          "groupHeader": "Event Management"
         }
       ]
     },

@@ -7,10 +7,12 @@ import FunctionGrid from './FunctionGrid.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
 import DaoUserLists from './DaoUserLists.jsx'
 import LotteryUserLists from './LotteryUserLists.jsx'
+import GorakuTokenPanel from './GorakuTokenPanel.jsx'
 
 const METADATA_COLLAPSE_COOKIE = 'contractMetadataCollapsed'
 const FUNCTIONS_COLLAPSE_COOKIE = 'functionsListCollapsed'
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
+const GORAKU_VSC_ID = 'vsc1PLACEHOLDER_GAMES2'
 
 export default function ContractDetails({
   isMobile,
@@ -32,6 +34,7 @@ export default function ContractDetails({
 
   const isGameContract = selectedContract?.functions?.[0]?.parse === 'game'
   const isLotteryContract = selectedContract?.vscId === LOTTERY_VSC_ID
+  const isGorakuContract = selectedContract?.vscId === GORAKU_VSC_ID
   const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false)
   const [isFunctionsCollapsed, setIsFunctionsCollapsed] = useState(false)
 
@@ -229,6 +232,10 @@ export default function ContractDetails({
       )}
       {!isDaoContract && !isLotteryContract && (isMobile || !isFunctionsCollapsed) && (
         <>
+          {/* Goraku Token Panel (inside Games section, above game tiles) */}
+          {isGorakuContract && (
+            <GorakuTokenPanel />
+          )}
           {/* To revert to list on mobile, change FunctionGrid back to FunctionList */}
           <FunctionGrid
             selectedContract={selectedContract}

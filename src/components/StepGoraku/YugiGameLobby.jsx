@@ -2,9 +2,11 @@ import { useState, useMemo } from 'preact/hooks'
 import NeonButtonSimple from '../buttons/NeonButtonSimple.jsx'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
-import { useIsMobile } from './lib/asciiGameEngine.js'
+import { useIsMobile } from './shared/asciiGameEngine.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlay, faPaperPlane, faDice, faGavel, faCalendarPlus, faFilter, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import { faCoins, faFilter, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import { useAioha } from '@aioha/react-ui'
+import { KeyTypes } from '@aioha/aioha'
 
 // Dummy global leaderboard data
 const DUMMY_LEADERBOARD = [
@@ -76,7 +78,8 @@ const baseButtonStyle = (active = false) => ({
   whiteSpace: 'nowrap',
 })
 
-export default function YugiGameLobby({ gameTypeId, gameDescription, onPlayGame }) {
+export default function YugiGameLobby({ gameTypeId, gameDescription, onStartGame }) {
+  const { user, aioha } = useAioha()
   const [leaderboardTab, setLeaderboardTab] = useState('global') // 'global' or 'events'
   const [leaderboardScope, setLeaderboardScope] = useState('season') // For global-active: 'season' or 'all'
   const [selectedPastSeason, setSelectedPastSeason] = useState('season5') // For global-closed
@@ -87,12 +90,64 @@ export default function YugiGameLobby({ gameTypeId, gameDescription, onPlayGame 
   const [sortDirection, setSortDirection] = useState(() => getCookie('yugiLeaderboardSortDir') || 'desc')
   const [mobileTab, setMobileTab] = useState('game') // 'game' or 'leaderboard'
   const [selectedGameMode, setSelectedGameMode] = useState('global-season') // 'global-season' or event key
+  const [isInsertingCoin, setIsInsertingCoin] = useState(false)
   const isMobile = useIsMobile()
 
-  // Game mode options for dropdown
+  const normalizedUser = useMemo(() => {
+    if (!user) return 'unknown'
+    return user.startsWith('hive:') ? user.slice(5) : user
+  }, [user])
+
+  const handleInsertCoin = async () => {
+    if (isInsertingCoin) return
+
+    setIsInsertingCoin(true)
+
+    try {
+      // Placeholder transaction - deduct a token and start game
+      const ops = [
+        [
+          'custom_json',
+          {
+            required_auths: [],
+            required_posting_auths: [normalizedUser],
+            id: 'vsc.tx',
+            json: JSON.stringify({
+              action: 'insert_coin',
+              contract: 'vsc1PLACEHOLDER_GAMES2',
+              game_type: gameTypeId,
+              game_mode: selectedGameMode,
+            }),
+          },
+        ],
+      ]
+
+      console.log('Sending insert coin transaction:', ops)
+
+      const result = await aioha.signAndBroadcastTx(ops, KeyTypes.Posting)
+
+      console.log('Transaction result:', result)
+
+      if (result?.success) {
+        // Transaction successful - start the game
+        onStartGame()
+      } else {
+        console.error('Transaction failed:', result?.error)
+        alert(`Transaction failed: ${result?.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error inserting coin:', error)
+      alert(`Error: ${error.message || 'Unknown error'}`)
+    } finally {
+      setIsInsertingCoin(false)
+    }
+  }
+
+  // Game mode options for dropdown (with prize pools)
   const gameModeOptions = [
-    { key: 'global-season', label: 'Global Season' },
-    ...DUMMY_ACTIVE_EVENTS_LIST,
+    { key: 'global-season', label: 'Global Season (12.5 HIVE)' },
+    { key: 'summer-championship', label: 'Summer Championship (25.0 HIVE)' },
+    { key: 'weekly-12', label: 'Weekly Challenge #12 (5.0 HIVE)' },
   ]
 
   // Get the scope options based on current tab and filter
@@ -145,13 +200,6 @@ export default function YugiGameLobby({ gameTypeId, gameDescription, onPlayGame 
     } else {
       setSelectedEvent(key)
     }
-  }
-
-  // Dummy user stats
-  const userStats = {
-    gameTokens: 100,
-    daysInSeason: '3 days 12 hours',
-    seasonPot: '12.001 HIVE',
   }
 
   const handleSortChange = (nextKey) => {
@@ -207,7 +255,7 @@ export default function YugiGameLobby({ gameTypeId, gameDescription, onPlayGame 
     { key: 'game_count', label: 'Game Count', sortable: true, sortKey: 'games' },
   ]
 
-  // Game section content (buttons + stats)
+  // Game section content (Play button + game mode dropdown)
   const gameSection = (
     <div
       style={{
@@ -218,70 +266,30 @@ export default function YugiGameLobby({ gameTypeId, gameDescription, onPlayGame 
         flex: isMobile ? 1 : undefined,
       }}
     >
-      {/* Left column: Action buttons - uses flex-wrap for responsive layout */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: '1 1 300px', minWidth: isMobile ? '100px' : '200px' }}>
-        {/* Play button row with dropdown */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <NeonButtonSimple onClick={onPlayGame} style={{ padding: '12px 1rem' }}>
-            {isMobile ? <FontAwesomeIcon icon={faPlay} /> : 'Play Game'}
-          </NeonButtonSimple>
-          <NeonListDropdown
-            options={gameModeOptions.map((opt) => ({ value: opt.key, label: opt.label }))}
-            value={selectedGameMode}
-            onChange={setSelectedGameMode}
-            placeholder="Select game mode"
-            style={{ flex: 1 }}
-          />
-        </div>
-        {/* Other action buttons */}
-        <div style={{ display: 'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', gap: '10px', justifyContent: isMobile ? 'space-between' : undefined }}>
-          <NeonButtonSimple onClick={() => {}} style={{ flex: isMobile ? '1' : '1 1 auto', minWidth: isMobile ? 'auto' : '100px', padding: isMobile ? '8px 12px' : '12px 1rem' }}>
-            {isMobile ? <FontAwesomeIcon icon={faPaperPlane} /> : 'Send Token'}
-          </NeonButtonSimple>
-          <NeonButtonSimple onClick={() => {}} style={{ flex: isMobile ? '1' : '1 1 auto', minWidth: isMobile ? 'auto' : '100px', padding: isMobile ? '8px 12px' : '12px 1rem' }}>
-            {isMobile ? <FontAwesomeIcon icon={faDice} /> : 'Claim Tokens'}
-          </NeonButtonSimple>
-          <NeonButtonSimple disabled onClick={() => {}} style={{ flex: isMobile ? '1' : undefined, width: isMobile ? 'auto' : '100%', padding: isMobile ? '8px 12px' : '12px 1rem' }}>
-            {isMobile ? <FontAwesomeIcon icon={faGavel} /> : 'Execute Season'}
-          </NeonButtonSimple>
-          <NeonButtonSimple disabled onClick={() => {}} style={{ flex: isMobile ? '1' : undefined, width: isMobile ? 'auto' : '100%', padding: isMobile ? '8px 12px' : '12px 1rem' }}>
-            {isMobile ? <FontAwesomeIcon icon={faCalendarPlus} /> : 'Host Event'}
-          </NeonButtonSimple>
-        </div>
-      </div>
-
-      {/* Right column: User stats table */}
-      <div
-        style={{
-          border: '1px solid var(--color-primary-darkest)',
-          padding: '10px',
-          background: 'rgba(0, 0, 0, 0.3)',
-          flex: '1 1 250px',
-          minWidth: '200px',
-        }}
-      >
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <tbody>
-            <tr>
-              <td style={{ padding: '6px 0', color: 'var(--color-primary-lighter)' }}>Your tokens:</td>
-              <td style={{ padding: '6px 0', textAlign: 'right', color: 'var(--color-primary-lightest)', fontSize: '5rem' }}>
-                {userStats.gameTokens}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 0', color: 'var(--color-primary-lighter)' }}>Days in season:</td>
-              <td style={{ padding: '6px 0', textAlign: 'right', color: 'var(--color-primary-lightest)' }}>
-                {userStats.daysInSeason}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 0', color: 'var(--color-primary-lighter)' }}>Season pot:</td>
-              <td style={{ padding: '6px 0', textAlign: 'right', color: 'var(--color-primary-lightest)' }}>
-                {userStats.seasonPot}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Insert Coin button row with dropdown */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: '1 1 300px', minWidth: isMobile ? '100px' : '200px' }}>
+        <NeonButtonSimple
+          onClick={handleInsertCoin}
+          disabled={isInsertingCoin}
+          style={{
+            padding: isMobile ? '12px 1rem' : '12px 1rem',
+            height: isMobile ? 'auto' : '60px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1.2,
+          }}
+        >
+          {isInsertingCoin ? 'Inserting...' : (isMobile ? <FontAwesomeIcon icon={faCoins} /> : <>Insert Coin<br />and Play</>)}
+        </NeonButtonSimple>
+        <NeonListDropdown
+          options={gameModeOptions.map((opt) => ({ value: opt.key, label: opt.label }))}
+          value={selectedGameMode}
+          onChange={setSelectedGameMode}
+          placeholder="Season / Event"
+          style={{ flex: 1 }}
+        />
       </div>
     </div>
   )

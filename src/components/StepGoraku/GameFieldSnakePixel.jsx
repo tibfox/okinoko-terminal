@@ -4,34 +4,37 @@ import {
   useBufferedKeyInput,
   useCountdown,
   useIsMobile,
-  createGrid,
-  drawChar,
-  renderGrid,
   randomInt,
   KEY_MAPS,
   DIRECTIONS,
   GAME_STYLES,
-} from './lib/asciiGameEngine.js'
-import GameLayout from './GameLayout.jsx'
+} from './shared/asciiGameEngine.js'
+import PixelCanvas from './shared/PixelCanvas.jsx'
 
-// Square playing field
+// Square playing field (in grid cells)
 const GAME_WIDTH = 30
 const GAME_HEIGHT = 30
+const CELL_SIZE = 8 // Each cell is 8x8 pixels
 const INITIAL_SPEED = 6 // Moves per second
 const SPEED_INCREMENT = 0.15
 const MAX_SPEED = 14
 
-// Japanese food items as collectibles (single-width ASCII characters)
-const FOOD_CHARS = ['*', '#', '+', '$', '%', '&']
-
-// Snake body characters
-const SNAKE_HEAD = '@'
-const SNAKE_BODY = 'o'
-const SNAKE_TAIL = '~'
-const SNAKE_BODY_POWERED = '*' // Body character when wall-walk is active
+// Colors for pixel graphics (using CSS custom properties via computed values)
+// These map to --color-primary-* variables
+const COLORS = {
+  background: '#000000',
+  wall: 'var(--color-primary-darker, #1a4a1a)',
+  snakeHead: 'var(--color-primary, #00ff00)',
+  snakeBody: 'var(--color-primary-dark, #00cc00)',
+  snakeBodyGhost: 'var(--color-primary-light, #66ff66)',
+  snakeTail: 'var(--color-primary-darker, #009900)',
+  food: 'var(--color-primary, #00ff00)',
+  foodAlt: 'var(--color-primary-light, #66ff66)',
+  powerUp: 'var(--color-primary-light, #66ff66)',
+  powerUpAlt: 'var(--color-primary, #00ff00)',
+}
 
 // Power-up settings
-const POWER_UP_CHARS = ['.', '?'] // Alternates between these
 const WALL_WALK_DURATION = 10 // seconds
 const POWER_UP_SPAWN_CHANCE = 0.15 // 15% chance to spawn power-up instead of food
 const TWO_FOOD_CHANCE = 0.25 // 25% chance to spawn 2 foods instead of 1
@@ -43,20 +46,74 @@ const FOOD_SCORE = 5
 const FOOD_BONUS_SCORE = 10
 const POWER_UP_SCORE = 20
 
+// Pixel art patterns (8x8 grids represented as arrays of 1s and 0s)
+const PIXEL_PATTERNS = {
+  snakeHead: [
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,0,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [1,1,0,1,1,0,1,1],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+  ],
+  snakeBody: [
+    [0,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,0],
+  ],
+  snakeTail: [
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+  ],
+  food: [
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+  ],
+  powerUp: [
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,0,0,1,0,0],
+    [0,1,0,1,1,0,1,0],
+    [1,0,1,1,1,1,0,1],
+    [1,0,1,1,1,1,0,1],
+    [0,1,0,1,1,0,1,0],
+    [0,0,1,0,0,1,0,0],
+    [0,0,0,1,1,0,0,0],
+  ],
+}
+
 /**
- * GameFieldSnake - Classic Snake game with Japanese theme
+ * GameFieldSnakePixel - Classic Snake game with pixel graphics
  * Collect treats to grow! Hit a wall and it's game over.
  */
-export default function GameFieldSnake({ onGameComplete }) {
+export default function GameFieldSnakePixel({ onGameComplete }) {
   const [gameState, setGameState] = useState('ready') // ready, playing, lost
   const [snake, setSnake] = useState([{ x: 15, y: 15 }])
   const [direction, setDirection] = useState(DIRECTIONS.RIGHT)
   const [nextDirection, setNextDirection] = useState(DIRECTIONS.RIGHT)
-  const [foods, setFoods] = useState([{ x: 7, y: 5, char: '*' }])
+  const [foods, setFoods] = useState([{ x: 7, y: 5, isPowerUp: false, spawnTime: Date.now() }])
   const [score, setScore] = useState(0)
   const [speed, setSpeed] = useState(INITIAL_SPEED)
   const [wallWalkTimeLeft, setWallWalkTimeLeft] = useState(0) // seconds remaining
-  const [animTick, setAnimTick] = useState(0) // for power-up animation
+  const [animTick, setAnimTick] = useState(0) // for animations
 
   const moveAccumulatorRef = useRef(0)
   const wallWalkTimerRef = useRef(null)
@@ -90,7 +147,6 @@ export default function GameFieldSnake({ onGameComplete }) {
     return {
       x: newX,
       y: newY,
-      char: isPowerUp ? POWER_UP_CHARS[0] : FOOD_CHARS[randomInt(0, FOOD_CHARS.length)],
       isPowerUp,
       spawnTime: now,
     }
@@ -194,7 +250,7 @@ export default function GameFieldSnake({ onGameComplete }) {
   }, [resetGame, startCountdown])
 
   // Buffered input for direction changes
-  const { consumeOne, clear: clearBuffer } = useBufferedKeyInput(KEY_MAPS.ARROWS_AND_WASD, true)
+  const { consumeOne } = useBufferedKeyInput(KEY_MAPS.ARROWS_AND_WASD, true)
 
   // Handle direction input (used by mobile controls)
   const handleInput = useCallback((action) => {
@@ -316,55 +372,56 @@ export default function GameFieldSnake({ onGameComplete }) {
     })
   }, gameState === 'playing')
 
-  // Render the game with ASCII border
-  const renderGame = () => {
-    const grid = createGrid(GAME_WIDTH, GAME_HEIGHT)
+  // Render callback for PixelCanvas
+  const handleRender = useCallback((ctx, helpers) => {
     const wallWalkActive = wallWalkTimeLeft > 0
 
-    // Draw border using ASCII characters
-    // Use '.' for horizontal and ':' for vertical walls when wall-walk is active
-    const wallHoriz = wallWalkActive ? '.' : '-'
-    const wallVert = wallWalkActive ? ':' : '|'
-    const wallCorner = wallWalkActive ? '.' : '+'
+    // Draw thin border walls (0.5 cell width) with holes when ghost mode is active
+    const wallColor = COLORS.wall
 
-    for (let x = 0; x < GAME_WIDTH; x++) {
-      grid[0][x] = wallHoriz
-      grid[GAME_HEIGHT - 1][x] = wallHoriz
-    }
-    for (let y = 0; y < GAME_HEIGHT; y++) {
-      grid[y][0] = wallVert
-      grid[y][GAME_WIDTH - 1] = wallVert
-    }
-    grid[0][0] = wallCorner
-    grid[0][GAME_WIDTH - 1] = wallCorner
-    grid[GAME_HEIGHT - 1][0] = wallCorner
-    grid[GAME_HEIGHT - 1][GAME_WIDTH - 1] = wallCorner
+    // Generate gaps for ghost mode (every 3rd cell, excluding corners)
+    const horizontalGaps = wallWalkActive
+      ? Array.from({ length: GAME_WIDTH }, (_, i) => i).filter(i => i % 3 === 0 && i > 0 && i < GAME_WIDTH - 1)
+      : []
+    const verticalGaps = wallWalkActive
+      ? Array.from({ length: GAME_HEIGHT }, (_, i) => i).filter(i => i % 3 === 0 && i > 0 && i < GAME_HEIGHT - 1)
+      : []
 
-    // Draw all foods (power-ups animate between . and ?)
+    // Draw thin borders on all sides
+    helpers.drawThinBorder('top', GAME_WIDTH, 0, wallColor, horizontalGaps)
+    helpers.drawThinBorder('bottom', GAME_WIDTH, 0, wallColor, horizontalGaps)
+    helpers.drawThinBorder('left', GAME_HEIGHT, 0, wallColor, verticalGaps)
+    helpers.drawThinBorder('right', GAME_HEIGHT, 0, wallColor, verticalGaps)
+
+    // Draw all foods with animation
     foods.forEach(food => {
-      let char = food.char
       if (food.isPowerUp) {
-        // Animate power-up character
-        char = POWER_UP_CHARS[animTick % POWER_UP_CHARS.length]
-      }
-      drawChar(grid, char, food.x, food.y)
-    })
-
-    // Draw snake - use powered-up body when wall-walk is active
-    snake.forEach((seg, i) => {
-      let char
-      if (i === 0) {
-        char = SNAKE_HEAD
-      } else if (i === snake.length - 1) {
-        char = SNAKE_TAIL
+        // Animate power-up color
+        const color = animTick % 2 === 0 ? COLORS.powerUp : COLORS.powerUpAlt
+        helpers.drawPattern(PIXEL_PATTERNS.powerUp, food.x, food.y, color)
       } else {
-        char = wallWalkActive ? SNAKE_BODY_POWERED : SNAKE_BODY
+        // Regular food with subtle pulse
+        const color = animTick % 4 < 2 ? COLORS.food : COLORS.foodAlt
+        helpers.drawPattern(PIXEL_PATTERNS.food, food.x, food.y, color)
       }
-      drawChar(grid, char, seg.x, seg.y)
     })
 
-    return renderGrid(grid)
-  }
+    // Draw snake
+    snake.forEach((seg, i) => {
+      let pattern, color
+      if (i === 0) {
+        pattern = PIXEL_PATTERNS.snakeHead
+        color = COLORS.snakeHead
+      } else if (i === snake.length - 1) {
+        pattern = PIXEL_PATTERNS.snakeTail
+        color = COLORS.snakeTail
+      } else {
+        pattern = PIXEL_PATTERNS.snakeBody
+        color = wallWalkActive ? COLORS.snakeBodyGhost : COLORS.snakeBody
+      }
+      helpers.drawPattern(pattern, seg.x, seg.y, color)
+    })
+  }, [snake, foods, wallWalkTimeLeft, animTick])
 
   const handleClick = useCallback(() => {
     if (gameState !== 'playing' && gameState !== 'countdown') {
@@ -452,7 +509,7 @@ export default function GameFieldSnake({ onGameComplete }) {
     if (gameState === 'ready') {
       return (
         <>
-          <div style={{ fontSize: '20px', marginBottom: '10px' }}>JASHOKU</div>
+          <div style={{ fontSize: '20px', marginBottom: '10px' }}>JASHOKU PIXEL</div>
           <div style={{ marginBottom: '5px' }}>Collect treats and grow!</div>
           <div style={{ marginBottom: '15px', fontSize: '12px' }}>How long can you survive?</div>
           <div style={{ color: 'var(--color-primary)' }}>
@@ -482,14 +539,28 @@ export default function GameFieldSnake({ onGameComplete }) {
   }
 
   return (
-    <GameLayout
-      gameWidth={GAME_WIDTH}
-      gameHeight={GAME_HEIGHT}
-      renderGame={renderGame}
-      InfoPanel={InfoPanel}
-      MobileControls={MobileControls}
-      onFieldClick={handleClick}
-      overlayContent={getOverlayContent()}
-    />
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '10px',
+        width: '100%',
+        height: '100%',
+      }}
+    >
+      <InfoPanel />
+      <PixelCanvas
+        gridWidth={GAME_WIDTH}
+        gridHeight={GAME_HEIGHT}
+        cellSize={CELL_SIZE}
+        backgroundColor={COLORS.background}
+        onRender={handleRender}
+        onClick={handleClick}
+        renderDeps={[snake, foods, wallWalkTimeLeft, animTick]}
+        overlay={getOverlayContent()}
+      />
+      {isMobile && <MobileControls />}
+    </div>
   )
 }

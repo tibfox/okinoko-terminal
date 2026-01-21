@@ -3,38 +3,36 @@ import {
   useGameLoop,
   useBufferedKeyInput,
   useCountdown,
-  useIsMobile,
+  createGrid,
+  drawChar,
+  renderGrid,
   randomInt,
   KEY_MAPS,
   DIRECTIONS,
   GAME_STYLES,
-} from './lib/asciiGameEngine.js'
-import PixelCanvas from './PixelCanvas.jsx'
+} from './shared/asciiGameEngine.js'
+import GameLayout from './shared/GameLayout.jsx'
+import GameInfoPanel from './shared/GameInfoPanel.jsx'
+import GameOverlay from './shared/GameOverlay.jsx'
 
-// Square playing field (in grid cells)
+// Square playing field
 const GAME_WIDTH = 30
 const GAME_HEIGHT = 30
-const CELL_SIZE = 8 // Each cell is 8x8 pixels
 const INITIAL_SPEED = 6 // Moves per second
 const SPEED_INCREMENT = 0.15
 const MAX_SPEED = 14
 
-// Colors for pixel graphics (using CSS custom properties via computed values)
-// These map to --color-primary-* variables
-const COLORS = {
-  background: '#000000',
-  wall: 'var(--color-primary-darker, #1a4a1a)',
-  snakeHead: 'var(--color-primary, #00ff00)',
-  snakeBody: 'var(--color-primary-dark, #00cc00)',
-  snakeBodyGhost: 'var(--color-primary-light, #66ff66)',
-  snakeTail: 'var(--color-primary-darker, #009900)',
-  food: 'var(--color-primary, #00ff00)',
-  foodAlt: 'var(--color-primary-light, #66ff66)',
-  powerUp: 'var(--color-primary-light, #66ff66)',
-  powerUpAlt: 'var(--color-primary, #00ff00)',
-}
+// Japanese food items as collectibles (single-width ASCII characters)
+const FOOD_CHARS = ['*', '#', '+', '$', '%', '&']
+
+// Snake body characters
+const SNAKE_HEAD = '@'
+const SNAKE_BODY = 'o'
+const SNAKE_TAIL = '~'
+const SNAKE_BODY_POWERED = '*' // Body character when wall-walk is active
 
 // Power-up settings
+const POWER_UP_CHARS = ['.', '?'] // Alternates between these
 const WALL_WALK_DURATION = 10 // seconds
 const POWER_UP_SPAWN_CHANCE = 0.15 // 15% chance to spawn power-up instead of food
 const TWO_FOOD_CHANCE = 0.25 // 25% chance to spawn 2 foods instead of 1
@@ -46,74 +44,28 @@ const FOOD_SCORE = 5
 const FOOD_BONUS_SCORE = 10
 const POWER_UP_SCORE = 20
 
-// Pixel art patterns (8x8 grids represented as arrays of 1s and 0s)
-const PIXEL_PATTERNS = {
-  snakeHead: [
-    [0,0,1,1,1,1,0,0],
-    [0,1,1,1,1,1,1,0],
-    [1,1,0,1,1,0,1,1],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [1,1,0,1,1,0,1,1],
-    [0,1,1,1,1,1,1,0],
-    [0,0,1,1,1,1,0,0],
-  ],
-  snakeBody: [
-    [0,1,1,1,1,1,1,0],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [0,1,1,1,1,1,1,0],
-  ],
-  snakeTail: [
-    [0,0,0,1,1,0,0,0],
-    [0,0,1,1,1,1,0,0],
-    [0,1,1,1,1,1,1,0],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [0,1,1,1,1,1,1,0],
-    [0,0,1,1,1,1,0,0],
-    [0,0,0,1,1,0,0,0],
-  ],
-  food: [
-    [0,0,0,1,1,0,0,0],
-    [0,0,1,1,1,1,0,0],
-    [0,1,1,1,1,1,1,0],
-    [1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1],
-    [0,1,1,1,1,1,1,0],
-    [0,0,1,1,1,1,0,0],
-    [0,0,0,1,1,0,0,0],
-  ],
-  powerUp: [
-    [0,0,0,1,1,0,0,0],
-    [0,0,1,0,0,1,0,0],
-    [0,1,0,1,1,0,1,0],
-    [1,0,1,1,1,1,0,1],
-    [1,0,1,1,1,1,0,1],
-    [0,1,0,1,1,0,1,0],
-    [0,0,1,0,0,1,0,0],
-    [0,0,0,1,1,0,0,0],
-  ],
+// Game configuration for overlay
+const GAME_CONFIG = {
+  title: 'JASHOKU',
+  instructions: ['Collect treats and grow!'],
+  subtitle: 'How long can you survive?',
+  lostMessage: 'The snake crashed!',
 }
 
 /**
- * GameFieldSnakePixel - Classic Snake game with pixel graphics
+ * GameFieldSnake - Classic Snake game with Japanese theme
  * Collect treats to grow! Hit a wall and it's game over.
  */
-export default function GameFieldSnakePixel({ onGameComplete }) {
+export default function GameFieldSnake({ onGameComplete }) {
   const [gameState, setGameState] = useState('ready') // ready, playing, lost
   const [snake, setSnake] = useState([{ x: 15, y: 15 }])
   const [direction, setDirection] = useState(DIRECTIONS.RIGHT)
   const [nextDirection, setNextDirection] = useState(DIRECTIONS.RIGHT)
-  const [foods, setFoods] = useState([{ x: 7, y: 5, isPowerUp: false, spawnTime: Date.now() }])
+  const [foods, setFoods] = useState([{ x: 7, y: 5, char: '*' }])
   const [score, setScore] = useState(0)
   const [speed, setSpeed] = useState(INITIAL_SPEED)
   const [wallWalkTimeLeft, setWallWalkTimeLeft] = useState(0) // seconds remaining
-  const [animTick, setAnimTick] = useState(0) // for animations
+  const [animTick, setAnimTick] = useState(0) // for power-up animation
 
   const moveAccumulatorRef = useRef(0)
   const wallWalkTimerRef = useRef(null)
@@ -122,9 +74,6 @@ export default function GameFieldSnakePixel({ onGameComplete }) {
 
   // Keep ref in sync with state for use in game loop
   wallWalkTimeLeftRef.current = wallWalkTimeLeft
-
-  // Check if on mobile device
-  const isMobile = useIsMobile()
 
   // Spawn food at random position not on snake, not on borders, and not on existing food
   const spawnFood = useCallback((currentSnake, existingFoods = [], forcePowerUp = false, noPowerUp = false) => {
@@ -147,6 +96,7 @@ export default function GameFieldSnakePixel({ onGameComplete }) {
     return {
       x: newX,
       y: newY,
+      char: isPowerUp ? POWER_UP_CHARS[0] : FOOD_CHARS[randomInt(0, FOOD_CHARS.length)],
       isPowerUp,
       spawnTime: now,
     }
@@ -250,7 +200,7 @@ export default function GameFieldSnakePixel({ onGameComplete }) {
   }, [resetGame, startCountdown])
 
   // Buffered input for direction changes
-  const { consumeOne } = useBufferedKeyInput(KEY_MAPS.ARROWS_AND_WASD, true)
+  const { consumeOne, clear: clearBuffer } = useBufferedKeyInput(KEY_MAPS.ARROWS_AND_WASD, true)
 
   // Handle direction input (used by mobile controls)
   const handleInput = useCallback((action) => {
@@ -372,56 +322,55 @@ export default function GameFieldSnakePixel({ onGameComplete }) {
     })
   }, gameState === 'playing')
 
-  // Render callback for PixelCanvas
-  const handleRender = useCallback((ctx, helpers) => {
+  // Render the game with ASCII border
+  const renderGame = () => {
+    const grid = createGrid(GAME_WIDTH, GAME_HEIGHT)
     const wallWalkActive = wallWalkTimeLeft > 0
 
-    // Draw thin border walls (0.5 cell width) with holes when ghost mode is active
-    const wallColor = COLORS.wall
+    // Draw border using ASCII characters
+    // Use '.' for horizontal and ':' for vertical walls when wall-walk is active
+    const wallHoriz = wallWalkActive ? '.' : '-'
+    const wallVert = wallWalkActive ? ':' : '|'
+    const wallCorner = wallWalkActive ? '.' : '+'
 
-    // Generate gaps for ghost mode (every 3rd cell, excluding corners)
-    const horizontalGaps = wallWalkActive
-      ? Array.from({ length: GAME_WIDTH }, (_, i) => i).filter(i => i % 3 === 0 && i > 0 && i < GAME_WIDTH - 1)
-      : []
-    const verticalGaps = wallWalkActive
-      ? Array.from({ length: GAME_HEIGHT }, (_, i) => i).filter(i => i % 3 === 0 && i > 0 && i < GAME_HEIGHT - 1)
-      : []
+    for (let x = 0; x < GAME_WIDTH; x++) {
+      grid[0][x] = wallHoriz
+      grid[GAME_HEIGHT - 1][x] = wallHoriz
+    }
+    for (let y = 0; y < GAME_HEIGHT; y++) {
+      grid[y][0] = wallVert
+      grid[y][GAME_WIDTH - 1] = wallVert
+    }
+    grid[0][0] = wallCorner
+    grid[0][GAME_WIDTH - 1] = wallCorner
+    grid[GAME_HEIGHT - 1][0] = wallCorner
+    grid[GAME_HEIGHT - 1][GAME_WIDTH - 1] = wallCorner
 
-    // Draw thin borders on all sides
-    helpers.drawThinBorder('top', GAME_WIDTH, 0, wallColor, horizontalGaps)
-    helpers.drawThinBorder('bottom', GAME_WIDTH, 0, wallColor, horizontalGaps)
-    helpers.drawThinBorder('left', GAME_HEIGHT, 0, wallColor, verticalGaps)
-    helpers.drawThinBorder('right', GAME_HEIGHT, 0, wallColor, verticalGaps)
-
-    // Draw all foods with animation
+    // Draw all foods (power-ups animate between . and ?)
     foods.forEach(food => {
+      let char = food.char
       if (food.isPowerUp) {
-        // Animate power-up color
-        const color = animTick % 2 === 0 ? COLORS.powerUp : COLORS.powerUpAlt
-        helpers.drawPattern(PIXEL_PATTERNS.powerUp, food.x, food.y, color)
-      } else {
-        // Regular food with subtle pulse
-        const color = animTick % 4 < 2 ? COLORS.food : COLORS.foodAlt
-        helpers.drawPattern(PIXEL_PATTERNS.food, food.x, food.y, color)
+        // Animate power-up character
+        char = POWER_UP_CHARS[animTick % POWER_UP_CHARS.length]
       }
+      drawChar(grid, char, food.x, food.y)
     })
 
-    // Draw snake
+    // Draw snake - use powered-up body when wall-walk is active
     snake.forEach((seg, i) => {
-      let pattern, color
+      let char
       if (i === 0) {
-        pattern = PIXEL_PATTERNS.snakeHead
-        color = COLORS.snakeHead
+        char = SNAKE_HEAD
       } else if (i === snake.length - 1) {
-        pattern = PIXEL_PATTERNS.snakeTail
-        color = COLORS.snakeTail
+        char = SNAKE_TAIL
       } else {
-        pattern = PIXEL_PATTERNS.snakeBody
-        color = wallWalkActive ? COLORS.snakeBodyGhost : COLORS.snakeBody
+        char = wallWalkActive ? SNAKE_BODY_POWERED : SNAKE_BODY
       }
-      helpers.drawPattern(pattern, seg.x, seg.y, color)
+      drawChar(grid, char, seg.x, seg.y)
     })
-  }, [snake, foods, wallWalkTimeLeft, animTick])
+
+    return renderGrid(grid)
+  }
 
   const handleClick = useCallback(() => {
     if (gameState !== 'playing' && gameState !== 'countdown') {
@@ -429,60 +378,49 @@ export default function GameFieldSnakePixel({ onGameComplete }) {
     }
   }, [gameState, startGame])
 
-  // Info Panel component
-  const InfoPanel = () => (
-    <div style={GAME_STYLES.infoPanelMobile}>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>SCORE</span>
-        <span style={GAME_STYLES.infoPanelValue}>{score}</span>
-      </div>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>LENGTH</span>
-        <span style={GAME_STYLES.infoPanelValue}>{snake.length}</span>
-      </div>
-      {wallWalkTimeLeft > 0 && (
-        <div style={GAME_STYLES.infoPanelMobileItem}>
-          <span style={{ ...GAME_STYLES.infoPanelLabel, color: '#ff6b6b' }}>GHOST</span>
-          <span style={{ ...GAME_STYLES.infoPanelValue, color: '#ff6b6b' }}>{wallWalkTimeLeft}s</span>
-        </div>
-      )}
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>TOKENS</span>
-        <span style={GAME_STYLES.infoPanelValue}>100</span>
-      </div>
-    </div>
-  )
+  // Info Panel component - Snake has dynamic items based on power-up state
+  const InfoPanel = useCallback(() => {
+    const items = [
+      { label: 'SCORE', value: score },
+      { label: 'LENGTH', value: snake.length },
+    ]
+    if (wallWalkTimeLeft > 0) {
+      items.push({ label: 'GHOST', value: `${wallWalkTimeLeft}s` })
+    }
+    items.push({ label: 'TOKENS', value: 100 })
+    return <GameInfoPanel items={items} />
+  }, [score, snake.length, wallWalkTimeLeft])
 
-  // Mobile Controls component
-  const MobileControls = () => (
+  // Mobile Controls component - Snake uses D-pad only, no action buttons
+  const MobileControls = useCallback(() => (
     <div style={GAME_STYLES.gamepad}>
       {/* D-Pad (Left) */}
       <div style={GAME_STYLES.dpad}>
-        <div /> {/* Empty top-left */}
+        <div />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); handleInput('UP') }}
           onClick={() => handleInput('UP')}
         >▲</button>
-        <div /> {/* Empty top-right */}
+        <div />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); handleInput('LEFT') }}
           onClick={() => handleInput('LEFT')}
         >◀</button>
-        <div style={GAME_STYLES.dpadCenter} /> {/* Center */}
+        <div style={GAME_STYLES.dpadCenter} />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); handleInput('RIGHT') }}
           onClick={() => handleInput('RIGHT')}
         >▶</button>
-        <div /> {/* Empty bottom-left */}
+        <div />
         <button
           style={GAME_STYLES.dpadButton}
           onTouchStart={(e) => { e.preventDefault(); handleInput('DOWN') }}
           onClick={() => handleInput('DOWN')}
         >▼</button>
-        <div /> {/* Empty bottom-right */}
+        <div />
       </div>
 
       {/* Action Buttons (Right) - Snake has no action buttons, just placeholder */}
@@ -492,75 +430,29 @@ export default function GameFieldSnakePixel({ onGameComplete }) {
         </div>
       </div>
     </div>
-  )
+  ), [handleInput])
 
-  // Overlay content for different game states
-  const getOverlayContent = () => {
-    if (gameState === 'playing') return null
-
-    if (gameState === 'countdown') {
-      return (
-        <div style={{ fontSize: '48px', color: 'var(--color-primary)' }}>
-          {countdown}
-        </div>
-      )
+  // Get overlay config for lost state
+  const getOverlayConfig = useCallback(() => {
+    if (gameState !== 'lost') return GAME_CONFIG
+    return {
+      ...GAME_CONFIG,
+      lostStats: [
+        { label: 'Score', value: score },
+        { label: 'Length', value: snake.length },
+      ],
     }
-
-    if (gameState === 'ready') {
-      return (
-        <>
-          <div style={{ fontSize: '20px', marginBottom: '10px' }}>JASHOKU PIXEL</div>
-          <div style={{ marginBottom: '5px' }}>Collect treats and grow!</div>
-          <div style={{ marginBottom: '15px', fontSize: '12px' }}>How long can you survive?</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] to START
-          </div>
-        </>
-      )
-    }
-
-    if (gameState === 'lost') {
-      return (
-        <>
-          <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
-            GAME OVER
-          </div>
-          <div style={{ marginBottom: '5px' }}>Score: {score}</div>
-          <div style={{ marginBottom: '5px' }}>Length: {snake.length}</div>
-          <div style={{ marginBottom: '15px' }}>The snake crashed!</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] or [CLICK] to TRY AGAIN
-          </div>
-        </>
-      )
-    }
-
-    return null
-  }
+  }, [gameState, score, snake.length])
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '10px',
-        width: '100%',
-        height: '100%',
-      }}
-    >
-      <InfoPanel />
-      <PixelCanvas
-        gridWidth={GAME_WIDTH}
-        gridHeight={GAME_HEIGHT}
-        cellSize={CELL_SIZE}
-        backgroundColor={COLORS.background}
-        onRender={handleRender}
-        onClick={handleClick}
-        renderDeps={[snake, foods, wallWalkTimeLeft, animTick]}
-        overlay={getOverlayContent()}
-      />
-      {isMobile && <MobileControls />}
-    </div>
+    <GameLayout
+      gameWidth={GAME_WIDTH}
+      gameHeight={GAME_HEIGHT}
+      renderGame={renderGame}
+      InfoPanel={InfoPanel}
+      MobileControls={MobileControls}
+      onFieldClick={handleClick}
+      overlayContent={<GameOverlay gameState={gameState} countdown={countdown} gameConfig={getOverlayConfig()} />}
+    />
   )
 }

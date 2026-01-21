@@ -3,16 +3,17 @@ import {
   useGameLoop,
   useHeldKeys,
   useCountdown,
-  useIsMobile,
   createGrid,
   drawSprite,
   drawChar,
   renderGrid,
   checkCollision,
   clamp,
-  GAME_STYLES,
-} from './lib/asciiGameEngine.js'
-import GameLayout from './GameLayout.jsx'
+} from './shared/asciiGameEngine.js'
+import GameLayout from './shared/GameLayout.jsx'
+import GameInfoPanel from './shared/GameInfoPanel.jsx'
+import GameOverlay from './shared/GameOverlay.jsx'
+import MobileGamepad from './shared/MobileGamepad.jsx'
 
 const GAME_WIDTH = 50
 const GAME_HEIGHT = 50
@@ -55,6 +56,15 @@ const ENEMY_BULLET_CHAR = '.'
 // Speed increases more gradually for endless mode
 const SPEED_INCREMENT_PER_WAVE = 0.008
 
+// Game configuration for overlay
+const GAME_CONFIG = {
+  title: 'YOKAI INVADERS',
+  instructions: ['Defend against the yokai!'],
+  subtitle: 'Survive as long as you can',
+  lostTitle: 'GAME ENDED',
+  lostMessage: 'The yokai won!',
+}
+
 /**
  * GameFieldInvaders - Space Invaders with Japanese yokai theme
  * Defend against waves of yokai!
@@ -72,9 +82,6 @@ export default function GameFieldInvaders({ onGameComplete }) {
 
   const shootCooldownRef = useRef(0)
   const enemySpeedRef = useRef(ENEMY_SPEED_INITIAL)
-
-  // Check if on mobile device
-  const isMobile = useIsMobile()
 
   // Initialize enemies for a wave
   const initEnemies = useCallback((waveNum) => {
@@ -342,104 +349,36 @@ export default function GameFieldInvaders({ onGameComplete }) {
   }, [gameState, startGame])
 
   // Info Panel component
-  const InfoPanel = () => (
-    <div style={GAME_STYLES.infoPanelMobile}>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>SCORE</span>
-        <span style={GAME_STYLES.infoPanelValue}>{score}</span>
-      </div>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>WAVE</span>
-        <span style={GAME_STYLES.infoPanelValue}>{wave}</span>
-      </div>
-      <div style={GAME_STYLES.infoPanelMobileItem}>
-        <span style={GAME_STYLES.infoPanelLabel}>TOKENS</span>
-        <span style={GAME_STYLES.infoPanelValue}>100</span>
-      </div>
-    </div>
-  )
+  const InfoPanel = useCallback(() => (
+    <GameInfoPanel items={[
+      { label: 'SCORE', value: score },
+      { label: 'WAVE', value: wave },
+      { label: 'TOKENS', value: 100 },
+    ]} />
+  ), [score, wave])
 
   // Mobile Controls component
-  const MobileControls = () => (
-    <div style={GAME_STYLES.gamepad}>
-      {/* D-Pad (Left) - only left/right for Invaders */}
-      <div style={GAME_STYLES.dpad}>
-        <div /> {/* Empty top-left */}
-        <div /> {/* Empty top - no up in invaders */}
-        <div /> {/* Empty top-right */}
-        <button
-          style={GAME_STYLES.dpadButton}
-          onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.left = true }}
-          onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.left = false }}
-          onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.left = false }}
-        >◀</button>
-        <div style={GAME_STYLES.dpadCenter} /> {/* Center */}
-        <button
-          style={GAME_STYLES.dpadButton}
-          onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.right = true }}
-          onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.right = false }}
-          onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.right = false }}
-        >▶</button>
-        <div /> {/* Empty bottom-left */}
-        <div /> {/* Empty bottom - no down in invaders */}
-        <div /> {/* Empty bottom-right */}
-      </div>
+  const MobileControls = useCallback(() => (
+    <MobileGamepad keysHeldRef={keysHeldRef} config={{
+      showUp: false,
+      showDown: false,
+      showLeft: true,
+      showRight: true,
+      actionButtons: [{ label: 'FIRE', key: 'action' }],
+    }} />
+  ), [])
 
-      {/* Action Buttons (Right) - FIRE button */}
-      <div style={GAME_STYLES.actionButtons}>
-        <button
-          style={GAME_STYLES.actionButtonLarge}
-          onTouchStart={(e) => { e.preventDefault(); keysHeldRef.current.action = true }}
-          onTouchEnd={(e) => { e.preventDefault(); keysHeldRef.current.action = false }}
-          onTouchCancel={(e) => { e.preventDefault(); keysHeldRef.current.action = false }}
-        >FIRE</button>
-      </div>
-    </div>
-  )
-
-  // Overlay content for different game states
-  const getOverlayContent = () => {
-    if (gameState === 'playing') return null
-
-    if (gameState === 'countdown') {
-      return (
-        <div style={{ fontSize: '48px', color: 'var(--color-primary)' }}>
-          {countdown}
-        </div>
-      )
+  // Get overlay config for lost state
+  const getOverlayConfig = useCallback(() => {
+    if (gameState !== 'lost') return GAME_CONFIG
+    return {
+      ...GAME_CONFIG,
+      lostStats: [
+        { label: 'Score', value: score },
+        { label: 'Wave', value: wave },
+      ],
     }
-
-    if (gameState === 'ready') {
-      return (
-        <>
-          <div style={{ fontSize: '20px', marginBottom: '10px' }}>YOKAI INVADERS</div>
-          <div style={{ marginBottom: '5px' }}>Defend against the yokai!</div>
-          <div style={{ marginBottom: '15px', fontSize: '12px' }}>Survive as long as you can</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] to START
-          </div>
-        </>
-      )
-    }
-
-    if (gameState === 'lost') {
-      return (
-        <>
-          <div style={{ fontSize: '24px', marginBottom: '10px', color: '#ff6b6b' }}>
-            GAME ENDED
-          </div>
-          <div style={{ marginBottom: '5px' }}>Score: {score}</div>
-          <div style={{ marginBottom: '5px' }}>Wave: {wave}</div>
-          <div style={{ marginBottom: '15px' }}>The yokai won!</div>
-          <div style={{ color: 'var(--color-primary)' }}>
-            [SPACE] or [CLICK] to TRY AGAIN
-          </div>
-        </>
-      )
-    }
-
-    return null
-  }
+  }, [gameState, score, wave])
 
   return (
     <GameLayout
@@ -449,7 +388,7 @@ export default function GameFieldInvaders({ onGameComplete }) {
       InfoPanel={InfoPanel}
       MobileControls={MobileControls}
       onFieldClick={handleClick}
-      overlayContent={getOverlayContent()}
+      overlayContent={<GameOverlay gameState={gameState} countdown={countdown} gameConfig={getOverlayConfig()} />}
     />
   )
 }

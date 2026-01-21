@@ -1,10 +1,11 @@
 import GameFieldBase from './GameFieldBase.jsx'
 import GameFieldGomoku from './GameFieldGomoku.jsx'
-import GameFieldJump from './GameFieldJump.jsx'
-import GameFieldSnakePixel from './GameFieldSnakePixel.jsx'
-import GameFieldInvaders from './GameFieldInvaders.jsx'
-import GameFieldTetrisPixel from './GameFieldTetrisPixel.jsx'
-import YugiGameLobby from './YugiGameLobby.jsx'
+// Goraku games (in StepGoraku folder)
+import GameFieldJump from '../StepGoraku/GameFieldJump.jsx'
+import GameFieldSnakePixel from '../StepGoraku/GameFieldSnakePixel.jsx'
+import GameFieldInvaders from '../StepGoraku/GameFieldInvaders.jsx'
+import GameFieldTetrisPixel from '../StepGoraku/GameFieldTetrisPixel.jsx'
+import YugiGameLobby from '../StepGoraku/YugiGameLobby.jsx'
 
 // Games 2 / Yugi contract ID
 const GAMES2_CONTRACT_ID = 'vsc1PLACEHOLDER_GAMES2'
@@ -17,13 +18,13 @@ export default function GameField(props) {
     const gameTypeId = props?.defaultGameTypeId
     const { yugiView, setYugiView } = props
 
-    // Show lobby first, then game when Play Game is clicked
+    // Show lobby first, then game when Insert Coin transaction succeeds
     if (yugiView === 'lobby') {
       return (
         <YugiGameLobby
           gameTypeId={gameTypeId}
           gameDescription={props?.gameDescription}
-          onPlayGame={() => setYugiView('game')}
+          onStartGame={() => setYugiView('game')}
         />
       )
     }

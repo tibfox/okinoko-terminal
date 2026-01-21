@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'preact/hooks'
 import { memo } from 'preact/compat'
-import { useIsMobile, GAME_STYLES } from './lib/asciiGameEngine.js'
+import { useIsMobile, GAME_STYLES } from './asciiGameEngine.js'
 
 /**
  * GameLayout - Reusable layout component for ASCII games
