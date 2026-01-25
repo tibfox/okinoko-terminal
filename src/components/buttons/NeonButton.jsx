@@ -31,6 +31,9 @@ export default function NeonButton({
     maxWidth: 'max-content',
     opacity: disabled ? 0.5 : 1,
     position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   }
 
 

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'preact/hooks'
 import { KeyTypes } from '@aioha/aioha'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import FormField from '../common/FormField.jsx'
-import contractsCfg from '../../data/contracts.json'
+import contractsCfg from '../../data/contracts'
 
 // Get the Goraku contract config
 const gorakuContract = contractsCfg.contracts.find(c => c.vscId === 'vsc1PLACEHOLDER_GAMES2')

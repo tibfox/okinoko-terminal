@@ -163,6 +163,9 @@ tr.hover\:bg-gray-50:hover {
   border: none !important;
   box-shadow: inset 0 0 0 3px var(--color-primary-darkest);
 }
+tr.hover\:bg-gray-50 td div {
+  font-size: var(--font-size-base) !important;
+}
 
 /* Aioha modal font size increase */
 [class*="aioha"] {

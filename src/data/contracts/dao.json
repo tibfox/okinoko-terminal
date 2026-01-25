@@ -1,0 +1,692 @@
+{
+  "name": "Ōkinoko ShinDAO [beta]",
+  "id": 2,
+  "sortIndex": 4,
+  "vscId": "vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb",
+  "owner": "tibfox.vsc",
+  "deployedOn": "2025-11-28T22:20:57",
+  "verifiedOn": "unverified",
+  "description": "Create your own DAO with your own rules!",
+  "icon": "faPeopleGroup",
+  "kanji": "真道",
+  "devOnly": true,
+  "functions": [
+    {
+      "name": "project_create",
+      "friendlyName": "Create DAO Project",
+      "description": "Bootstraps a DAO, using the caller's transfer.allow intent to split funds between initial stake and treasury.",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "wizardEnabled": true,
+      "wizardSteps": [
+        {
+          "id": "basic",
+          "title": "Basics",
+          "description": "Name your DAO and add a description"
+        },
+        {
+          "id": "voting",
+          "title": "Voting",
+          "description": "Configure how decisions are made"
+        },
+        {
+          "id": "economics",
+          "title": "Economics",
+          "description": "Set costs and stake requirements"
+        },
+        {
+          "id": "membership",
+          "title": "NFT Gate",
+          "description": "Optional NFT-gated access (advanced)",
+          "disabled": true,
+          "disabledMessage": "NFT gated membership will get activated in near future"
+        },
+        {
+          "id": "review",
+          "title": "Review",
+          "description": "Confirm your settings before creation"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "Name",
+          "payloadName": "name",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 0,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Description",
+          "payloadName": "description",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Add a description but always remember the more characters you use, the higher the gas cost.",
+          "sortIndex": 1,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Project URL",
+          "payloadName": "url",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Optional URL for this DAO",
+          "sortIndex": 2,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Voting System",
+          "payloadName": "votingSystem",
+          "type": "bool",
+          "mandatory": true,
+          "hintText": "Choose between democratic (1 vote per member) or stake-weighted voting.",
+          "boolFalse": "0",
+          "boolTrue": "1",
+          "default": false,
+          "sortIndex": 3,
+          "displayTrue": "Stake-weighted",
+          "displayFalse": "Democratic",
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Threshold Percent",
+          "payloadName": "threshold",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the percentage where a proposal is considered passed. Defaults to 50.01%",
+          "min": 0.1,
+          "max": 100,
+          "default": 50.01,
+          "sortIndex": 4,
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Quorum Percent",
+          "payloadName": "quorum",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the minimum percentage of total stake/members that need to vote for a proposal to be valid. Defaults to 50.01%",
+          "min": 0.1,
+          "max": 100,
+          "default": 50.01,
+          "sortIndex": 5,
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Proposal Duration (hours)",
+          "payloadName": "proposalDuration",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the duration for which a proposal is open for voting. Defaults to 24 hours.",
+          "default": 24,
+          "sortIndex": 6,
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Execution Delay (hours)",
+          "payloadName": "executionDelay",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the delay before a proposal is executed after it is approved.",
+          "sortIndex": 7,
+          "wizardStep": "economics"
+        },
+        {
+          "name": "Leave Cooldown (hours)",
+          "payloadName": "leaveCooldown",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the cooldown period after leaving the DAO before rejoining.",
+          "sortIndex": 8,
+          "wizardStep": "economics"
+        },
+        {
+          "name": "Proposal Cost",
+          "payloadName": "proposalCost",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the cost associated with submitting a proposal. This cost is added to the project the treasury.",
+          "sortIndex": 9,
+          "wizardStep": "economics"
+        },
+        {
+          "name": "Minimum Stake Amount",
+          "payloadName": "stakeMin",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "This is the minimum amount of stake required to participate in the DAO. For democratic DAOs, this is the exact member fee.",
+          "sortIndex": 10,
+          "wizardStep": "economics"
+        },
+        {
+          "name": "Membership NFT Contract",
+          "payloadName": "membershipContract",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "In future you will be able to set a membership NFT contract to gate access to the DAO.",
+          "sortIndex": 11,
+          "wizardStep": "membership"
+        },
+        {
+          "name": "Membership NFT Function",
+          "payloadName": "membershipFunction",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "This is the function that will be called on the membership NFT contract.",
+          "sortIndex": 12,
+          "wizardStep": "membership"
+        },
+        {
+          "name": "Membership NFT Token ID",
+          "payloadName": "membershipNftId",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the ID of the membership NFT. The NFT needs to be an editioned NFT.",
+          "sortIndex": 13,
+          "wizardStep": "membership"
+        },
+        {
+          "name": "Membership Payload Format ({nft}|{caller})",
+          "payloadName": "membershipPayloadFormat",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "This is the format for the membership NFT payload.",
+          "sortIndex": 14,
+          "wizardStep": "membership"
+        },
+        {
+          "name": "Proposal Creator Restriction",
+          "payloadName": "creatorRestriction",
+          "type": "bool",
+          "mandatory": true,
+          "hintText": "Restrict proposal creation to members only or allow the public.",
+          "boolFalse": "Only Members can create Proposals",
+          "boolTrue": "public",
+          "default": false,
+          "sortIndex": 15,
+          "displayTrue": "Public",
+          "displayFalse": "Members only",
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Project Metadata",
+          "payloadName": "metadata",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "This is the metadata associated with the project. It will not get used/checked by the contract but can be useful for frontends.",
+          "sortIndex": 16,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Initial deposit (stake + treasury)",
+          "payloadName": "vscIntent",
+          "type": "vscIntent",
+          "mandatory": true,
+          "hintText": "This is the initial deposit for the project. Excess funds beyond the minimum stake amount will go to the treasury.",
+          "sortIndex": 17,
+          "wizardStep": "economics"
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Projects"
+    },
+    {
+      "name": "project_join",
+      "friendlyName": "Join DAO",
+      "description": "Validates membership requirements (NFT gate if configured) and stakes via transfer.allow.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Project Id",
+          "payloadName": "id",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the project you want to join.",
+          "sortIndex": 1
+        },
+        {
+          "name": "transfer.allow intent (membership stake)",
+          "payloadName": "vscIntent",
+          "type": "vscIntent",
+          "mandatory": true,
+          "hintText": "This is the membership fee. For democratic DAOs this needs to equal the minimum stake amount.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Projects"
+    },
+    {
+      "name": "project_leave",
+      "friendlyName": "Leave DAO",
+      "description": "Requests exit (or finalizes it after cooldown) and withdraws stake when safe.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Project Id",
+          "payloadName": "id",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the project you want to leave.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Projects"
+    },
+    {
+      "name": "project_funds",
+      "friendlyName": "Add Funds",
+      "description": "Adds funds to personal stake or the treasury using transfer.allow; democratic DAOs can only top up the treasury.",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "Project Id",
+          "payloadName": "projectId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the project you want to add funds to.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Add To Stake? (true/false)",
+          "payloadName": "toStake",
+          "type": "bool",
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "asString": true,
+          "mandatory": true,
+          "hintText": "Indicates whether the funds should be added to the personal stake or the treasury.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Deposit amount / asset",
+          "payloadName": "vscIntent",
+          "type": "vscIntent",
+          "mandatory": true,
+          "hintText": "This is the amount and asset you want to deposit. The asset must match the project's asset.",
+          "sortIndex": 3
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Projects"
+    },
+    {
+      "name": "project_transfer",
+      "friendlyName": "Transfer Ownership",
+      "description": "Owner-only transfer of project ownership to another member.",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "Project Id",
+          "payloadName": "projectId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the project you want to transfer ownership of.",
+          "sortIndex": 1
+        },
+        {
+          "name": "New Owner Address",
+          "payloadName": "newOwner",
+          "type": "address",
+          "mandatory": true,
+          "hintText": "This is the address of the new owner.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Projects"
+    },
+    {
+      "name": "project_pause",
+      "friendlyName": "Pause / Unpause",
+      "description": "Owner toggles pause state immediately; paused projects only accept unpause proposals.",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "Project Id",
+          "payloadName": "projectId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the project you want to pause or unpause.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Pause Flag (true/false, default true)",
+          "payloadName": "pause",
+          "type": "bool",
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "asString": true,
+          "mandatory": false,
+          "hintText": "Indicates whether the project should be paused or unpaused.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Projects"
+    },
+    {
+      "name": "proposal_create",
+      "friendlyName": "Create Proposal",
+      "description": "Creates governance or payout proposals; options default to no/yes unless provided. Costs are charged via transfer.allow when configured.",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "wizardEnabled": true,
+      "wizardSteps": [
+        {
+          "id": "basic",
+          "title": "Proposal",
+          "description": "Title and description for your proposal"
+        },
+        {
+          "id": "voting",
+          "title": "Voting",
+          "description": "Configure voting settings"
+        },
+        {
+          "id": "answers",
+          "title": "Answers",
+          "description": "Define the voting choices for your poll"
+        },
+        {
+          "id": "actions",
+          "title": "Actions",
+          "description": "Optional payouts and governance changes"
+        },
+        {
+          "id": "review",
+          "title": "Review",
+          "description": "Confirm before submitting"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "Project Id",
+          "payloadName": "projectId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the project you want to create a proposal for.",
+          "sortIndex": 1,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Proposal Title",
+          "payloadName": "title",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 2,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Proposal Description",
+          "payloadName": "description",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "This is the description of the proposal. Remember that longer descriptions increase gas costs.",
+          "sortIndex": 3,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Custom Duration (hours)",
+          "payloadName": "duration",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "This is the custom duration for the proposal in hours. If not set, the project's default duration will be used.",
+          "sortIndex": 6,
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Options (semicolon separated)",
+          "payloadName": "options",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "These are the options for the proposal, separated by semicolons. If not provided, defaults to No;Yes.",
+          "sortIndex": 5,
+          "wizardStep": "answers"
+        },
+        {
+          "name": "Poll Mode",
+          "payloadName": "forcePoll",
+          "type": "bool",
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "displayTrue": "Poll-only mode",
+          "displayFalse": "With action(s)",
+          "asString": true,
+          "mandatory": false,
+          "hintText": "Indicates whether the proposal should be a simple poll. In poll mode, proposals cannot execute actions / transfers.",
+          "sortIndex": 4,
+          "wizardStep": "voting"
+        },
+        {
+          "name": "Payout Instructions (addr:amount;...)",
+          "payloadName": "payouts",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "These are the payout instructions for the proposal, specifying the address and amount for each payout. Separate multiple instructions with semicolons.",
+          "sortIndex": 7,
+          "wizardStep": "actions"
+        },
+        {
+          "name": "Meta Actions (key=value;...)",
+          "payloadName": "meta",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "These are the meta actions for the proposal, specified as key-value pairs. Separate multiple actions with semicolons.",
+          "metaOptions": [
+            {
+              "key": "pause",
+              "type": "none",
+              "hint": "Toggle project pause state (true pauses, false unpauses)",
+              "staticValue": "1"
+            },
+            {
+              "key": "owner",
+              "type": "account",
+              "hint": "Address of the project owner"
+            },
+            {
+              "key": "threshold",
+              "type": "float",
+              "hint": "Required approval threshold percentage"
+            },
+            {
+              "key": "quorum",
+              "type": "float",
+              "hint": "Minimum quorum percentage"
+            },
+            {
+              "key": "proposalDuration",
+              "type": "int",
+              "hint": "Duration for proposals in hours"
+            },
+            {
+              "key": "executionDelay",
+              "type": "int",
+              "hint": "Delay before execution in hours"
+            },
+            {
+              "key": "leaveCooldown",
+              "type": "int",
+              "hint": "Cooldown before members can leave, in hours"
+            },
+            {
+              "key": "proposalCost",
+              "type": "float",
+              "hint": "Cost for new proposals"
+            },
+            {
+              "key": "proposalCreatorRestriction",
+              "type": "bool",
+              "hint": "Restrict proposal creation to only members"
+            },
+            {
+              "key": "membershipNFT",
+              "type": "int",
+              "hint": "membership NFTs"
+            },
+            {
+              "key": "membershipNFTContract",
+              "type": "string",
+              "hint": "contract we should lookup for the membershi NFTs"
+            },
+            {
+              "key": "membershipNFTContractFunction",
+              "type": "string",
+              "hint": "function we should call on the membership NFT contract"
+            },
+            {
+              "key": "membershipNFTPayload",
+              "type": "string",
+              "hint": "payload we should send to the membership NFT contract (must contain `{nft}` and `{caller}`) "
+            }
+          ],
+          "sortIndex": 8,
+          "wizardStep": "actions"
+        },
+        {
+          "name": "Inter-Contract Call (ICC)",
+          "payloadName": "icc",
+          "type": "icc",
+          "mandatory": false,
+          "hintText": "Call another contract when the proposal passes. Specify the contract, action, and parameters.",
+          "sortIndex": 8.5,
+          "wizardStep": "actions"
+        },
+        {
+          "name": "Proposal Metadata",
+          "payloadName": "metadata",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "These are the metadata for the proposal. Will not be used/checked by the contract but can be useful for frontends.",
+          "sortIndex": 9,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Proposal URL",
+          "payloadName": "url",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Optional URL for this proposal",
+          "sortIndex": 10,
+          "wizardStep": "basic"
+        },
+        {
+          "name": "Proposal cost",
+          "payloadName": "vscIntent",
+          "type": "vscIntent",
+          "mandatory": true,
+          "readOnly": true,
+          "hintText": "This cost is defined by the DAO settings and will be charged when creating the proposal.",
+          "sortIndex": 11,
+          "wizardStep": "basic"
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Proposals"
+    },
+    {
+      "name": "proposals_vote",
+      "friendlyName": "Vote on Proposal",
+      "description": "Members cast or update votes by passing option indexes (comma/semicolon separated). Weight equals current stake.",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "Proposal Id",
+          "payloadName": "proposalId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the proposal you want to vote on.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Choices (comma/semicolon indexes)",
+          "payloadName": "choices",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "These are the choices you want to vote for, specified as comma or semicolon separated indexes.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Proposals"
+    },
+    {
+      "name": "proposal_tally",
+      "friendlyName": "Tally Proposal",
+      "description": "Tallies votes after the deadline, sets proposal state, and schedules execution if passed.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Proposal Id",
+          "payloadName": "proposalId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the proposal you want to tally.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Proposals"
+    },
+    {
+      "name": "proposal_execute",
+      "friendlyName": "Execute Proposal",
+      "description": "Executes passed proposals after execution delay, moving funds and applying meta updates.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Proposal Id",
+          "payloadName": "proposalId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the proposal you want to execute.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Proposals"
+    },
+    {
+      "name": "proposal_cancel",
+      "friendlyName": "Cancel Proposal",
+      "description": "Creator or owner cancels an active proposal; owner-triggered cancels refund the proposal cost when funds exist.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Proposal Id",
+          "payloadName": "proposalId",
+          "type": "number",
+          "asString": false,
+          "mandatory": true,
+          "hintText": "This is the ID of the proposal you want to cancel.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Proposals"
+    }
+  ]
+}

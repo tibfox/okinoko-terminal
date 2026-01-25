@@ -421,13 +421,20 @@ export default function TerminalContainer({
     const hasTokenChanged = layoutTransitionToken !== layoutTokenRef.current
     const hasMinimizeChanged = isMinimized !== lastMinimizedRef.current
     const hasTransitionSignal = hasTokenChanged || hasMinimizeChanged
+    // Skip animation if the terminal would extend beyond viewport bounds
+    const wouldExtendBeyondViewport = nextRect.right > window.innerWidth ||
+      nextRect.bottom > window.innerHeight ||
+      nextRect.left < 0 ||
+      nextRect.top < 0
+
     const shouldAnimate =
       hasTransitionSignal &&
       previousRect &&
       !prefersReducedMotionRef.current &&
       !isMobile &&
       !isDragging &&
-      !isResizing
+      !isResizing &&
+      !wouldExtendBeyondViewport
 
     if (shouldAnimate && typeof containerRef.current?.animate === 'function') {
       const node = containerRef.current
@@ -592,7 +599,8 @@ export default function TerminalContainer({
 
   const mobileWidth = '100vw'
   const desktopWidth = dimensions ? `${dimensions.width}px` : '66vw'
-  const desktopHeight = dimensions ? `${dimensions.height}px` : undefined
+  const defaultDesktopSize = getDefaultDesktopSize()
+  const desktopHeight = dimensions ? `${dimensions.height}px` : `${defaultDesktopSize.height}px`
   const desktopBounds = !isMobile && canUseWindow ? getDesktopBounds() : null
   const isFloating = !isMobile && Boolean(position)
   const MINIMIZED_DESKTOP_WIDTH = `${Math.round(DESKTOP_MIN_WIDTH * 0.5)}px`
@@ -1067,7 +1075,7 @@ export default function TerminalContainer({
               : desktopBounds
                 ? `${desktopBounds.minWidth}px`
                 : desktopWidth,
-          flex: visualMinimized ? '0 0 auto' : 1,
+          flex: isMobile ? 1 : 'none',
           display: 'flex',
           flexDirection: 'column',
           margin: isMobile ? '0' : isFloating ? '0' : 'auto',
@@ -1080,6 +1088,7 @@ export default function TerminalContainer({
           overflowY: isMobile ? (visualMinimized ? 'visible' : 'auto') : 'visible',
           boxSizing: 'border-box',
           minHeight: visualMinimized ? 'auto' : undefined,
+          maxHeight: isMobile ? undefined : (visualMinimized ? `${MINIMIZED_DESKTOP_HEIGHT}px` : resolvedHeight),
           transition: isDragging || isResizing ? 'none' : 'transform 120ms ease-out',
           cursor: !isMobile && isDragging ? 'grabbing' : undefined,
           
@@ -1099,7 +1108,8 @@ export default function TerminalContainer({
             transition: contentOpacity === 0 ? 'opacity 0ms linear' : 'opacity 240ms ease-in-out',
             display: 'flex',
             flexDirection: 'column',
-            height: '100%',
+            flex: '1 1 0',
+            minHeight: 0,
             position: 'relative',
           }}
         >
@@ -1127,13 +1137,13 @@ export default function TerminalContainer({
           <div
             className="terminal-body"
             style={{
-              flex: shouldHideBody ? '0' : 1,
+              flex: shouldHideBody ? '0 0 0' : '1 1 0',
               display: 'flex',
               flexDirection: 'column',
               overflow: shouldHideBody ? 'hidden' : 'auto',
               minHeight: 0,
-              maxHeight: isMobile ? '80vh' : shouldHideBody ? 'auto' : '100%',
-              height: shouldHideBody ? 0 : (isMobile ? undefined : '100%'),
+              maxHeight: isMobile ? '80vh' : undefined,
+              height: shouldHideBody ? 0 : undefined,
               paddingBottom: isMobile ? '0.1rem' : '0',
               visibility: shouldHideBody ? 'hidden' : 'visible',
               pointerEvents: shouldHideBody ? 'none' : 'auto',

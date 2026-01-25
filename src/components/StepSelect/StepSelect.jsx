@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState, useCallback, useRef } from 'preact/hooks'
-import contractsCfg from '../../data/contracts.json'
+import contractsCfg from '../../data/contracts'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import NeonButton from '../buttons/NeonButton.jsx'
 import SparkleButton from '../buttons/SparkleButton.jsx'
@@ -146,17 +146,34 @@ export default function StepSelect({
     setStep(2)
   }, [setContractId, setFnName, setStep])
 
-  const handleCreateProposal = useCallback((projectId) => {
+  const handleCreateProposal = useCallback((projectId, daoSettings) => {
     setContractId(DAO_VSC_ID)
     setFnName('proposal_create')
-    if (projectId) {
+    // Use project_id from daoSettings if available, otherwise use passed projectId
+    const pid = daoSettings?.project_id ?? projectId
+    const numericPid = Number(pid)
+    if (Number.isFinite(numericPid)) {
       try {
-        sessionStorage.setItem(DAO_PROPOSAL_PREFILL_KEY, String(projectId))
+        sessionStorage.setItem(DAO_PROPOSAL_PREFILL_KEY, String(numericPid))
       } catch {}
+      const newParams = {
+        'Project Id': numericPid,
+        projectId: numericPid,
+      }
+      // Pre-fill DAO default values if available
+      if (daoSettings) {
+        const duration = Number(daoSettings.proposal_duration_hours)
+        if (Number.isFinite(duration) && duration > 0) {
+          newParams['Custom Duration (hours)'] = duration
+          newParams.duration = duration
+        }
+        const proposalCost = Number(daoSettings.proposal_cost) || 0
+        const asset = (daoSettings.funds_asset || 'HIVE').toUpperCase()
+        newParams.vscIntent = { amount: proposalCost, asset }
+      }
       setParams((prev) => ({
         ...prev,
-        'Project Id': projectId,
-        projectId: projectId,
+        ...newParams,
       }))
     }
     setStep(2)
@@ -326,31 +343,34 @@ export default function StepSelect({
           <FontAwesomeIcon icon={faChevronLeft} style={{  fontSize: '0.9rem', marginRight: '10px' }} />
           Back
         </NeonButton>
-        <div className="next-button-glitter-wrapper">
-         
-          <NeonButton
-            disabled={!selectedContract || (!isMobile && !selectedFunction)}
-            onClick={handleNext}
-            style={{ position: 'relative', overflow: 'hidden' }}
-          >
-            <SparkleButton>
-            {/* <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
-              {Array.from({ length: 90 }).map((_, i) => (
-                <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>
-              ))}
-            </div>
-            <div className="pixel-sparkle-grid pixel-sparkle-grid-overlay">
-              {Array.from({ length: 90 }).map((_, i) => (
-                <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
-              ))}
-            </div>
-            <span style={{ position: 'relative', zIndex: 3 }}> */}
-              Next
-              <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '0.9rem', marginLeft: '10px' }} />
-            {/* </span> */}
-            </SparkleButton>
-          </NeonButton>
-        </div>
+        {/* Hide Next button when viewing DAO overview list (no function selected) */}
+        {!(isDaoContract && !selectedFunction) && (
+          <div className="next-button-glitter-wrapper">
+
+            <NeonButton
+              disabled={!selectedContract || (!isMobile && !selectedFunction)}
+              onClick={handleNext}
+              style={{ position: 'relative', overflow: 'hidden' }}
+            >
+              <SparkleButton>
+              {/* <div className="pixel-sparkle-grid pixel-sparkle-grid-twinkle">
+                {Array.from({ length: 90 }).map((_, i) => (
+                  <div key={`twinkle-${i}`} className="pixel-sparkle-twinkle"></div>
+                ))}
+              </div>
+              <div className="pixel-sparkle-grid pixel-sparkle-grid-overlay">
+                {Array.from({ length: 90 }).map((_, i) => (
+                  <div key={`overlay-${i}`} className="pixel-sparkle-overlay"></div>
+                ))}
+              </div>
+              <span style={{ position: 'relative', zIndex: 3 }}> */}
+                Next
+                <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '0.9rem', marginLeft: '10px' }} />
+              {/* </span> */}
+              </SparkleButton>
+            </NeonButton>
+          </div>
+        )}
       </div>
     </TerminalContainer>
   )

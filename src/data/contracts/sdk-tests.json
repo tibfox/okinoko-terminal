@@ -1,0 +1,276 @@
+{
+  "name": "SDK Function Tests",
+  "id": 3,
+  "sortIndex": 999,
+  "vscId": "vsc1BdaaUWkeEoCkHrFDt9uVMq7LXKSxcSFoPK",
+  "owner": "tibfox.vsc",
+  "deployedOn": "2025-10-31T15:12:33",
+  "verifiedOn": "unverified",
+  "icon": "faCode",
+  "description": "All currently supported sdk functions",
+  "devOnly": true,
+  "functions": [
+    {
+      "name": "c_log",
+      "friendlyName": "Log something",
+      "description": "sdk.Log(*a)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "log message",
+          "payloadName": "",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Logging"
+    },
+    {
+      "name": "c_state_set",
+      "friendlyName": "Set State",
+      "description": "sdk.StateSetObject(key, value)",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "key",
+          "payloadName": "key",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        },
+        {
+          "name": "value",
+          "payloadName": "value",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Contract State"
+    },
+    {
+      "name": "c_state_get",
+      "friendlyName": "Get State",
+      "description": "sdk.StateGetObject(*key)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "key",
+          "payloadName": "key",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Contract State"
+    },
+    {
+      "name": "c_state_del",
+      "friendlyName": "Delete State",
+      "description": "sdk.StateDeleteObject(*key)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "key",
+          "payloadName": "key",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Contract State"
+    },
+    {
+      "name": "c_get_env",
+      "friendlyName": "Get full env and convert to string",
+      "description": "sdk.GetEnv()",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": ""
+    },
+    {
+      "name": "c_get_env_string",
+      "friendlyName": "Get full env string",
+      "description": "sdk.GetEnvStr()",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Environment"
+    },
+    {
+      "name": "c_get_envkey",
+      "friendlyName": "Get Env Key",
+      "description": "sdk.GetEnvKey(*a)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "key",
+          "payloadName": "key",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Environment"
+    },
+    {
+      "name": "c_get_balance",
+      "friendlyName": "Get Hive Balance for user",
+      "description": "sdk.GetBalance(sdk.Address(*a), sdk.AssetHive)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "user",
+          "payloadName": "key",
+          "type": "address",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Assets"
+    },
+    {
+      "name": "c_hive_draw",
+      "friendlyName": "Draw from caller to contract",
+      "description": "sdk.HiveDraw(1, sdk.AssetHive) ",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "amount / asset",
+          "payloadName": "vscIntent",
+          "type": "vscIntent",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Assets"
+    },
+    {
+      "name": "c_hive_transfer",
+      "friendlyName": "Send Hive from contract to user",
+      "description": "sdk.HiveTransfer(sdk.Address(*receiver), 1, sdk.AssetHive)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "user",
+          "payloadName": "key",
+          "type": "address",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Assets"
+    },
+    {
+      "name": "c_hive_withdraw",
+      "friendlyName": "Withdraw Hive from contract to user on L1",
+      "description": "sdk.HiveWithdraw(sdk.Address(*receiver), 1, sdk.AssetHive)",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "user",
+          "payloadName": "key",
+          "type": "address",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Assets"
+    },
+    {
+      "name": "c_contract_read",
+      "friendlyName": "Read state of other contract",
+      "description": "sdk.ContractStateGet(contractId, key)",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "contract",
+          "payloadName": "contract",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        },
+        {
+          "name": "key",
+          "payloadName": "key",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Contracts"
+    },
+    {
+      "name": "c_contract_call",
+      "friendlyName": "Call method of other contract",
+      "description": "sdk.ContractCall(contractId, method, callPayload, callOptions)",
+      "parse": "csv",
+      "delimiter": "|",
+      "excludeKeys": true,
+      "parameters": [
+        {
+          "name": "contract",
+          "payloadName": "contract",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 1
+        },
+        {
+          "name": "method",
+          "payloadName": "method",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 2
+        },
+        {
+          "name": "payload",
+          "payloadName": "payload",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "",
+          "sortIndex": 3
+        },
+        {
+          "name": "amount / asset",
+          "payloadName": "vscIntent",
+          "type": "vscIntent",
+          "mandatory": false,
+          "hintText": "",
+          "sortIndex": 4
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Contracts"
+    }
+  ]
+}

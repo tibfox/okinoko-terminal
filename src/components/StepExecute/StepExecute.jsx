@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'preact/hooks'
-import contractsCfg from '../../data/contracts.json'
+import contractsCfg from '../../data/contracts'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
 import ExecuteForm from './ExecuteForm.jsx'
@@ -19,6 +19,7 @@ import { gql, useQuery } from '@urql/preact'
 const DIVIDER_COOKIE = 'stepExecuteDivider'
 const SPLITTER_WIDTH_PX = 2
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
+const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const LOTTERY_TICKET_QUERY = gql`
   query LotteryTicketEstimate($id: numeric!) {
     oki_lottery_v2_active(where: { id: { _eq: $id } }) {
@@ -264,6 +265,11 @@ export default function StepExecute({
     if (!intentParam) return true
     const intentVal = params?.[intentParam.name]
 
+    // If intent is optional and not filled, it's valid
+    if (!intentParam.mandatory && (!intentVal || (typeof intentVal === 'object' && !intentVal.amount && !intentVal.hive && !intentVal.hbd))) {
+      return true
+    }
+
     // Check if it's a multi-intent (object with asset keys like { hive: "0.300", hbd: "1.000" })
     if (intentVal && typeof intentVal === 'object' && !intentVal.amount) {
       // Multi-intent: check if at least one asset has a valid amount > 0
@@ -304,7 +310,7 @@ export default function StepExecute({
     }
     if (!isSendEnabled) return
     const sent = await handleSend()
-    if (sent && contract?.vscId === LOTTERY_VSC_ID) {
+    if (sent && (contract?.vscId === LOTTERY_VSC_ID || contract?.vscId === DAO_VSC_ID)) {
       setParams({})
     }
   }

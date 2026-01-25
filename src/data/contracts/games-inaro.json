@@ -1,0 +1,74 @@
+{
+  "name": "Ōkinoko Ināro (Games)",
+  "id": 2,
+  "sortIndex": 2,
+  "vscId": "vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n",
+  "owner": "tibfox.vsc",
+  "deployedOn": "2025-11-06 14:53:27",
+  "verifiedOn": "2025-12-11 20:42:13",
+  "description": "Play games on-chain!",
+  "icon": "faGamepad",
+  "kanji": "列",
+  "functions": [
+    {
+      "name": "1",
+      "friendlyName": "Tic Tac Toe",
+      "description": "Tic Tac Toe is a classic 3×3 grid game where two players alternate placing Xs and Os. The goal is to get three in a row horizontally, vertically, or diagonally.",
+      "parse": "game",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Common",
+      "icon": "faHashtag"
+    },
+    {
+      "name": "4",
+      "friendlyName": "Tic Tac Toe 5",
+      "description": "Tic Tac Toe 5 is an extended version of Tic Tac Toe played on a larger 5×5 grid. The aim is to align 4 marks in a row instead of three.",
+      "parse": "game",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Common",
+      "icon": "faHashtag"
+    },
+    {
+      "name": "2",
+      "friendlyName": "Connect 4",
+      "description": "Connect Four is a vertical board game where players drop colored discs into a 7×6 grid. The objective is to be the first to align four pieces in a row in any direction.",
+      "parse": "game",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Common",
+      "icon": "faCircleDot"
+    },
+    {
+      "name": "5",
+      "friendlyName": "Squava",
+      "description": "Squava is a Yavalath variant played on a 5×5 grid. Players try to create a row of 4 of their symbol while avoiding a row of 3, which results in an immediate loss.",
+      "parse": "game",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Advanced",
+      "icon": "faTableCellsLarge"
+    },
+    {
+      "name": "6",
+      "friendlyName": "Gomoku Freestyle",
+      "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve at least five in a row. To ensure fairness we use Swap2 rules for the opening moves.",
+      "parse": "game",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Advanced",
+      "icon": "faTableCells"
+    },
+    {
+      "name": "3",
+      "friendlyName": "Gomoku",
+      "description": "Gomoku is played on a 15x15 board where players alternate placing stones on intersections. The winner is the first to achieve exactly five in a row (not more). To ensure fairness we use Swap2 rules for the opening moves.",
+      "parse": "game",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Advanced",
+      "icon": "faTableCells"
+    }
+  ]
+}

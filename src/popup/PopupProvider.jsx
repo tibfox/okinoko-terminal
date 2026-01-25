@@ -122,7 +122,7 @@ export function PopupProvider({ children }) {
                 {popup.title}
               </div>
 
-              <div style={{ maxHeight: "60vh", overflowY: "auto", lineHeight: 1.5 }}>
+              <div className="neon-scroll" style={{ maxHeight: "60vh", overflowY: "auto", lineHeight: 1.5 }}>
                 {typeof popup.body === "function" ? popup.body() : popup.body}
                 <div style={{ display: "none" }}>{tick}</div>
               </div>

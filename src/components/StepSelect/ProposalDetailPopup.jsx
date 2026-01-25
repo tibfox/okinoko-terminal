@@ -5,6 +5,7 @@ import { faVoteYea, faCalculator, faPlay, faLink } from '@fortawesome/free-solid
 import NeonButton from '../buttons/NeonButton.jsx'
 import { formatUTC } from '../../lib/friendlyDates.js'
 import Avatar from '../common/Avatar.jsx'
+import PollPie from './PollPie.jsx'
 
 const PROPOSAL_DETAIL_QUERY = gql`
   query ProposalDetail($proposalId: numeric!) {
@@ -30,6 +31,8 @@ const PROPOSAL_DETAIL_QUERY = gql`
       member
       member_active
       last_action
+      active_members
+      members
     }
     created: okinoko_dao_proposal_created_events(
       where: { proposal_id: { _eq: $proposalId } }
@@ -39,13 +42,31 @@ const PROPOSAL_DETAIL_QUERY = gql`
       indexer_ts
       indexer_block_height
     }
+    votes: okinoko_dao_votes_view(where: { proposal_id: { _eq: $proposalId } }) {
+      voter
+      weight
+      choices
+    }
+  }
+`
+
+const DAO_SETTINGS_QUERY = gql`
+  query DaoSettings($projectId: numeric!) {
+    dao: okinoko_dao_project_created_events(where: { project_id: { _eq: $projectId } }) {
+      threshold_percent
+      quorum_percent
+      voting_system
+    }
   }
 `
 
 export default function ProposalDetailPopup({ proposal, isMember, onVote, onTally, onExecute }) {
   const proposalId = proposal?.proposal_id
+  const projectId = proposal?.project_id
   const numericProposalId = Number(proposalId)
+  const numericProjectId = Number(projectId)
   const hasProposalId = proposalId !== undefined && proposalId !== null && !Number.isNaN(numericProposalId)
+  const hasProjectId = projectId !== undefined && projectId !== null && !Number.isNaN(numericProjectId)
   if (!hasProposalId) {
     console.warn('[ProposalDetailPopup] Missing proposal_id in payload', proposal)
   }
@@ -57,6 +78,18 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
   })
 
   const detail = data?.proposal?.[0] || proposal || {}
+  const votes = data?.votes || []
+  const detailProjectId = Number(detail?.project_id)
+
+  // Fetch DAO settings for threshold/quorum
+  const [{ data: daoData }] = useQuery({
+    query: DAO_SETTINGS_QUERY,
+    variables: { projectId: hasProjectId ? numericProjectId : detailProjectId },
+    pause: !hasProjectId && !Number.isFinite(detailProjectId),
+    requestPolicy: 'cache-first',
+  })
+  const daoSettings = daoData?.dao?.[0] || {}
+
   const createdEvent = data?.created?.[0]
   const createdAt = createdEvent?.indexer_ts ? new Date(createdEvent.indexer_ts) : null
   const durationHours = Number(detail?.duration_hours)
@@ -65,16 +98,70 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
     return new Date(createdAt.getTime() + durationHours * 60 * 60 * 1000)
   }, [createdAt, durationHours])
   const tallyLocked = deadline ? Date.now() < deadline.getTime() : false
+  const votingEnded = deadline ? Date.now() >= deadline.getTime() : false
   const hasResult = detail?.result !== null && detail?.result !== undefined && detail?.result !== ''
   const stateLower = (detail?.state || '').toLowerCase()
+  const alreadyTallied = hasResult ||
+    stateLower === 'passed' ||
+    stateLower === 'failed' ||
+    stateLower === 'approved' ||
+    stateLower === 'rejected' ||
+    stateLower === 'executed'
   const executionReady =
     hasResult ||
+    votingEnded ||
     stateLower === 'ready' ||
     stateLower === 'passed' ||
     stateLower === 'approved' ||
     stateLower === 'completed'
   const alreadyExecuted = stateLower === 'executed'
   const canExecute = detail?.is_poll === false && !alreadyExecuted
+
+  // Voting statistics
+  const votingStats = useMemo(() => {
+    const activeMembers = Number(detail?.active_members) || 1 // Default to 1 to avoid division by zero
+    const totalMembers = Number(detail?.members) || activeMembers
+    const thresholdPercent = Number(daoSettings?.threshold_percent) || 0
+    const quorumPercent = Number(daoSettings?.quorum_percent) || 0
+    const isStakeWeighted = daoSettings?.voting_system === '1'
+
+    // Count votes and calculate weights
+    const voterCount = votes.length
+    const totalWeight = votes.reduce((sum, v) => sum + (Number(v.weight) || 1), 0)
+
+    // For democratic voting, quorum is based on voter count / active members
+    // For stake-weighted, it would be based on weight ratios
+    const quorumCurrent = activeMembers > 0
+      ? (voterCount / activeMembers) * 100
+      : (voterCount > 0 ? 100 : 0)
+
+    // For DAO voting:
+    // - All votes are approval votes (voting = supporting the proposal)
+    // - The choice field indicates which payout option is selected (for multi-option proposals)
+    // - Threshold = total vote weight as percentage that passes the threshold requirement
+    // Since all votes are approval, threshold is always 100% if anyone voted
+    const approveWeight = totalWeight
+    const rejectWeight = 0
+
+    // Threshold current shows participation reached vs required threshold
+    // For DAOs, the threshold is typically about what % of votes need to pass
+    // Since voting = approval, if anyone voted, threshold is met
+    const thresholdCurrent = voterCount > 0 ? 100 : 0
+
+    return {
+      activeMembers: Number(detail?.active_members) || voterCount || 0,
+      totalMembers,
+      voterCount,
+      totalWeight,
+      thresholdPercent,
+      quorumPercent,
+      thresholdCurrent: Math.round(thresholdCurrent * 10) / 10,
+      quorumCurrent: Math.round(quorumCurrent * 10) / 10,
+      approveWeight,
+      rejectWeight,
+      isStakeWeighted,
+    }
+  }, [detail, daoSettings, votes])
 
   const options = (detail?.options || '')
     .split(';')
@@ -184,15 +271,15 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
               </NeonButton>
             )}
             {isMember && (
-              <NeonButton onClick={onVote} style={popupButtonStyle}>
+              <NeonButton disabled={votingEnded || alreadyTallied} onClick={onVote} style={popupButtonStyle}>
                 <FontAwesomeIcon icon={faVoteYea}  style={{ fontSize: '0.9rem' }}/>
-                <span>Vote</span>
+                <span>{votingEnded || alreadyTallied ? 'Voting closed' : 'Vote'}</span>
               </NeonButton>
             )}
             {isMember && (
-              <NeonButton disabled={tallyLocked} onClick={onTally} style={popupButtonStyle}>
+              <NeonButton disabled={tallyLocked || alreadyTallied} onClick={onTally} style={popupButtonStyle}>
                 <FontAwesomeIcon icon={faCalculator}  style={{ fontSize: '0.9rem' }}/>
-                <span>{tallyLocked ? 'Tally (locked)' : 'Tally'}</span>
+                <span>{alreadyTallied ? 'Tallied' : tallyLocked ? 'Tally (locked)' : 'Tally'}</span>
               </NeonButton>
             )}
             {isMember && canExecute && (
@@ -364,6 +451,65 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
 
       )}
       </div>
+        </div>
+      </div>
+
+      {/* Voting Statistics with Pie Charts */}
+      <div style={{
+        display: 'flex',
+        gap: '24px',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        padding: '16px',
+        background: 'rgba(0, 0, 0, 0.2)',
+      }}>
+        {/* Quorum */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '16px',
+          border: '1px solid var(--color-primary-darkest)',
+          background: 'rgba(0, 0, 0, 0.3)',
+        }}>
+          <div style={{ fontSize: 'var(--font-size-base)', textAlign: 'right', opacity: 0.9 }}>
+            <div style={{ fontWeight: 700 }}>Quorum</div>
+            <div>{votingStats.quorumCurrent}% / {votingStats.quorumPercent}%</div>
+            <div style={{ opacity: 0.7 }}>{votingStats.voterCount} / {votingStats.activeMembers} voted</div>
+          </div>
+          <PollPie
+            size={125}
+            parts={[
+              { percent: Math.min(100, votingStats.quorumCurrent) },
+            ]}
+          />
+        </div>
+
+        {/* Threshold */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '16px',
+          border: '1px solid var(--color-primary-darkest)',
+          background: 'rgba(0, 0, 0, 0.3)',
+        }}>
+          <PollPie
+            size={125}
+            parts={[
+              { percent: votingStats.thresholdCurrent },
+            ]}
+          />
+          <div style={{ fontSize: 'var(--font-size-base)', textAlign: 'left', opacity: 0.9 }}>
+            <div style={{ fontWeight: 700 }}>Threshold</div>
+            <div>{votingStats.thresholdCurrent}% / {votingStats.thresholdPercent}%</div>
+            <div style={{ opacity: 0.7 }}>
+              {votingStats.isStakeWeighted
+                ? `Weight: ${votingStats.approveWeight.toFixed(3)}`
+                : `${votingStats.voterCount} vote${votingStats.voterCount !== 1 ? 's' : ''}`
+              }
+            </div>
+          </div>
         </div>
       </div>
     </div>

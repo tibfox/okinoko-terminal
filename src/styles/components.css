@@ -580,7 +580,7 @@ select {
   padding: 2px 8px;
   background: var(--color-cyber-bg);
   color: var(--color-primary-lighter);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-label);
   font-weight: 500;
   letter-spacing: 0.15em;
   pointer-events: none;
@@ -618,4 +618,297 @@ select {
 /* === Account Data Terminal Buttons === */
 .account-action-btn:hover {
   border-color: var(--color-primary-lighter) !important;
+}
+
+/* === Wizard === */
+.wizard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* Progress Indicator - Desktop */
+.wizard-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 4px 0 8px;
+  position: relative;
+}
+
+.wizard-progress__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* Connector line between steps */
+.wizard-progress__connector {
+  position: absolute;
+  top: 16px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 2px;
+  background: var(--color-primary-darkest);
+  z-index: 0;
+}
+
+.wizard-progress__connector--completed {
+  background: var(--color-primary-darker);
+}
+
+.wizard-progress__step:last-child .wizard-progress__connector {
+  display: none;
+}
+
+/* Step indicator circle */
+.wizard-progress__indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary-darkest);
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  color: var(--color-primary-darker);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.wizard-progress__indicator:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.wizard-progress__indicator:not(:disabled):hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.wizard-progress__step--active .wizard-progress__indicator {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary-darker);
+}
+
+.wizard-progress__step--completed .wizard-progress__indicator {
+  border-color: var(--color-primary-darker);
+  color: var(--color-primary);
+  background: var(--color-primary-darkest);
+}
+
+/* Step label */
+.wizard-progress__label {
+  margin-top: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-darker);
+  text-align: center;
+  max-width: 100px;
+  line-height: 1.3;
+}
+
+.wizard-progress__step--active .wizard-progress__label {
+  color: var(--color-primary);
+}
+
+.wizard-progress__step--completed .wizard-progress__label {
+  color: var(--color-primary-darker);
+}
+
+/* Progress Indicator - Mobile */
+.wizard-progress--mobile {
+  padding: 12px 0;
+}
+
+.wizard-progress__mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.wizard-progress__mobile-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-darker);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wizard-progress__mobile-title {
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.wizard-progress__mobile-bar {
+  height: 4px;
+  background: var(--color-primary-darkest);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.wizard-progress__mobile-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+/* Step Content */
+.wizard-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wizard-step__header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-primary-darkest);
+  flex-shrink: 0;
+}
+
+.wizard-step__header h3 {
+  color: var(--color-primary);
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wizard-step__header p {
+  color: var(--color-primary-darker);
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+.wizard-step__description {
+  color: var(--color-primary-darker);
+  margin: 0 0 12px 0;
+  font-size: var(--font-size-base);
+}
+
+.wizard-step__header-content {
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.wizard-step__content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.wizard-step__field {
+  margin-bottom: 16px;
+}
+
+.wizard-step__field:last-child {
+  margin-bottom: 0;
+}
+
+/* Disabled Step */
+.wizard-step__disabled-message {
+  color: var(--color-warning);
+  font-size: var(--font-size-base);
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 12px;
+  opacity: 0.9;
+  font-style: italic;
+  border: 1px solid var(--color-warning);
+  border-radius: 4px;
+  background: rgba(255, 165, 0, 0.1);
+}
+
+.wizard-step__content--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Review Step */
+.wizard-step--review .wizard-step__content {
+  padding: 0;
+}
+
+.wizard-review-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard-review-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-primary-darkest);
+  gap: 16px;
+}
+
+.wizard-review-item__label {
+  color: var(--color-primary-darker);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.wizard-review-item__value {
+  color: var(--color-primary-lighter);
+  font-size: var(--font-size-base);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Navigation */
+.wizard-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-primary-darkest);
+  flex-shrink: 0;
+}
+
+.wizard-navigation .neon-btn {
+  min-width: 120px;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 900px) {
+  .wizard-progress__label {
+    display: none;
+  }
+
+  .wizard-progress__connector {
+    top: 12px;
+    left: calc(50% + 14px);
+    right: calc(-50% + 14px);
+  }
+
+  .wizard-progress__indicator {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .wizard-step__header h3 {
+    font-size: 1rem;
+  }
+
+  .wizard-navigation .neon-btn {
+    min-width: 100px;
+    font-size: var(--font-size-sm);
+  }
 }

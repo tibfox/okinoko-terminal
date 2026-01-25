@@ -61,7 +61,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
   const [waiting, setWaiting] = useState(false)
   const [waitingDots, setWaitingDots] = useState('')
   const intervalRef = useRef(null)
-  const [balances, setBalances] = useState({ hive: 0, hbd: 0 })
+  const [balances, setBalances] = useState({ hive: 0, hbd: 0, hbd_savings: 0 })
 
   const [logs, setLogs] = useState(() => {
     const saved = sessionStorage.getItem('terminalLogs')
@@ -96,6 +96,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
           bal: getAccountBalance(account: $acc) {
             hive
             hbd
+            hbd_savings
           }
         }
       `
@@ -107,6 +108,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         const newBalances = {
           hive: Number(data.bal.hive) / 1000,
           hbd: Number(data.bal.hbd) / 1000,
+          hbd_savings: Number(data.bal.hbd_savings) / 1000,
         }
         console.log('[useExecuteHandler] Balances fetched:', newBalances)
         setBalances(newBalances)
@@ -165,8 +167,10 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         // Multi-intent: iterate over each asset
         Object.keys(val).forEach(asset => {
           const amount = (val[asset] ?? '').toString().trim()
-          console.log(`Multi-intent: ${asset} = "${amount}"`)
-          if (amount !== '' && (asset === 'hive' || asset === 'hbd')) {
+          const parsedAmount = parseFloat(amount)
+          console.log(`Multi-intent: ${asset} = "${amount}" (parsed: ${parsedAmount})`)
+          // Skip if amount is empty, not a valid number, or zero
+          if (amount !== '' && (asset === 'hive' || asset === 'hbd') && !isNaN(parsedAmount) && parsedAmount > 0) {
             console.log(`Adding intent for ${asset}: ${amount}`)
             intents.push({
               type: 'transfer.allow',
@@ -178,8 +182,10 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         // Single intent: { amount: '10.000', asset: 'HIVE' }
         const amount = (val.amount ?? '').toString()
         const asset = (val.asset ?? '').toString().toLowerCase()
-        console.log(`Single intent: ${asset} = ${amount}`)
-        if (amount !== '' && asset) {
+        const parsedAmount = parseFloat(amount)
+        console.log(`Single intent: ${asset} = ${amount} (parsed: ${parsedAmount})`)
+        // Skip if amount is empty, not a valid number, or zero
+        if (amount !== '' && asset && !isNaN(parsedAmount) && parsedAmount > 0) {
           intents.push({
             type: 'transfer.allow',
             args: { limit: amount, token: asset },
@@ -354,7 +360,8 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
         const parts = paramList
           .filter((p) => p.type !== 'vscIntent')
           .map((p) => {
-            let val = params?.[p.name]
+            // Check both name and payloadName for the value
+            let val = params?.[p.name] ?? params?.[p.payloadName]
             if (val === undefined || val === null || val === '') {
               val = getMandatoryDefault(p)
             }
@@ -630,7 +637,11 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
             // Single intent
             if (val.amount === '' || isNaN(parseFloat(val.amount))) return false
             const amount = parseFloat(String(val.amount).replace(',', '.'))
-            const available = val.asset === 'HIVE' ? balances.hive : balances.hbd
+            const available = val.asset === 'HIVE'
+              ? balances.hive
+              : val.asset === 'hbd_savings'
+                ? balances.hbd_savings
+                : balances.hbd
             if (amount > available) return false
             return true
           }
@@ -693,7 +704,11 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
               return
             }
             const amount = parseFloat(String(val.amount).replace(',', '.'))
-            const available = (val.asset === 'HIVE' ? balances.hive : balances.hbd) || 0
+            const available = (val.asset === 'HIVE'
+              ? balances.hive
+              : val.asset === 'hbd_savings'
+                ? balances.hbd_savings
+                : balances.hbd) || 0
             if (amount > available) {
               issues.push(
                 `Insufficient balance for "${p.name}": need ${formatAmt(amount)} ${val.asset || ''}, have ${formatAmt(available)}`
@@ -868,5 +883,6 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     handleSend,
     allMandatoryFilled,
     describeMissing,
+    balances,
   }
 }

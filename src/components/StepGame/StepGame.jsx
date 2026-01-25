@@ -1,6 +1,6 @@
 // StepGame.jsx
 import { useMemo, useState, useEffect } from 'preact/hooks'
-import contractsCfg from '../../data/contracts.json'
+import contractsCfg from '../../data/contracts'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
 import GameSelect from './GameSelect.jsx'

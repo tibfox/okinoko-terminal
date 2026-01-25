@@ -5,6 +5,7 @@ import {
   faChevronDown,
   faChevronUp,
   faCircleInfo,
+  faLink,
   faPlusCircle,
   faUserPlus,
   faUserShield,
@@ -12,7 +13,8 @@ import {
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
-import contractsCfg from '../../data/contracts.json'
+import Avatar from '../common/Avatar.jsx'
+import contractsCfg from '../../data/contracts'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import { PopupContext } from '../../popup/context.js'
 import ProposalDetailPopup from './ProposalDetailPopup.jsx'
@@ -388,92 +390,176 @@ export default function DaoUserLists({
     }
     popup?.openPopup?.({
       title: 'Join a DAO',
+      width: '900px',
       body: () => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {joinableDaos.length === 0 && (
-            <div style={{ color: 'var(--color-primary-lighter)' }}>
-              No joinable DAOs available right now.
-            </div>
-          )}
-          {joinableDaos.map((dao) => (
-            <div
-              key={`joinable-${dao.project_id}`}
-              style={{
-                border: '1px solid var(--color-primary-darkest)',
-                padding: '10px',
-                background: 'rgba(0,0,0,0.4)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                <div style={{ fontWeight: 700 }}>{dao.name || `DAO #${dao.project_id}`}</div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: joinableDaos.length > 1 ? 'repeat(2, 1fr)' : '1fr',
+          gap: '16px',
+        }}>
+            {joinableDaos.length === 0 && (
+              <div style={{ color: 'var(--color-primary-lighter)', padding: '20px', textAlign: 'center', gridColumn: '1 / -1' }}>
+                No joinable DAOs available right now.
+              </div>
+            )}
+            {joinableDaos.map((dao) => {
+              const members = [...(membersByDao.get(dao.project_id) || [])]
+              if (dao.created_by) {
+                const exists = members.some(
+                  (m) => String(m.name || '').toLowerCase() === String(dao.created_by || '').toLowerCase()
+                )
+                if (!exists) {
+                  members.push({ name: dao.created_by, active: true })
+                }
+              }
+              const asset = (dao.funds_asset || 'HIVE').toUpperCase()
+              const isStakeBased = dao.voting_system === '1'
+              const treasury = treasuryByProject.get(dao.project_id) || {}
+              const treasuryDisplay = Object.keys(treasury).length === 0
+                ? 'Empty'
+                : Object.entries(treasury)
+                    .map(([a, amt]) => `${formatNumber(amt) ?? '0'} ${a}`)
+                    .join(' · ')
+
+              return (
                 <div
+                  key={`joinable-${dao.project_id}`}
                   style={{
-                    fontSize: 'var(--font-size-base)',
-                    color: 'var(--color-primary)',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
+                    border: '1px solid var(--color-primary-darkest)',
+                    background: 'linear-gradient(135deg, rgba(246, 173, 85, 0.05) 0%, rgba(79, 209, 197, 0.05) 100%)',
+                    overflow: 'hidden',
                   }}
                 >
-                  #{dao.project_id}
-                </div>
-              </div>
-              {dao.description && (
-                <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8, lineHeight: 1.3 }}>
-                  {dao.description}
-                </div>
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: 'var(--font-size-base)' }}>
-                <div>Voting: {dao.voting_system === '1' ? 'Stake-weighted' : 'Democratic'}</div>
-                <div>Stake min: {formatNumber(dao.stake_min_amount) ?? '?'} {dao.funds_asset || 'HIVE'}</div>
-                <div>Proposal cost: {formatNumber(dao.proposal_cost) ?? '?'} {dao.funds_asset || 'HIVE'}</div>
-                <div>Threshold: {dao.threshold_percent ?? '?'}%</div>
-                <div>Quorum: {dao.quorum_percent ?? '?'}%</div>
-                <div>Creator: {dao.created_by}</div>
-              </div>
-              <div style={{ marginTop: '6px' }}>
-                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Members</div>
-                {(() => {
-                  const members = [...(membersByDao.get(dao.project_id) || [])]
-                  if (dao.created_by) {
-                    const exists = members.some(
-                      (m) => String(m.name || '').toLowerCase() === String(dao.created_by || '').toLowerCase()
-                    )
-                    if (!exists) {
-                      members.push({ name: dao.created_by, active: true })
-                    }
-                  }
-                  if (!members.length) {
-                    return <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8 }}>No members listed yet.</div>
-                  }
-                  return (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: 'var(--font-size-base)' }}>
-                      {members.map((m) => (
-                        <span
-                          key={`${dao.project_id}-${m.name}`}
+                  {/* Header with Avatar */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '16px',
+                      padding: '16px',
+                      borderBottom: '1px solid var(--color-primary-darkest)',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                    }}
+                  >
+                    <Avatar username={dao.created_by} size={80} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                        <div style={{ fontWeight: 700, fontSize: 'var(--font-size-base)' }}>
+                          {dao.name || `DAO #${dao.project_id}`}
+                        </div>
+                        <div
                           style={{
-                            padding: '4px 8px',
-                            border: '1px solid var(--color-primary-darkest)',
-                            opacity: m.active ? 1 : 0.6,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px',
                           }}
                         >
-                          {m.name} {m.active ? '' : '(former)'}
-                        </span>
-                      ))}
+                          <div
+                            style={{
+                              fontSize: 'var(--font-size-label)',
+                              color: 'var(--color-primary)',
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            #{dao.project_id}
+                          </div>
+                          {dao.url && (
+                            <FontAwesomeIcon
+                              icon={faLink}
+                              style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--color-primary)',
+                                cursor: 'pointer',
+                                opacity: 0.8,
+                              }}
+                              title="Open project URL"
+                              onClick={() => {
+                                try {
+                                  window.open(dao.url, '_blank')
+                                } catch {}
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.7, marginTop: '4px' }}>
+                        by {dao.created_by || 'Unknown'}
+                      </div>
+                      {dao.description && (
+                        <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.85, marginTop: '8px', lineHeight: 1.4 }}>
+                          {dao.description}
+                        </div>
+                      )}
                     </div>
-                  )
-                })()}
-              </div>
-              <NeonButton
-                disabled={joinPending || joiningDaoId === dao.project_id}
-                onClick={() => handleJoinDao(dao)}
-              >
-                {joiningDaoId === dao.project_id ? 'Joining…' : 'Join DAO'}
-              </NeonButton>
-            </div>
-          ))}
+                  </div>
+
+                  {/* Properties Grid */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '1px',
+                      background: 'var(--color-primary-darkest)',
+                      margin: '0',
+                      borderBottom: '1px solid var(--color-primary-darkest)',
+                    }}
+                  >
+                    {(() => {
+                      const activeMembers = members.filter(m => m.active).length
+                      const daoProposals = proposalsByDao.get(Number(dao.project_id)) || []
+                      const proposalCount = daoProposals.length
+                      return [
+                        { label: 'Members', value: activeMembers },
+                        { label: 'Proposals', value: proposalCount },
+                        { label: 'Voting', value: isStakeBased ? 'Stake-weighted' : 'Democratic' },
+                        { label: 'Min Stake', value: `${formatNumber(dao.stake_min_amount) ?? '?'} ${asset}` },
+                        { label: 'Proposal Cost', value: `${formatNumber(dao.proposal_cost) ?? '?'} ${asset}` },
+                        { label: 'Treasury', value: treasuryDisplay },
+                        { label: 'Threshold', value: `${dao.threshold_percent ?? '?'}%` },
+                        { label: 'Quorum', value: `${dao.quorum_percent ?? '?'}%` },
+                      ]
+                    })().map((item, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '10px 12px',
+                          background: 'black',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                        }}
+                      >
+                        <div style={{ fontSize: 'var(--font-size-label)', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {item.label}
+                        </div>
+                        <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)' }}>
+                          {item.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Join Button */}
+                  <div style={{ padding: '12px 16px', background: 'rgba(0, 0, 0, 0.3)', display: 'flex', justifyContent: 'center' }}>
+                    <NeonButton
+                      disabled={joinPending || joiningDaoId === dao.project_id}
+                      onClick={() => handleJoinDao(dao)}
+                    >
+                      {joiningDaoId === dao.project_id
+                        ? 'Joining…'
+                        : (() => {
+                            const stakeMin = Number(dao.stake_min_amount) || 0
+                            if (stakeMin > 0) {
+                              return `Join DAO (${isStakeBased ? '≥' : ''}${stakeMin} ${asset})`
+                            }
+                            return 'Join DAO'
+                          })()}
+                    </NeonButton>
+                  </div>
+                </div>
+              )
+            })}
         </div>
       ),
     })
@@ -546,10 +632,10 @@ export default function DaoUserLists({
               }
             : null
         }
-        onCreateProposal={(pid) => {
-          onCreateProposal?.(pid)
+        onCreateProposal={(pid, daoSettings) => {
+          onCreateProposal?.(pid, daoSettings || daoRow)
         }}
-        onProposalClick={(p) => openProposalDetail(p, { project_id: selectedDaoId })}
+        onProposalClick={(p) => openProposalDetail(p, daoRow)}
       />
     )
   }

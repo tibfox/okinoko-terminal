@@ -1,11 +1,17 @@
-import { useState, useEffect, useRef } from 'preact/hooks'
+import { useState, useEffect, useRef, useContext, useMemo, useCallback } from 'preact/hooks'
 import { useQuery } from '@urql/preact'
 import { gql } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLink, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
+import { faLink, faChevronDown, faChevronUp, faPlus } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import Avatar from '../common/Avatar.jsx'
+import NeonSwitch from '../common/NeonSwitch.jsx'
+import AssetAmountInput from '../common/AssetAmountInput.jsx'
 import { isClosedProposal } from './daoHelpers.js'
+import { PopupContext } from '../../popup/context.js'
+import contractsCfg from '../../data/contracts'
+import useExecuteHandler from '../../lib/useExecuteHandler.js'
+import { DAO_VSC_ID } from './daoQueries.js'
 
 // Cookie helpers for collapse state persistence
 const COOKIE_NAME = 'daoDetailCollapse'
@@ -103,6 +109,122 @@ const DAO_DETAIL_QUERY = gql`
   }
 `
 
+// Add Funds Popup Component
+function AddFundsPopup({ projectId, fundsAsset, votingSystem, onClose, onSend, balances = {} }) {
+  const [amount, setAmount] = useState('')
+  const [asset, setAsset] = useState((fundsAsset || 'HIVE').toUpperCase())
+  const [toStake, setToStake] = useState(true)
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  const isDemocratic = votingSystem !== '1'
+
+  const currentBalance = useMemo(() => {
+    if (asset === 'HIVE') return balances.hive || 0
+    if (asset === 'hbd_savings') return balances.hbd_savings || 0
+    return balances.hbd || 0
+  }, [asset, balances])
+
+  const isValidAmount = useMemo(() => {
+    if (!amount) return false
+    const num = parseFloat(amount)
+    return !isNaN(num) && num > 0 && num <= currentBalance
+  }, [amount, currentBalance])
+
+  const handleSubmit = async () => {
+    if (!isValidAmount || isProcessing || !onSend) return
+    setIsProcessing(true)
+    try {
+      // Build the params for the transaction
+      const params = {
+        'Project Id': projectId,
+        'Add To Stake? (true/false)': isDemocratic ? false : toStake,
+        'Deposit amount / asset': { amount, asset },
+      }
+      const success = await onSend(params)
+      if (success) {
+        onClose?.()
+      }
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '8px' }}>
+      <AssetAmountInput
+        label="Amount"
+        amount={amount}
+        onAmountChange={setAmount}
+        asset={asset}
+        onAssetChange={setAsset}
+        balances={balances}
+      />
+
+      {!isDemocratic && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '8px 0',
+          marginBottom: '60px',
+        }}>
+          <span style={{
+            color: 'var(--color-primary-lighter)',
+            fontSize: 'var(--font-size-base)',
+            opacity: toStake ? 0.5 : 1,
+          }}>
+            Treasury
+          </span>
+          <NeonSwitch
+            checked={toStake}
+            onChange={setToStake}
+            beep={false}
+          />
+          <span style={{
+            color: 'var(--color-primary-lighter)',
+            fontSize: 'var(--font-size-base)',
+            opacity: toStake ? 1 : 0.5,
+          }}>
+            Stake
+          </span>
+        </div>
+      )}
+
+      {isDemocratic && (
+        <div style={{
+          fontSize: 'var(--font-size-base)',
+          color: 'var(--color-primary-darker)',
+          fontStyle: 'italic',
+          marginBottom: '60px',
+        }}>
+          Democratic DAOs can only add funds to the treasury.
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={!isValidAmount || isProcessing}
+        style={{
+          border: '1px solid var(--color-primary-darkest)',
+          background: isValidAmount && !isProcessing ? 'var(--color-primary-darkest)' : 'transparent',
+          color: isValidAmount && !isProcessing ? 'var(--color-primary)' : 'var(--color-primary-darker)',
+          padding: '0.75rem 1rem',
+          cursor: isValidAmount && !isProcessing ? 'pointer' : 'not-allowed',
+          fontSize: 'var(--font-size-base)',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          fontFamily: 'var(--font-family-base)',
+          transition: 'all 0.2s ease',
+          opacity: isValidAmount && !isProcessing ? 1 : 0.4,
+        }}
+      >
+        {isProcessing ? 'Processing...' : 'Send'}
+      </button>
+    </div>
+  )
+}
+
 export default function DaoDetail({
   projectId,
   client,
@@ -119,6 +241,24 @@ export default function DaoDetail({
   const isNarrow = isContainerNarrow || isMobileProp
   const [collapseState, setCollapseState] = useState(() => getCollapseStateFromCookie())
   const [proposalFilter, setProposalFilter] = useState('active') // 'active' or 'closed'
+  const popup = useContext(PopupContext)
+
+  // Setup for project_funds transaction
+  const daoContract = useMemo(
+    () => contractsCfg.contracts.find((c) => c.vscId === DAO_VSC_ID),
+    []
+  )
+  const projectFundsFn = useMemo(
+    () => daoContract?.functions?.find((f) => f.name === 'project_funds'),
+    [daoContract]
+  )
+
+  const { handleSend: executeProjectFunds, balances } = useExecuteHandler({
+    contract: daoContract,
+    fn: projectFundsFn,
+    params: {},
+    disablePreview: true,
+  })
 
   // Helper to toggle collapse state and persist to cookie
   const toggleCollapse = (key) => {
@@ -128,6 +268,24 @@ export default function DaoDetail({
       return newState
     })
   }
+
+  // Function to open add funds popup
+  const openAddFundsPopup = useCallback((dao) => {
+    popup?.openPopup?.({
+      title: 'Add Funds / Stake',
+      width: '520px',
+      body: () => (
+        <AddFundsPopup
+          projectId={dao.project_id ?? projectId}
+          fundsAsset={dao.funds_asset}
+          votingSystem={dao.voting_system}
+          onClose={() => popup?.closePopup?.()}
+          onSend={(params) => executeProjectFunds(params)}
+          balances={balances}
+        />
+      ),
+    })
+  }, [popup, projectId, executeProjectFunds, balances])
 
   const [{ data: detailData, fetching: detailFetching, error: detailError }] = useQuery({
     query: DAO_DETAIL_QUERY,
@@ -218,19 +376,26 @@ export default function DaoDetail({
           onClick={() => toggleCollapse('header')}
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
             cursor: 'pointer',
             marginBottom: collapseState.header ? 0 : '10px',
             userSelect: 'none',
           }}
         >
-          <span style={{ fontWeight: 700, fontSize: 'var(--font-size-base)' }}>
-            {base.name || `DAO #${projectId}`}
-          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 'var(--font-size-base)' }}>
+              {base.name || `DAO #${projectId}`}
+            </div>
+            {base.description && (
+              <div style={{ fontSize: 'var(--font-size-base)', opacity: 0.8, marginTop: '4px', lineHeight: 1.4 }}>
+                {base.description}
+              </div>
+            )}
+          </div>
           <FontAwesomeIcon
             icon={collapseState.header ? faChevronDown : faChevronUp}
-            style={{ fontSize: '0.8rem', opacity: 0.8 }}
+            style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px' }}
           />
         </div>
         {!collapseState.header && (
@@ -239,7 +404,6 @@ export default function DaoDetail({
               <>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9 }}>by {base.created_by || 'n/a'}</div>
-                  <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9, marginTop: '4px' }}>{base.description}</div>
                   <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {daoUrl && (
                       <NeonButton
@@ -266,6 +430,18 @@ export default function DaoDetail({
                           }
                           return 'Join DAO'
                         })()}
+                      </NeonButton>
+                    )}
+                    {onCreateProposal && (isMember || base.proposals_members_only === false) && (
+                      <NeonButton
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCreateProposal(projectId, base)
+                        }}
+                        style={popupButtonStyle}
+                      >
+                        <FontAwesomeIcon icon={faPlus} style={{ fontSize: '0.9rem' }} />
+                        <span>Create Proposal</span>
                       </NeonButton>
                     )}
                   </div>
@@ -277,8 +453,7 @@ export default function DaoDetail({
             ) : (
               <>
                 <div>
-                  <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9 }}>{base.description}</div>
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {daoUrl && (
                       <NeonButton
                         onClick={(e) => {
@@ -304,6 +479,18 @@ export default function DaoDetail({
                           }
                           return 'Join DAO'
                         })()}
+                      </NeonButton>
+                    )}
+                    {onCreateProposal && (isMember || base.proposals_members_only === false) && (
+                      <NeonButton
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCreateProposal(projectId, base)
+                        }}
+                        style={popupButtonStyle}
+                      >
+                        <FontAwesomeIcon icon={faPlus} style={{ fontSize: '0.9rem' }} />
+                        <span>Create Proposal</span>
                       </NeonButton>
                     )}
                   </div>
@@ -354,12 +541,26 @@ export default function DaoDetail({
           />
         </div>
         {!collapseState.treasury && (
-          <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)' }}>
-            {Object.keys(treasuryTotals).length === 0
-              ? 'No treasury movements yet.'
-              : Object.entries(treasuryTotals)
-                  .map(([asset, amt]) => `${Number(amt).toFixed(3)} ${asset}`)
-                  .join(' · ')}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)' }}>
+              {Object.keys(treasuryTotals).length === 0
+                ? 'No treasury movements yet.'
+                : Object.entries(treasuryTotals)
+                    .map(([asset, amt]) => `${Number(amt).toFixed(3)} ${asset}`)
+                    .join(' · ')}
+            </div>
+            {isMember && (
+              <NeonButton
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openAddFundsPopup(base)
+                }}
+                style={popupButtonStyle}
+              >
+                <FontAwesomeIcon icon={faPlus} style={{ fontSize: '0.9rem' }} />
+                <span>Add Funds / Stake</span>
+              </NeonButton>
+            )}
           </div>
         )}
       </div>

@@ -22,6 +22,8 @@ import FormField from '../common/FormField.jsx'
 import NeonListInput from '../common/NeonListInput.jsx'
 import WinnerSharesInput from '../common/WinnerSharesInput.jsx'
 import WinnerPrizesInput from '../common/WinnerPrizesInput.jsx'
+import AssetAmountInput from '../common/AssetAmountInput.jsx'
+import WizardContainer from '../common/WizardContainer.jsx'
 
 const DAO_VSC_ID = 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb'
 const DAO_PROPOSAL_PREFILL_KEY = 'daoProposalProjectId'
@@ -76,23 +78,36 @@ export default function ExecuteForm({
   const [daoProjects, setDaoProjects] = useState([])
   const [showNewOptionInput, setShowNewOptionInput] = useState(false)
   const [newOptionText, setNewOptionText] = useState('')
+  const [newOptionUrl, setNewOptionUrl] = useState('')
   const [editingOptionIndex, setEditingOptionIndex] = useState(null)
   const [editingText, setEditingText] = useState('')
+  const [editingUrl, setEditingUrl] = useState('')
+  const [useCustomPollOptions, setUseCustomPollOptions] = useState(false)
   const [showNewShareInput, setShowNewShareInput] = useState(false)
   const [newShareText, setNewShareText] = useState('')
   const [editingShareIndex, setEditingShareIndex] = useState(null)
   const [editingShareText, setEditingShareText] = useState('')
   const [payoutReceiver, setPayoutReceiver] = useState('')
   const [payoutAmount, setPayoutAmount] = useState('')
+  const [payoutAsset, setPayoutAsset] = useState('HIVE')
   const [editingPayoutIndex, setEditingPayoutIndex] = useState(null)
   const [editingReceiver, setEditingReceiver] = useState('')
   const [editingAmount, setEditingAmount] = useState('')
+  const [editingAsset, setEditingAsset] = useState('HIVE')
   const [metaKey, setMetaKey] = useState('')
   const [metaValue, setMetaValue] = useState('')
   const [editingMetaIndex, setEditingMetaIndex] = useState(null)
   const [editingMetaKey, setEditingMetaKey] = useState('')
   const [participantsListMode, setParticipantsListMode] = useState(false)
   const [editingMetaValue, setEditingMetaValue] = useState('')
+  const [iccContract, setIccContract] = useState('')
+  const [iccAction, setIccAction] = useState('')
+  const [iccParams, setIccParams] = useState('')
+  const [iccAmounts, setIccAmounts] = useState([]) // Array of { asset: 'HIVE', amount: '1.000' }
+  // Actions step section toggles
+  const [actionsShowPayouts, setActionsShowPayouts] = useState(false)
+  const [actionsShowICC, setActionsShowICC] = useState(false)
+  const [actionsShowMetadata, setActionsShowMetadata] = useState(false)
   const [lotteryMetaFields, setLotteryMetaFields] = useState({
     lotteryPostUrl: '',
     donationPostUrl: '',
@@ -115,11 +130,12 @@ export default function ExecuteForm({
       .filter(Boolean)
   const balances = useMemo(() => {
     if (!accountBalances) {
-      return { hive: 0, hbd: 0 }
+      return { hive: 0, hbd: 0, hbd_savings: 0 }
     }
     return {
       hive: Number(accountBalances.hive ?? 0) / 1000,
       hbd: Number(accountBalances.hbd ?? 0) / 1000,
+      hbd_savings: Number(accountBalances.hbd_savings ?? 0) / 1000,
     }
   }, [accountBalances])
 
@@ -149,7 +165,11 @@ export default function ExecuteForm({
 
     const current = params[intent.name] ?? { amount: '', asset: 'HIVE' }
     const parsed = parseFloat(String(current.amount || '').replace(',', '.'))
-    const available = current.asset === 'HIVE' ? balances.hive : balances.hbd
+    const available = current.asset === 'HIVE'
+      ? balances.hive
+      : current.asset === 'hbd_savings'
+        ? balances.hbd_savings
+        : balances.hbd
     const over = !isNaN(parsed) && parsed > available
 
     setInsufficient(over)
@@ -160,6 +180,8 @@ export default function ExecuteForm({
   const isProposalCreate = isDaoContract && fn?.name === 'proposal_create'
   const isCreateLottery = fn?.name === 'create_lottery'
   const isJoinLottery = fn?.name === 'join_lottery'
+  const wizardEnabled = fn?.wizardEnabled && fn?.wizardSteps?.length > 0
+  const wizardSteps = fn?.wizardSteps || []
   useEffect(() => {
     if (!isJoinLottery || !setParams) return
     const intent = fn?.parameters?.find((p) => p.type === 'vscIntent')
@@ -500,6 +522,46 @@ export default function ExecuteForm({
     )
   }, [forcePollParam, params])
 
+  // Dynamic wizard steps: show "answers" step for poll mode, "actions" step otherwise
+  const dynamicWizardSteps = useMemo(() => {
+    if (!isProposalCreate) return wizardSteps
+    return wizardSteps.filter(step => {
+      // Hide "actions" step when poll mode is active
+      if (step.id === 'actions' && forcePollActive) return false
+      // Hide "answers" step when poll mode is NOT active
+      if (step.id === 'answers' && !forcePollActive) return false
+      return true
+    })
+  }, [wizardSteps, isProposalCreate, forcePollActive])
+
+  // Custom validation for poll options - requires at least 2 unique options when custom options mode is active
+  const validatePollField = useMemo(() => {
+    return (param, value) => {
+      // Check if this is the options field
+      const isOptions = optionsParam && (param.name === optionsParam.name || param.payloadName === optionsParam?.payloadName)
+
+      // Only validate options when poll mode is active AND custom options is selected
+      if (isOptions && forcePollActive && useCustomPollOptions) {
+        // Parse the semicolon-separated options (format: "text###url" or just "text")
+        const optionsList = String(value ?? '')
+          .split(';')
+          .map(o => o.trim())
+          .filter(Boolean)
+          .map(o => o.split('###')[0]) // Extract only the text part for validation
+
+        // Check for duplicates (case-insensitive, only comparing text)
+        const uniqueOptions = new Set(optionsList.map(o => o.toLowerCase()))
+        const hasDuplicates = uniqueOptions.size !== optionsList.length
+
+        // Require at least 2 unique options for custom poll options
+        return optionsList.length >= 2 && !hasDuplicates
+      }
+
+      // Return undefined to use default validation for other fields
+      return undefined
+    }
+  }, [optionsParam, forcePollActive, useCustomPollOptions])
+
   useEffect(() => {
     if (!showNewOptionInput) return
     newOptionInputRef.current?.focus()
@@ -563,28 +625,29 @@ export default function ExecuteForm({
     const proj = daoProjects.find(
       (p) => Number(p.id) === Number(selectedProject)
     )
-    if (!proj || proj.proposal_cost === undefined || proj.proposal_cost === null)
-      return
-    const desired = {
-      amount: Number(proj.proposal_cost || 0).toFixed(3),
-      asset: proj.asset,
+
+    // Determine the desired cost value
+    let desired
+    if (!proj || proj.proposal_cost === undefined || proj.proposal_cost === null) {
+      // Clear cost if project has no proposal_cost defined
+      desired = { amount: '', asset: proj?.asset || 'HIVE' }
+    } else {
+      desired = {
+        amount: Number(proj.proposal_cost || 0).toFixed(3),
+        asset: proj.asset,
+      }
     }
+
     const current =
       params[proposalCostParam.name] ??
       params[proposalCostParam.payloadName || proposalCostParam.name]
     if (
       current &&
-      Number(current.amount) === Number(desired.amount) &&
+      (current.amount || '') === (desired.amount || '') &&
       (current.asset || '').toString() === (desired.asset || '').toString()
     ) {
       return
     }
-    console.log('[proposal_create] autofill cost', {
-      selectedProject,
-      desired,
-      projectIdParam,
-      proposalCostParam,
-    })
     setParams((prev) => {
       const next = { ...prev }
       next[proposalCostParam.name] = desired
@@ -627,29 +690,60 @@ export default function ExecuteForm({
   useEffect(() => {
     if (!optionsParam) return
     if (forcePollActive) return
-    if (
-      params[optionsParam.name] ||
-      params[optionsParam.payloadName || optionsParam.name]
-    ) {
-      setParams((prev) => ({
+
+    // Clear options when poll mode is disabled
+    setParams((prev) => {
+      const hasOptions = prev[optionsParam.name] || prev[optionsParam.payloadName || optionsParam.name]
+      if (!hasOptions) return prev
+      return {
         ...prev,
         [optionsParam.name]: '',
         [optionsParam.payloadName || optionsParam.name]: '',
-      }))
-    }
+      }
+    })
     setShowNewOptionInput(false)
     setNewOptionText('')
+    setNewOptionUrl('')
     setEditingOptionIndex(null)
     setEditingText('')
-  }, [forcePollActive, optionsParam, params, setParams])
+    setEditingUrl('')
+    // Reset custom options mode when poll mode is disabled
+    setUseCustomPollOptions(false)
+  }, [forcePollActive, optionsParam, setParams])
+
+  // Clear options when switching from custom to Yes/No mode
+  useEffect(() => {
+    if (!optionsParam) return
+    if (!forcePollActive) return
+    if (useCustomPollOptions) return // Only clear when switching TO Yes/No mode
+
+    // Clear options when Yes/No mode is selected
+    setParams((prev) => {
+      const hasOptions = prev[optionsParam.name] || prev[optionsParam.payloadName || optionsParam.name]
+      if (!hasOptions) return prev
+      return {
+        ...prev,
+        [optionsParam.name]: '',
+        [optionsParam.payloadName || optionsParam.name]: '',
+      }
+    })
+    setShowNewOptionInput(false)
+    setNewOptionText('')
+    setNewOptionUrl('')
+    setEditingOptionIndex(null)
+    setEditingText('')
+    setEditingUrl('')
+  }, [useCustomPollOptions, forcePollActive, optionsParam, setParams])
 
   useEffect(() => {
     if (!forcePollActive) return
     setPayoutReceiver('')
     setPayoutAmount('')
+    setPayoutAsset('HIVE')
     setEditingPayoutIndex(null)
     setEditingReceiver('')
     setEditingAmount('')
+    setEditingAsset('HIVE')
     setMetaKey('')
     setMetaValue('')
     setEditingMetaIndex(null)
@@ -667,30 +761,54 @@ export default function ExecuteForm({
 
   const renderDaoSwitch = (p, leftLabel, rightLabel) => {
     const checked = !!params[p.name]
+    const labelText = `${p.name}${p.mandatory || p.displayAsMandatory ? ' *' : ''}`
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}
-      >
-        <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-          {leftLabel}
+      <div style={{ position: 'relative' }}>
+        <span style={{
+          position: 'absolute',
+          top: 0,
+          left: '12px',
+          transform: 'translateY(-50%)',
+          background: 'var(--color-cyber-bg)',
+          color: 'var(--color-primary-lighter)',
+          fontSize: 'var(--font-size-label)',
+          fontWeight: 500,
+          letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+          padding: '2px 8px',
+          zIndex: 1,
+          clipPath: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
+        }}>
+          {labelText}
         </span>
-        <NeonSwitch
-          name=""
-          checked={checked}
-          onChange={(val) =>
-            setParams((prev) => ({
-              ...prev,
-              [p.name]: val,
-            }))
-          }
-        />
-        <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-          {rightLabel}
-        </span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '16px',
+            border: '1px solid var(--color-primary-darkest)',
+            background: 'rgba(0, 0, 0, 0.6)',
+            minHeight: '50px',
+          }}
+        >
+          <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+            {leftLabel}
+          </span>
+          <NeonSwitch
+            name=""
+            checked={checked}
+            onChange={(val) =>
+              setParams((prev) => ({
+                ...prev,
+                [p.name]: val,
+              }))
+            }
+          />
+          <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+            {rightLabel}
+          </span>
+        </div>
       </div>
     )
   }
@@ -1457,15 +1575,18 @@ export default function ExecuteForm({
               }
               if (fn?.name === 'proposal_create' && proposalCostParam) {
                 const proj = daoProjects.find((d) => Number(d.id) === Number(numericVal))
+                let desired
                 if (proj && proj.proposal_cost !== undefined && proj.proposal_cost !== null) {
-                  const desired = {
-                    amount: Number(proj.proposal_cost || 0).toFixed(3),
+                  desired = {
+                    amount: Number(proj.proposal_cost).toFixed(3),
                     asset: proj.asset,
                   }
-                  next[proposalCostParam.name] = desired
-                  next[proposalCostParam.payloadName || proposalCostParam.name] = desired
-                  console.log('[proposal_create] dropdown autofill cost', { numericVal, desired })
+                } else {
+                  // Clear cost if project has no proposal_cost defined
+                  desired = { amount: '', asset: proj?.asset || 'HIVE' }
                 }
+                next[proposalCostParam.name] = desired
+                next[proposalCostParam.payloadName || proposalCostParam.name] = desired
               }
               return next
             })
@@ -1533,6 +1654,10 @@ export default function ExecuteForm({
     }
 
     if (isOptionsField) {
+      // Sanitize option text/URL to remove reserved delimiters
+      const sanitizeOptionInput = (val) => val.replace(/###/g, '').replace(/\|/g, '').replace(/;/g, '')
+
+      // Parse options with URL support: "Option A###https://url.com;Option B###https://url2.com"
       const optionsList = String(
         params[p.name] ??
           params[p.payloadName || p.name] ??
@@ -1541,9 +1666,20 @@ export default function ExecuteForm({
         .split(';')
         .map((o) => o.trim())
         .filter(Boolean)
+        .map((o) => {
+          const parts = o.split('###')
+          return { text: parts[0] || '', url: parts[1] || '' }
+        })
+
+      // Check for duplicate options (case-insensitive, only compare text)
+      const uniqueOptions = new Set(optionsList.map(o => o.text.toLowerCase()))
+      const hasDuplicates = uniqueOptions.size !== optionsList.length
 
       const updateOptions = (nextList) => {
-        const serialized = nextList.join(';')
+        // Serialize with ### format only if URL is present
+        const serialized = nextList
+          .map((o) => o.url ? `${o.text}###${o.url}` : o.text)
+          .join(';')
         setParams((prev) => ({
           ...prev,
           [p.name]: serialized,
@@ -1552,21 +1688,28 @@ export default function ExecuteForm({
       }
 
       const confirmNewOption = () => {
-        const trimmed = newOptionText.trim()
-        if (!trimmed) return
-        updateOptions([...optionsList, trimmed])
+        const trimmedText = newOptionText.trim()
+        const trimmedUrl = newOptionUrl.trim()
+        if (!trimmedText) return
+        updateOptions([...optionsList, { text: trimmedText, url: trimmedUrl }])
         setNewOptionText('')
+        setNewOptionUrl('')
         setShowNewOptionInput(false)
       }
 
       const confirmEditOption = () => {
         if (editingOptionIndex === null) return
-        const trimmed = editingText.trim()
+        const trimmedText = editingText.trim()
+        const trimmedUrl = editingUrl.trim()
         const next = [...optionsList]
-        next[editingOptionIndex] = trimmed || optionsList[editingOptionIndex]
-        updateOptions(next.filter(Boolean))
+        next[editingOptionIndex] = {
+          text: trimmedText || optionsList[editingOptionIndex].text,
+          url: trimmedUrl,
+        }
+        updateOptions(next.filter((o) => o.text))
         setEditingOptionIndex(null)
         setEditingText('')
+        setEditingUrl('')
       }
 
       const removeOption = (idx) => {
@@ -1575,6 +1718,7 @@ export default function ExecuteForm({
         if (editingOptionIndex === idx) {
           setEditingOptionIndex(null)
           setEditingText('')
+          setEditingUrl('')
         }
       }
 
@@ -1585,194 +1729,327 @@ export default function ExecuteForm({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
-            alignItems: 'flex-start',
+            gap: '12px',
+            alignItems: 'stretch',
+            border: '1px solid var(--color-primary-darkest)',
+            padding: '12px',
+            background: 'rgba(0,0,0,0.2)',
           }}
         >
+          {/* Toggle between Yes/No and Custom Options with labels on both sides */}
           <div
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
-              gap: '8px',
+              alignItems: 'center',
+              gap: '12px',
+              justifyContent: 'flex-start',
             }}
           >
-            {optionsList.length === 0 ? (
-              <span
+            <span
+              style={{
+                color: 'var(--color-primary-lighter)',
+                fontFamily: 'var(--font-family-base)',
+                fontSize: 'var(--font-size-base)',
+                userSelect: 'none',
+                opacity: !useCustomPollOptions ? 1 : 0.5,
+                transition: 'opacity 0.2s ease',
+              }}
+            >
+              Yes / No
+            </span>
+            <NeonSwitch
+              checked={useCustomPollOptions}
+              onChange={setUseCustomPollOptions}
+            />
+            <span
+              style={{
+                color: 'var(--color-primary-lighter)',
+                fontFamily: 'var(--font-family-base)',
+                fontSize: 'var(--font-size-base)',
+                userSelect: 'none',
+                opacity: useCustomPollOptions ? 1 : 0.5,
+                transition: 'opacity 0.2s ease',
+              }}
+            >
+              Custom
+            </span>
+          </div>
+
+          {useCustomPollOptions && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid var(--color-primary-darkest)',
+              }}
+            >
+              <div
                 style={{
-                  color: 'var(--color-primary-lighter)',
-                  opacity: 0.8,
-                  fontSize: 'var(--font-size-base)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
                 }}
               >
-                No options yet.
-              </span>
-            ) : (
-              optionsList.map((opt, idx) =>
-                editingOptionIndex === idx ? (
-                  <div
-                    key={`opt-edit-${idx}`}
+                {optionsList.length === 0 ? (
+                  <span
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid var(--color-primary-darkest)',
-                     
-                      padding: '6px 8px',
+                      color: 'var(--color-primary-lighter)',
+                      opacity: 0.8,
+                      fontSize: 'var(--font-size-base)',
                     }}
                   >
+                    No options yet. Add at least 2.
+                  </span>
+                ) : (
+                  <>
+                    {optionsList.map((opt, idx) =>
+                      editingOptionIndex === idx ? (
+                        <div
+                        key={`opt-edit-${idx}`}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                          background: 'rgba(0,0,0,0.4)',
+                          border: '1px solid var(--color-primary-darkest)',
+                          padding: '8px',
+                          width: '100%',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            ref={(el) => {
+                              if (idx === editingOptionIndex) editingInputRef.current = el
+                            }}
+                            type="text"
+                            value={editingText}
+                            onChange={(e) => setEditingText(sanitizeOptionInput(e.target.value))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                confirmEditOption()
+                              }
+                            }}
+                            placeholder="Option text"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              borderBottom: '1px solid var(--color-primary-darkest)',
+                              color: 'var(--color-primary-lighter)',
+                              padding: '4px 6px',
+                              flex: 1,
+                              minWidth: '120px',
+                            }}
+                          />
+                          <button
+                            onClick={confirmEditOption}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--color-primary)',
+                              cursor: 'pointer',
+                            }}
+                            title="Confirm option"
+                          >
+                            <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}}  />
+                          </button>
+                          <button
+                            onClick={() => removeOption(idx)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--color-primary-lighter)',
+                              cursor: 'pointer',
+                            }}
+                            title="Delete option"
+                          >
+                            <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={editingUrl}
+                          onChange={(e) => setEditingUrl(sanitizeOptionInput(e.target.value))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              confirmEditOption()
+                            }
+                          }}
+                          placeholder="URL (optional)"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid var(--color-primary-darkest)',
+                            color: 'var(--color-primary-lighter)',
+                            padding: '4px 6px',
+                            fontSize: 'var(--font-size-small)',
+                            opacity: 0.8,
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={`opt-${idx}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'rgba(0,0,0,0.35)',
+                          border: '1px solid var(--color-primary-darkest)',
+                          padding: '6px 8px',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => {
+                          setEditingOptionIndex(idx)
+                          setEditingText(opt.text)
+                          setEditingUrl(opt.url)
+                        }}
+                        title="Click to edit"
+                      >
+                        <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span>{opt.text}</span>
+                          {opt.url && (
+                            <span style={{ fontSize: 'var(--font-size-small)', opacity: 0.6 }}>
+                              {opt.url}
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeOption(idx)
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--color-primary-lighter)',
+                            cursor: 'pointer',
+                            marginLeft: 'auto',
+                          }}
+                          title="Delete option"
+                        >
+                          <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
+                        </button>
+                      </div>
+                    )
+                    )}
+                    {optionsList.length === 1 && !hasDuplicates && (
+                      <span
+                        style={{
+                          color: 'var(--color-primary-lighter)',
+                          opacity: 0.8,
+                          fontSize: 'var(--font-size-base)',
+                        }}
+                      >
+                        Add at least 1 more.
+                      </span>
+                    )}
+                    {hasDuplicates && (
+                      <span
+                        style={{
+                          color: 'var(--color-warning)',
+                          opacity: 0.9,
+                          fontSize: 'var(--font-size-base)',
+                        }}
+                      >
+                        Options must be unique.
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {showNewOptionInput ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid var(--color-primary-darkest)',
+                    padding: '8px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
-                      ref={(el) => {
-                        if (idx === editingOptionIndex) editingInputRef.current = el
-                      }}
+                      ref={newOptionInputRef}
                       type="text"
-                      value={editingText}
-                      onChange={(e) => setEditingText(e.target.value)}
+                      value={newOptionText}
+                      onChange={(e) => setNewOptionText(sanitizeOptionInput(e.target.value))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
-                          confirmEditOption()
+                          confirmNewOption()
                         }
                       }}
+                      placeholder="Option text"
                       style={{
                         background: 'transparent',
                         border: 'none',
                         borderBottom: '1px solid var(--color-primary-darkest)',
                         color: 'var(--color-primary-lighter)',
                         padding: '4px 6px',
-                        minWidth: '140px',
+                        flex: 1,
+                        minWidth: '120px',
                       }}
                     />
                     <button
-                      onClick={confirmEditOption}
+                      onClick={confirmNewOption}
                       style={{
                         background: 'transparent',
                         border: 'none',
                         color: 'var(--color-primary)',
                         cursor: 'pointer',
                       }}
-                      title="Confirm option"
+                      title="Add option"
                     >
-                      <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}}  />
-                    </button>
-                    <button
-                      onClick={() => removeOption(idx)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--color-primary-lighter)',
-                        cursor: 'pointer',
-                      }}
-                      title="Delete option"
-                    >
-                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
+                      <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}} />
                     </button>
                   </div>
-                ) : (
-                  <div
-                    key={`opt-${idx}`}
+                  <input
+                    type="text"
+                    value={newOptionUrl}
+                    onChange={(e) => setNewOptionUrl(sanitizeOptionInput(e.target.value))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        confirmNewOption()
+                      }
+                    }}
+                    placeholder="URL (optional)"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'rgba(0,0,0,0.35)',
-                      border: '1px solid var(--color-primary-darkest)',
-                     
-                      padding: '6px 8px',
-                      cursor: 'pointer',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid var(--color-primary-darkest)',
+                      color: 'var(--color-primary-lighter)',
+                      padding: '4px 6px',
+                      fontSize: 'var(--font-size-small)',
+                      opacity: 0.8,
                     }}
-                    onClick={() => {
-                      setEditingOptionIndex(idx)
-                      setEditingText(opt)
-                    }}
-                    title="Click to edit"
-                  >
-                    <span>{opt}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeOption(idx)
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--color-primary-lighter)',
-                        cursor: 'pointer',
-                      }}
-                      title="Delete option"
-                    >
-                      <FontAwesomeIcon icon={faTimes} style={{fontSize:'0.9rem'}} />
-                    </button>
-                  </div>
-                )
-              )
-            )}
-          </div>
-
-          {showNewOptionInput ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'rgba(0,0,0,0.4)',
-                border: '1px solid var(--color-primary-darkest)',
-               
-                padding: '6px 8px',
-              }}
-            >
-              <input
-                ref={newOptionInputRef}
-                type="text"
-                value={newOptionText}
-                onChange={(e) => setNewOptionText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    confirmNewOption()
-                  }
-                }}
-                placeholder="New option"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: '1px solid var(--color-primary-darkest)',
-                  color: 'var(--color-primary-lighter)',
-                  padding: '4px 6px',
-                  minWidth: '140px',
-                }}
-              />
-              <button
-                onClick={confirmNewOption}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--color-primary)',
-                  cursor: 'pointer',
-                }}
-                title="Add option"
-              >
-                <FontAwesomeIcon icon={faCheck} style={{fontSize:'0.9rem'}} />
-              </button>
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowNewOptionInput(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'transparent',
+                    border: '1px solid var(--color-primary-darkest)',
+                    color: 'var(--color-primary)',
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
+                  <span>Add option</span>
+                </button>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => setShowNewOptionInput(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'transparent',
-                border: '1px solid var(--color-primary-darkest)',
-                color: 'var(--color-primary)',
-                padding: '6px 10px',
-                cursor: 'pointer',
-               
-              }}
-            >
-              <FontAwesomeIcon icon={faPlusCircle} style={{fontSize:'0.9rem'}} />
-              <span>Add option</span>
-            </button>
           )}
         </div>
       )
@@ -2313,29 +2590,56 @@ export default function ExecuteForm({
         p.display_true ??
         p.boolTrue ??
         null
-     const switchControl = (
-       <NeonSwitch
-         name=""
-         checked={!!params[p.name]}
-         onChange={(val) =>
+      const labelText = `${p.name}${p.mandatory || p.displayAsMandatory ? ' *' : ''}`
+      const switchControl = (
+        <NeonSwitch
+          name=""
+          checked={!!params[p.name]}
+          onChange={(val) =>
             setParams((prev) => ({ ...prev, [p.name]: val }))
           }
         />
       )
-      if (!falseLabel && !trueLabel) return switchControl
       return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {falseLabel ? (
-            <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-              {falseLabel}
-            </span>
-          ) : null}
-          {switchControl}
-          {trueLabel ? (
-            <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-              {trueLabel}
-            </span>
-          ) : null}
+        <div style={{ position: 'relative' }}>
+          <span style={{
+            position: 'absolute',
+            top: 0,
+            left: '12px',
+            transform: 'translateY(-50%)',
+            background: 'var(--color-cyber-bg)',
+            color: 'var(--color-primary-lighter)',
+            fontSize: 'var(--font-size-label)',
+            fontWeight: 500,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            padding: '2px 8px',
+            zIndex: 1,
+            clipPath: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
+          }}>
+            {labelText}
+          </span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '16px',
+            border: '1px solid var(--color-primary-darkest)',
+            background: 'rgba(0, 0, 0, 0.6)',
+            minHeight: '50px',
+          }}>
+            {falseLabel ? (
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+                {falseLabel}
+              </span>
+            ) : null}
+            {switchControl}
+            {trueLabel ? (
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+                {trueLabel}
+              </span>
+            ) : null}
+          </div>
         </div>
       )
     }
@@ -2346,17 +2650,19 @@ export default function ExecuteForm({
           params[p.payloadName || p.name] ??
           ''
       )
+      // Parse format: receiver:amount:asset or receiver:amount (default to HIVE)
       const payoutList = payoutStr
         .split(';')
         .map((entry) => entry.trim())
         .filter(Boolean)
         .map((entry) => {
-          const sep = entry.lastIndexOf(':')
-          if (sep === -1) return null
-          return {
-            receiver: entry.slice(0, sep),
-            amount: entry.slice(sep + 1),
-          }
+          const parts = entry.split(':')
+          if (parts.length < 3) return null // Need at least hive:user:amount
+          // Format is hive:username:amount:asset or hive:username:amount
+          const receiver = parts.slice(0, 2).join(':') // hive:username
+          const amount = parts[2]
+          const asset = parts[3] || 'HIVE' // Default to HIVE if not specified
+          return { receiver, amount, asset: asset.toUpperCase() }
         })
         .filter(Boolean)
 
@@ -2371,14 +2677,16 @@ export default function ExecuteForm({
       const sanitizePayoutEntry = (entry) => {
         const receiver = normalizeReceiver(entry?.receiver || '').trim()
         const amount = String(entry?.amount || '').trim()
-        return receiver && amount ? { receiver, amount } : null
+        const asset = (entry?.asset || 'HIVE').toUpperCase()
+        return receiver && amount ? { receiver, amount, asset } : null
       }
 
       const updatePayouts = (nextList) => {
         const sanitized = nextList
           .map((e) => sanitizePayoutEntry(e))
           .filter(Boolean)
-        const serialized = sanitized.map((e) => `${e.receiver}:${e.amount}`).join(';')
+        // Serialize with asset: receiver:amount:asset
+        const serialized = sanitized.map((e) => `${e.receiver}:${e.amount}:${e.asset}`).join(';')
         setParams((prev) => ({
           ...prev,
           [p.name]: serialized,
@@ -2391,23 +2699,27 @@ export default function ExecuteForm({
       const confirmNewPayout = () => {
         const receiver = normalizeReceiver(payoutReceiver).trim()
         const amount = payoutAmount.trim()
+        const asset = payoutAsset
         if (!receiver || !isValidAmount(amount)) return
-        updatePayouts([...payoutList, { receiver, amount }])
+        updatePayouts([...payoutList, { receiver, amount, asset }])
         setPayoutReceiver('')
         setPayoutAmount('')
+        setPayoutAsset('HIVE')
       }
 
       const confirmEditPayout = () => {
         if (editingPayoutIndex === null) return
         const receiver = normalizeReceiver(editingReceiver).trim()
         const amount = editingAmount.trim()
+        const asset = editingAsset
         if (!receiver || !isValidAmount(amount)) return
         const next = [...payoutList]
-        next[editingPayoutIndex] = { receiver, amount }
+        next[editingPayoutIndex] = { receiver, amount, asset }
         updatePayouts(next)
         setEditingPayoutIndex(null)
         setEditingReceiver('')
         setEditingAmount('')
+        setEditingAsset('HIVE')
       }
 
       const removePayout = (idx) => {
@@ -2417,11 +2729,21 @@ export default function ExecuteForm({
           setEditingPayoutIndex(null)
           setEditingReceiver('')
           setEditingAmount('')
+          setEditingAsset('HIVE')
         }
       }
 
-      const assetLabel =
-        (selectedDaoProject?.asset || 'HIVE').toUpperCase()
+      const assetOptions = [
+        { value: 'HIVE', label: 'HIVE' },
+        { value: 'HBD', label: 'HBD' },
+        { value: 'hbd_savings', label: 'staked HBD' },
+      ]
+
+      // Get display label for asset (hbd_savings -> "sHBD")
+      const getAssetDisplayLabel = (asset) => {
+        if (asset === 'hbd_savings') return 'sHBD'
+        return asset
+      }
 
       const amountInputStyle = {
         background: 'transparent',
@@ -2504,9 +2826,18 @@ export default function ExecuteForm({
                         onBlur={(e) => setEditingAmount(formatThreeDecimals(e.target.value))}
                         style={amountInputStyle}
                       />
-                      <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-                        {assetLabel}
-                      </span>
+                      <NeonListDropdown
+                        options={assetOptions}
+                        value={editingAsset}
+                        onChange={(val) => setEditingAsset(val)}
+                        style={{ flex: '0 0 auto', width: 'auto', minWidth: '100px' }}
+                        buttonStyle={{
+                          height: '32px',
+                          padding: '0 28px 0 8px',
+                          fontSize: 'var(--font-size-small)',
+                        }}
+                        menuOffsetY="4px"
+                      />
                     </div>
                     <button
                       onClick={confirmEditPayout}
@@ -2551,6 +2882,7 @@ export default function ExecuteForm({
                       setEditingPayoutIndex(idx)
                       setEditingReceiver(entry.receiver)
                       setEditingAmount(entry.amount)
+                      setEditingAsset(entry.asset || 'HIVE')
                     }}
                     title="Click to edit"
                   >
@@ -2558,7 +2890,7 @@ export default function ExecuteForm({
                       {entry.receiver}
                     </span>
                     <span style={{ color: 'var(--color-primary)' }}>
-                      {entry.amount} {assetLabel}
+                      {entry.amount} {getAssetDisplayLabel(entry.asset || 'HIVE')}
                     </span>
                     <button
                       onClick={(e) => {
@@ -2612,9 +2944,18 @@ export default function ExecuteForm({
                 onBlur={(e) => setPayoutAmount(formatThreeDecimals(e.target.value))}
                 style={amountInputStyle}
               />
-              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-                {assetLabel}
-              </span>
+              <NeonListDropdown
+                options={assetOptions}
+                value={payoutAsset}
+                onChange={(val) => setPayoutAsset(val)}
+                style={{ flex: '0 0 auto', width: 'auto', minWidth: '100px' }}
+                buttonStyle={{
+                  height: '32px',
+                  padding: '0 28px 0 8px',
+                  fontSize: 'var(--font-size-small)',
+                }}
+                menuOffsetY="4px"
+              />
             </div>
             <button
               onClick={confirmNewPayout}
@@ -2639,7 +2980,311 @@ export default function ExecuteForm({
       )
     }
 
+    // ICC (Inter-Contract Call) field
+    if (p.type === 'icc') {
+      // Serialize amounts array to string format: asset1=amount1,asset2=amount2
+      const serializeAmounts = (amounts) => {
+        if (!amounts || amounts.length === 0) return ''
+        return amounts
+          .filter(a => a.asset && a.amount)
+          .map(a => `${a.asset}=${a.amount}`)
+          .join(',')
+      }
+
+      // Combine state into serialized value for params
+      const updateIccValue = (contract, action, jsonParams, amounts) => {
+        // Format: vsc1abc...|swap|{"from":"HIVE"}|HIVE=1.000,HBD=2.000
+        // Using | as delimiter (same as CSV format)
+        const amountStr = serializeAmounts(amounts)
+        const parts = [contract || '', action || '', jsonParams || '']
+        if (amountStr) parts.push(amountStr)
+        const serialized = parts.join('|')
+        setParams((prev) => ({
+          ...prev,
+          [p.payloadName || p.name]: serialized,
+        }))
+      }
+
+      // Parse existing value
+      const existingValue = params[p.payloadName || p.name] || ''
+      // Split by | delimiter
+      // Format: contract|action|params|amounts
+      // We parse from the end - amounts is last if it matches asset=amount pattern
+      const parts = existingValue.split('|')
+      let existingContract = ''
+      let existingAction = ''
+      let existingParams = ''
+      let existingAmountsStr = ''
+
+      if (parts.length >= 1) existingContract = parts[0] || ''
+      if (parts.length >= 2) existingAction = parts[1] || ''
+      if (parts.length >= 3) {
+        // Check if last part looks like amounts (asset=amount,asset=amount)
+        const lastPart = parts[parts.length - 1]
+        const amountPattern = /^([A-Za-z_]+=[0-9.]+)(,[A-Za-z_]+=[0-9.]+)*$/
+        if (parts.length >= 4 && amountPattern.test(lastPart)) {
+          // Last part is amounts, rejoin middle parts as payload (in case payload contains |)
+          existingAmountsStr = lastPart
+          existingParams = parts.slice(2, -1).join('|')
+        } else {
+          // No amounts, rejoin all parts after action as payload (in case payload contains |)
+          existingParams = parts.slice(2).join('|')
+        }
+      }
+
+      // Parse amounts string to array
+      const parseAmounts = (str) => {
+        if (!str) return []
+        return str.split(',').map(pair => {
+          const [asset, amount] = pair.split('=')
+          return { asset: asset || 'HIVE', amount: amount || '' }
+        }).filter(a => a.asset && a.amount)
+      }
+
+      // Initialize state from existing value if needed
+      if (existingValue && iccContract === '' && iccAction === '' && iccParams === '' && iccAmounts.length === 0) {
+        if (existingContract) setIccContract(existingContract)
+        if (existingAction) setIccAction(existingAction)
+        if (existingParams) setIccParams(existingParams)
+        const parsedAmounts = parseAmounts(existingAmountsStr)
+        if (parsedAmounts.length > 0) setIccAmounts(parsedAmounts)
+      }
+
+      const handleAddAmount = () => {
+        const newAmounts = [...iccAmounts, { asset: 'HIVE', amount: '' }]
+        setIccAmounts(newAmounts)
+      }
+
+      const handleRemoveAmount = (index) => {
+        const newAmounts = iccAmounts.filter((_, i) => i !== index)
+        setIccAmounts(newAmounts)
+        updateIccValue(iccContract, iccAction, iccParams, newAmounts)
+      }
+
+      const handleAmountChange = (index, field, value) => {
+        const newAmounts = [...iccAmounts]
+        if (field === 'amount') {
+          // Format amount input
+          let val = value.replace(/,/g, '.')
+          val = val.replace(/[^0-9.]/g, '')
+          const parts = val.split('.')
+          if (parts.length > 2) {
+            val = parts[0] + '.' + parts.slice(1).join('')
+          }
+          newAmounts[index] = { ...newAmounts[index], amount: val }
+        } else {
+          newAmounts[index] = { ...newAmounts[index], [field]: value }
+        }
+        setIccAmounts(newAmounts)
+        updateIccValue(iccContract, iccAction, iccParams, newAmounts)
+      }
+
+      const handleAmountBlur = (index) => {
+        const val = parseFloat(iccAmounts[index]?.amount || '0')
+        if (!isNaN(val) && val > 0) {
+          const newAmounts = [...iccAmounts]
+          newAmounts[index] = { ...newAmounts[index], amount: val.toFixed(3) }
+          setIccAmounts(newAmounts)
+          updateIccValue(iccContract, iccAction, iccParams, newAmounts)
+        }
+      }
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+            {labelText}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              padding: '12px',
+              background: 'rgba(255, 200, 50, 0.1)',
+              border: '1px solid rgba(255, 200, 50, 0.3)',
+              color: 'rgba(255, 220, 100, 0.9)',
+              fontSize: 'var(--font-size-base)',
+              lineHeight: 1.4,
+            }}
+          >
+            <span style={{ fontSize: '1.1em' }}>⚠</span>
+            <span>
+              Only the proposal creator can execute an ICC when the proposal passes.
+            </span>
+          </div>
+          {p.hintText && (
+            <div style={{ fontSize: 'var(--font-size-small)', color: 'var(--color-primary-lighter)', opacity: 0.7, fontStyle: 'italic' }}>
+              {p.hintText}
+            </div>
+          )}
+          <FloatingLabelInput
+            label="Contract"
+            type="text"
+            placeholder="e.g., vsc1abc..."
+            value={iccContract}
+            onChange={(e) => {
+              setIccContract(e.target.value)
+              updateIccValue(e.target.value, iccAction, iccParams, iccAmounts)
+            }}
+          />
+          <FloatingLabelInput
+            label="Action / Method"
+            type="text"
+            placeholder="e.g., swap"
+            value={iccAction}
+            onChange={(e) => {
+              setIccAction(e.target.value)
+              updateIccValue(iccContract, e.target.value, iccParams, iccAmounts)
+            }}
+          />
+          <FloatingLabelInput
+            label="Payload"
+            type="text"
+            placeholder='e.g., {"from":"HIVE","to":"HBD"}'
+            value={iccParams}
+            onChange={(e) => {
+              setIccParams(e.target.value)
+              updateIccValue(iccContract, iccAction, e.target.value, iccAmounts)
+            }}
+          />
+
+          {/* ICC Amounts Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+                Amounts (optional)
+              </span>
+              <button
+                type="button"
+                onClick={handleAddAmount}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-primary-darkest)',
+                  color: 'var(--color-primary)',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  fontSize: 'var(--font-size-small)',
+                  fontFamily: 'var(--font-family-base)',
+                }}
+              >
+                + Add Amount
+              </button>
+            </div>
+
+            {iccAmounts.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'center',
+                  padding: '8px',
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  border: '1px solid var(--color-primary-darkest)',
+                }}
+              >
+                <FloatingLabelInput
+                  label="Amount"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.000"
+                  value={item.amount}
+                  onChange={(e) => handleAmountChange(index, 'amount', e.target.value)}
+                  onBlur={() => handleAmountBlur(index)}
+                  style={{ flex: '1' }}
+                />
+                <NeonListDropdown
+                  options={[
+                    { value: 'HIVE', label: 'HIVE' },
+                    { value: 'HBD', label: 'HBD' },
+                    { value: 'hbd_savings', label: 'staked HBD' },
+                  ]}
+                  value={item.asset}
+                  onChange={(val) => handleAmountChange(index, 'asset', val)}
+                  style={{ flex: '0 0 auto', width: 'auto', minWidth: '120px' }}
+                  buttonStyle={{
+                    height: '50px',
+                    padding: '0 32px 0 12px',
+                    fontSize: 'var(--font-size-base)',
+                    fontFamily: 'var(--font-family-base)',
+                  }}
+                  menuOffsetY="4px"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAmount(index)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--color-primary-darkest)',
+                    color: 'var(--color-primary)',
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    fontSize: 'var(--font-size-base)',
+                    fontFamily: 'var(--font-family-base)',
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     if (p.type === 'vscIntent') {
+      // Read-only display for vscIntent (e.g., proposal cost set by DAO)
+      if (p.readOnly) {
+        const current = params[p.name] ?? { amount: '', asset: 'HIVE' }
+        const displayAmount = current.amount || '0.000'
+        const displayAsset = current.asset || 'HIVE'
+
+        // Check if a project is selected (for proposal_create)
+        const selectedProjectId = params['Project Id'] ?? params['projectId']
+        const hasProjectSelected = selectedProjectId !== undefined && selectedProjectId !== null && selectedProjectId !== ''
+
+        // Show value if project is selected (even if cost is 0 = free)
+        const showValue = hasProjectSelected || (current.amount !== undefined && current.amount !== '')
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
+              {labelText}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 16px',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid var(--color-primary-darkest)',
+                borderRadius: '4px',
+              }}
+            >
+              {showValue ? (
+                <span style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-lg)', fontWeight: 'bold' }}>
+                  {parseFloat(displayAmount) === 0 ? 'Free' : `${displayAmount} ${displayAsset}`}
+                </span>
+              ) : (
+                <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.5, fontStyle: 'italic' }}>
+                  Select a DAO to see the proposal cost
+                </span>
+              )}
+            </div>
+            {p.hintText && (
+              <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)', opacity: 0.7, fontStyle: 'italic' }}>
+                {p.hintText}
+              </div>
+            )}
+          </div>
+        )
+      }
+
       // Check if we have asset groups defined (for split_prize_random)
       const assetSharesParam = fn?.parameters?.find(
         (param) =>
@@ -2750,7 +3395,11 @@ export default function ExecuteForm({
             </div>
             {assets.map(asset => {
               const currentAmount = intents[asset] ?? ''
-              const available = asset === 'hive' ? balances.hive : balances.hbd
+              const available = asset === 'hive'
+                ? balances.hive
+                : asset === 'hbd_savings'
+                  ? balances.hbd_savings
+                  : balances.hbd
               const parsed = parseFloat(String(currentAmount).replace(',', '.'))
               const exceeds = !isNaN(parsed) && parsed > available
 
@@ -2846,11 +3495,8 @@ export default function ExecuteForm({
 
       // Single intent (original code)
       const current = params[p.name] ?? { amount: '', asset: 'HIVE' }
-      const available =
-        current.asset === 'HIVE' ? balances.hive : balances.hbd
 
       const parsed = parseFloat(String(current.amount || '').replace(',', '.'))
-      const exceeds = !isNaN(parsed) && parsed > available
       const ticketEstimate =
         isJoinLottery &&
         selectedLotteryTicket?.ticketPrice &&
@@ -2867,107 +3513,41 @@ export default function ExecuteForm({
           ? String(selectedLotteryTicket.asset).toUpperCase()
           : 'HIVE'
 
-      const onAmountChange = (e) => {
-        let val = e.target.value.replace(',', '.')
-        if (/^\d*([.]\d{0,3})?$/.test(val) || val === '') {
-          setParams((prev) => ({
-            ...prev,
-            [p.name]: { ...current, amount: val },
-          }))
-        }
-      }
-
-      const onAmountBlur = (e) => {
-        const val = parseFloat(String(e.target.value).replace(',', '.'))
-        if (!isNaN(val)) {
-          // Minimum value is 0.001
-          const clamped = Math.max(0.001, val)
-          setParams((prev) => ({
-            ...prev,
-            [p.name]: { ...current, amount: clamped.toFixed(3) },
-          }))
-        }
-      }
-
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <FloatingLabelInput
-              type="text"
-              inputMode="decimal"
-              placeholder="Amount"
-              label={labelText}
-              value={current.amount}
-              onChange={onAmountChange}
-              onBlur={onAmountBlur}
+          <AssetAmountInput
+            label={labelText}
+            amount={current.amount}
+            onAmountChange={(val) =>
+              setParams((prev) => ({
+                ...prev,
+                [p.name]: { ...current, amount: val },
+              }))
+            }
+            asset={current.asset}
+            onAssetChange={(val) =>
+              setParams((prev) => ({
+                ...prev,
+                [p.name]: { ...current, asset: val },
+              }))
+            }
+            balances={balances}
+            hideAssetDropdown={isJoinLottery}
+          />
+          {isJoinLottery && (
+            <div
               style={{
-                flex: '0 0 50%',
-                borderColor: exceeds ? 'red' : 'var(--color-primary-darkest)',
-                boxShadow: exceeds ? '0 0 8px red' : 'none',
-              }}
-            />
-
-            {isJoinLottery ? (
-              <div
-                style={{
-                  flex: '0 0 20%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: 'var(--color-primary-lighter)',
-                  fontSize: 'var(--font-size-base)',
-                }}
-              >
-                <span>HIVE</span>
-                <GamblingInfoIcon size={16} context="lottery" />
-              </div>
-            ) : (
-              <select
-                className="vsc-input"
-                value={current.asset}
-                onChange={(e) =>
-                  setParams((prev) => ({
-                    ...prev,
-                    [p.name]: { ...current, asset: e.target.value },
-                  }))
-                }
-                style={{
-                  flex: '0 0 20%',
-                  appearance: 'none',
-                  backgroundColor: 'black',
-                  padding: '0 20px 0 8px',
-                  backgroundImage:
-                    'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
-                  backgroundPosition:
-                    'calc(100% - 12px) center, calc(100% - 7px) center',
-                  backgroundSize: '5px 5px, 5px 5px',
-                  backgroundRepeat: 'no-repeat',
-                  color: 'var(--color-primary-lighter)',
-                  border: '1px solid var(--color-primary-darkest)',
-                }}
-              >
-                <option value="HIVE">HIVE</option>
-                <option value="HBD">HBD</option>
-              </select>
-            )}
-
-            <span
-              style={{
-                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--color-primary-lighter)',
                 fontSize: 'var(--font-size-base)',
-                color: exceeds ? 'red' : 'var(--color-primary-lighter)',
               }}
             >
-              {available.toFixed(3)} {current.asset}
-            </span>
-          </div>
+              <GamblingInfoIcon size={16} context="lottery" />
+              <span>Lottery tickets are paid in HIVE only</span>
+            </div>
+          )}
           {isJoinLottery && selectedLotteryTicket?.ticketPrice && (
             <>
               <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-primary-lighter)' }}>
@@ -3191,6 +3771,175 @@ export default function ExecuteForm({
       const formatted = (num / 1000).toFixed(3)
       setParams((prev) => ({ ...prev, rcLimit: Math.floor(Number(formatted) * 1000) }))
     }
+  }
+
+  // Render field for wizard mode - wraps renderParamRow
+  const renderWizardField = (p) => {
+    return renderParamRow(p)
+  }
+
+  // Handle wizard completion - proceed to execute step
+  const handleWizardComplete = () => {
+    if (allMandatoryFilled) {
+      setStep?.('execute')
+    }
+  }
+
+  // Filter parameters for actions step based on toggles
+  const filteredParameters = useMemo(() => {
+    return parameters.filter((p) => {
+      // Only filter parameters in the "actions" wizard step
+      if (p.wizardStep !== 'actions') return true
+      // Filter based on toggles
+      if (p.payloadName === 'payouts' && !actionsShowPayouts) return false
+      if (p.payloadName === 'icc' && !actionsShowICC) return false
+      if (p.payloadName === 'meta' && !actionsShowMetadata) return false
+      return true
+    })
+  }, [parameters, actionsShowPayouts, actionsShowICC, actionsShowMetadata])
+
+  // Render header for wizard steps (checkboxes for actions step)
+  const renderStepHeader = (step) => {
+    if (step.id !== 'actions') return null
+
+    const checkboxStyle = {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '8px 12px',
+      background: 'rgba(0, 0, 0, 0.3)',
+      border: '1px solid var(--color-primary-darkest)',
+      cursor: 'pointer',
+    }
+
+    const labelStyle = {
+      color: 'var(--color-primary-lighter)',
+      fontSize: 'var(--font-size-base)',
+      userSelect: 'none',
+    }
+
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+        <label style={checkboxStyle}>
+          <input
+            type="checkbox"
+            checked={actionsShowPayouts}
+            onChange={(e) => setActionsShowPayouts(e.target.checked)}
+            style={{ accentColor: 'var(--color-primary)' }}
+          />
+          <span style={labelStyle}>Treasury Payouts</span>
+        </label>
+        <label style={checkboxStyle}>
+          <input
+            type="checkbox"
+            checked={actionsShowICC}
+            onChange={(e) => setActionsShowICC(e.target.checked)}
+            style={{ accentColor: 'var(--color-primary)' }}
+          />
+          <span style={labelStyle}>Inter-Contract Call</span>
+        </label>
+        <label style={checkboxStyle}>
+          <input
+            type="checkbox"
+            checked={actionsShowMetadata}
+            onChange={(e) => setActionsShowMetadata(e.target.checked)}
+            style={{ accentColor: 'var(--color-primary)' }}
+          />
+          <span style={labelStyle}>Meta Actions</span>
+        </label>
+      </div>
+    )
+  }
+
+  // Step-level validation for actions step
+  const validateActionsStep = useMemo(() => {
+    return (stepId) => {
+      if (stepId !== 'actions') return { valid: true }
+      // Require at least one action type to be selected
+      const hasAction = actionsShowPayouts || actionsShowICC || actionsShowMetadata
+      if (!hasAction) {
+        return {
+          valid: false,
+          issues: ['Select at least one action type']
+        }
+      }
+
+      // Check that enabled sections have values
+      const issues = []
+
+      if (actionsShowPayouts) {
+        const payoutsValue = params?.['Payout Instructions (addr:amount;...)'] || params?.payouts || ''
+        if (!payoutsValue || payoutsValue.trim() === '') {
+          issues.push('Treasury Payouts requires at least one payout')
+        }
+      }
+
+      if (actionsShowICC) {
+        const iccValue = params?.['Inter-Contract Call (ICC)'] || params?.icc || ''
+        // ICC needs both contract and action (function) to be specified
+        const [contract, action] = (iccValue || '').split('|')
+        if (!contract || contract.trim() === '') {
+          issues.push('Inter-Contract Call requires a contract')
+        } else if (!action || action.trim() === '') {
+          issues.push('Inter-Contract Call requires a function')
+        }
+      }
+
+      if (actionsShowMetadata) {
+        const metaValue = params?.['Meta Actions (key=value;...)'] || params?.meta || ''
+        if (!metaValue || metaValue.trim() === '') {
+          issues.push('Meta Actions requires at least one action')
+        }
+      }
+
+      if (issues.length > 0) {
+        return { valid: false, issues }
+      }
+
+      return { valid: true }
+    }
+  }, [actionsShowPayouts, actionsShowICC, actionsShowMetadata, params])
+
+  // Wizard mode rendering
+  if (wizardEnabled) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflow: 'hidden',
+          minHeight: 0,
+        }}
+      >
+        <div
+          className="neon-scroll"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            paddingRight: '6px',
+          }}
+        >
+          <WizardContainer
+            steps={dynamicWizardSteps}
+            params={params}
+            setParams={setParams}
+            parameters={filteredParameters}
+            renderField={renderWizardField}
+            onComplete={handleWizardComplete}
+            validateField={validatePollField}
+            validateStep={validateActionsStep}
+            renderStepHeader={renderStepHeader}
+            isMobile={isMobile}
+            isSubmitting={pending}
+            submitLabel={fn?.friendlyName?.includes('Create') ? 'Create' : 'Submit'}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
