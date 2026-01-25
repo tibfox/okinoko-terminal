@@ -20,7 +20,7 @@ export default function Avatar({ username, size = 140, link, fallbackChar }) {
   const baseStyle = {
     width: `${size}px`,
     height: `${size}px`,
-    border: '2px solid var(--color-primary)',
+    border: '1px solid var(--color-primary)',
     boxShadow: '0 0 10px rgba(0,0,0,0.6)',
   }
 

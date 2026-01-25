@@ -13,8 +13,10 @@ import { getBoardDimensions } from '../utils/boardDimensions.js'
 import { CyberContainer } from '../../common/CyberContainer.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
 import NeonButton from '../../buttons/NeonButton.jsx'
+import CopyUrlButton from '../../common/CopyUrlButton.jsx'
 import { useGameSubscription } from '../providers/GameSubscriptionProvider.jsx'
 import InfoIcon from '../../common/InfoIcon.jsx'
+import { DEEP_LINK_TYPES } from '../../../hooks/useDeepLink.js'
 
 /* ---------------- GameDetails ---------------- */
 
@@ -151,39 +153,34 @@ export default function GameDetails({
           </table>
         </div>
 
-        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <NeonButton onClick={handleResignClick} style={{ width: '200px' }}>
-              <FontAwesomeIcon icon={faFlag} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
-              {hasOpponent ? 'Resign' : 'Cancel Game'}
-            </NeonButton>
-            <InfoIcon
-              size={16}
-              tooltip={
-                hasOpponent
-                  ? 'Resigning will forfeit the game and award the win to your opponent. This action cannot be undone.'
-                  : 'Canceling will remove this game from the lobby. Since no one has joined yet, there is no penalty.'
-              }
-              style={{ marginLeft: 0 }}
-            />
-          </div>
+        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <NeonButton
+            onClick={handleResignClick}
+            title={hasOpponent
+              ? 'Resigning will forfeit the game and award the win to your opponent.'
+              : 'Canceling will remove this game from the lobby.'}
+            style={{ marginTop: 0 }}
+          >
+            <FontAwesomeIcon icon={faFlag} style={{ fontSize:'0.9rem', marginRight: '6px' }} />
+            {hasOpponent ? 'Resign' : 'Cancel'}
+          </NeonButton>
           {hasOpponent && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <NeonButton
-                disabled={isMyTurn || daysAgo < 7}
-                onClick={handleTimeoutClick}
-                style={{ width: '200px' }}
-              >
-                <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem',marginRight: '10px' }} />
-                Claim Timeout
-              </NeonButton>
-              <InfoIcon
-                size={16}
-                tooltip="You can claim a timeout victory if your opponent has not moved in 7 days and it is their turn. This will award you the win and end the game."
-                style={{ marginLeft: 0 }}
-              />
-            </div>
+            <NeonButton
+              disabled={isMyTurn || daysAgo < 7}
+              onClick={handleTimeoutClick}
+              title="Claim timeout victory if opponent hasn't moved in 7 days"
+              style={{ marginTop: 0 }}
+            >
+              <FontAwesomeIcon icon={faHourglassStart} style={{ fontSize:'0.9rem', marginRight: '6px' }} />
+              Timeout
+            </NeonButton>
           )}
+          <CopyUrlButton
+            type={DEEP_LINK_TYPES.GAME}
+            id={game.id}
+            iconOnly
+            style={{ marginTop: 0 }}
+          />
         </div>
 
         {isGomokuVariant && swapPhaseLabel && (

@@ -17,7 +17,7 @@ import MonitorTerminal from './components/terminal/SubTerminals/MonitorTerminal.
 import TransactionsTerminal from './components/terminal/SubTerminals/TransactionsTerminal.jsx'
 import AccountDataTerminal from './components/terminal/SubTerminals/AccountDataTerminal.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
-import { useDeepLink, parseDeepLink, DEEP_LINK_CONTRACT_IDS } from './hooks/useDeepLink.js'
+import { useDeepLink, parseDeepLink, DEEP_LINK_CONTRACT_IDS, DEEP_LINK_TYPES } from './hooks/useDeepLink.js'
 
 const MAX_PAGE_INDEX = 3
 const clampPageIndex = (value) => Math.min(Math.max(value, 0), MAX_PAGE_INDEX)
@@ -25,10 +25,11 @@ const getInitialPageIndex = () => {
   if (typeof window === 'undefined') {
     return 0
   }
-  // Check for deep link first - if present, go to page 1 (StepSelect)
+  // Check for deep link first
   const deepLink = parseDeepLink(window.location.hash)
   if (deepLink) {
-    return 1
+    // Game deep links go to page 3 (StepGame), others go to page 1 (StepSelect)
+    return deepLink.type === DEEP_LINK_TYPES.GAME ? 3 : 1
   }
   const statePage = window.history.state?.page
   if (typeof statePage === 'number') {
@@ -155,10 +156,14 @@ export function App() {
         return (
           <StepGame
                         contractId={contractId}
+                        setContractId={setContractId}
                         fnName={fnName}
+                        setFnName={setFnName}
                         params={params}
                         setParams={setParams}
                         setStep={setPage}
+                        deepLink={deepLink}
+                        clearDeepLink={clearDeepLink}
                       />
         )
       

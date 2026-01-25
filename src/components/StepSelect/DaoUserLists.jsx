@@ -52,6 +52,7 @@ export default function DaoUserLists({
   const [selectedDaoId, setSelectedDaoId] = useState(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const deepLinkHandledRef = useRef(false)
+  const proposalDeepLinkHandledRef = useRef(false)
 
   // Wrapper to select a DAO and update the URL
   const selectDao = useCallback((projectId, { updateUrl = true } = {}) => {
@@ -111,7 +112,7 @@ export default function DaoUserLists({
   const [{ data, fetching, error }] = useQuery({
     query: DAO_USER_QUERY,
     variables: { user: user || '' },
-    requestPolicy: 'network-only',
+    requestPolicy: 'cache-first',
   })
 
   // Handle deep link - auto-select DAO when deep link is detected
@@ -654,6 +655,23 @@ export default function DaoUserLists({
     },
     [membershipMap, popup, selectProposalAction, user]
   )
+
+  // Handle proposal deep link - open proposal popup when deep link is detected
+  useEffect(() => {
+    if (!deepLink || deepLink.type !== DEEP_LINK_TYPES.PROPOSAL) return
+    if (proposalDeepLinkHandledRef.current) return
+
+    const proposalId = Number(deepLink.id)
+    if (!Number.isFinite(proposalId)) {
+      clearDeepLink?.(1)
+      return
+    }
+
+    // Open proposal popup - ProposalDetailPopup will fetch the full data
+    proposalDeepLinkHandledRef.current = true
+    openProposalDetail({ proposal_id: proposalId }, null)
+    clearDeepLink?.(1)
+  }, [deepLink, openProposalDetail, clearDeepLink])
 
   // Render inline DAO detail view
   const renderDaoDetailView = () => {

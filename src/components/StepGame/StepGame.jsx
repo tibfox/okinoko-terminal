@@ -1,5 +1,6 @@
 // StepGame.jsx
-import { useMemo, useState, useEffect } from 'preact/hooks'
+import { useMemo, useState, useEffect, useRef } from 'preact/hooks'
+import { useQuery } from '@urql/preact'
 import contractsCfg from '../../data/contracts'
 import TerminalContainer from '../terminal/TerminalContainer.jsx'
 import { useAioha } from '@aioha/react-ui'
@@ -11,17 +12,19 @@ import MobileTabs from '../common/MobileTabs.jsx'
 import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
 import GameDetails from './components/GameDetails.jsx'
 import ActionFooter from './components/ActionFooter.jsx'
+import LoginModal from '../common/LoginModal.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import { usePendingTransaction } from './hooks/usePendingTransaction.js'
 import { useGameSelection } from './hooks/useGameSelection.js'
-import { deriveGameTypeId } from './gameTypes.js'
+import { deriveGameTypeId, typeNameFromId } from './gameTypes.js'
 import { Tabs } from '../common/Tabs.jsx'
-import { useRef } from 'preact/hooks'
 import ResizableDivider from '../common/ResizableDivider.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
 import { GameSubscriptionProvider } from './providers/GameSubscriptionProvider.jsx'
 import { LobbySubscriptionProvider } from './providers/LobbySubscriptionProvider.jsx'
 import { useGamePendingTransaction } from './hooks/useGamePendingTransaction.js'
+import { GAME_BY_ID_QUERY } from '../../data/inarow_gql.js'
+import { DEEP_LINK_TYPES } from '../../hooks/useDeepLink.js'
 
 const DIVIDER_COOKIE = 'stepGameDivider'
 const SPLITTER_WIDTH_PX = 2
@@ -45,10 +48,14 @@ const resolvePreviewLabel = (activeGame, mode) => {
 
 export default function StepGame({
   contractId,
+  setContractId,
   fnName,
+  setFnName,
   params,
   setParams,
   setStep,
+  deepLink,
+  clearDeepLink,
 }) {
   const { user } = useAioha()
   const isMobile = useDeviceBreakpoint()
@@ -65,6 +72,16 @@ export default function StepGame({
   const [draggingDivider, setDraggingDivider] = useState(false)
   const [yugiView, setYugiView] = useState('lobby') // 'lobby' or 'game' for Yugi single-player games
   const layoutRef = useRef(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+
+  // Show login modal when entering game without being logged in
+  useEffect(() => {
+    if (!user) {
+      setShowLoginModal(true)
+    } else {
+      setShowLoginModal(false)
+    }
+  }, [user])
 
   const {
     activeGame,
@@ -83,6 +100,133 @@ export default function StepGame({
     onResetSelection: () => setSelectedCells([]),
     onMobilePageChange: setActivePage,
   })
+
+  // Deep link handling - query game by ID if deep link is present
+  const deepLinkGameId = deepLink?.type === DEEP_LINK_TYPES.GAME ? deepLink.id : null
+  const [deepLinkResult] = useQuery({
+    query: GAME_BY_ID_QUERY,
+    pause: !deepLinkGameId,
+    variables: deepLinkGameId ? { gameId: deepLinkGameId } : undefined,
+  })
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false)
+
+  // Handle deep link when query returns
+  useEffect(() => {
+    if (!deepLinkGameId || deepLinkHandled || deepLinkResult.fetching) return
+    if (deepLinkResult.error) {
+      console.error('[StepGame] Deep link query error:', deepLinkResult.error)
+      clearDeepLink?.(3)
+      setDeepLinkHandled(true)
+      return
+    }
+
+    const { data } = deepLinkResult
+    if (!data) return
+
+    // Check if game is in lobby (waiting for join) or active
+    const lobbyGame = data.lobby?.[0]
+    const activeGameData = data.active?.[0]
+
+    if (!lobbyGame && !activeGameData) {
+      console.warn('[StepGame] Game not found for deep link ID:', deepLinkGameId)
+      clearDeepLink?.(3)
+      setDeepLinkHandled(true)
+      return
+    }
+
+    // Helper to normalize amounts
+    const normalizeAmount = (value) => {
+      if (value === null || value === undefined) return null
+      const num = Number(value)
+      return Number.isNaN(num) ? null : num / 1000
+    }
+
+    let gameObj
+    let mode
+
+    if (lobbyGame) {
+      // Game is in lobby - user can join
+      gameObj = {
+        id: lobbyGame.id,
+        name: lobbyGame.name,
+        creator: lobbyGame.creator,
+        bet: normalizeAmount(lobbyGame.betamount),
+        asset: lobbyGame.betasset,
+        firstMovePurchase: normalizeAmount(lobbyGame.fmcosts),
+        type: typeNameFromId(lobbyGame.type),
+        playerX: lobbyGame.creator,
+        playerY: null,
+        opponent: null,
+        nextTurnPlayer: lobbyGame.creator,
+        turn: '1',
+        state: 'waiting',
+        moveType: 'm',
+        board: null,
+        lastMoveMinutesAgo: 0,
+      }
+      mode = 'g_join'
+
+      // Update the fnName based on game type
+      if (setFnName && lobbyGame.type) {
+        setFnName(typeNameFromId(lobbyGame.type))
+      }
+    } else if (activeGameData) {
+      // Game is active
+      const playerX = activeGameData.x_player
+      const playerY = activeGameData.o_player
+      const nextTurnPlayer = activeGameData.next_turn_player
+      const moveType = activeGameData.movetype || 'm'
+
+      // Calculate lastMoveMinutesAgo
+      let lastMoveMinutesAgo = 0
+      if (activeGameData.indexer_ts) {
+        const lastMoveDate = new Date(activeGameData.indexer_ts)
+        const now = new Date()
+        const diffMs = now - lastMoveDate
+        lastMoveMinutesAgo = Math.floor(diffMs / (1000 * 60))
+      }
+
+      gameObj = {
+        id: activeGameData.id,
+        name: activeGameData.name,
+        creator: activeGameData.creator,
+        bet: normalizeAmount(activeGameData.betamount),
+        asset: activeGameData.betasset,
+        firstMovePurchase: normalizeAmount(activeGameData.fmc),
+        type: typeNameFromId(activeGameData.type),
+        playerX,
+        playerY,
+        opponent: activeGameData.joiner || activeGameData.creator,
+        nextTurnPlayer,
+        turn: nextTurnPlayer === playerX ? '1' : '2',
+        state: moveType || 'play',
+        moveType,
+        board: null,
+        lastMoveBy: activeGameData.last_move_by,
+        lastMoveMinutesAgo,
+      }
+      mode = 'continue'
+
+      // Update the fnName based on game type
+      if (setFnName && activeGameData.type) {
+        setFnName(typeNameFromId(activeGameData.type))
+      }
+    }
+
+    if (gameObj) {
+      selectGame(gameObj, mode)
+    }
+
+    clearDeepLink?.(3)
+    setDeepLinkHandled(true)
+  }, [deepLinkGameId, deepLinkResult, deepLinkHandled, selectGame, clearDeepLink, setFnName])
+
+  // Reset deep link handled state when deep link changes
+  useEffect(() => {
+    if (deepLinkGameId) {
+      setDeepLinkHandled(false)
+    }
+  }, [deepLinkGameId])
 
   // Check if current game has pending transaction
   const { hasPendingTx } = useGamePendingTransaction(activeGame?.id)
@@ -261,11 +405,18 @@ export default function StepGame({
 
 
   return (
-    <TerminalContainer title={fn?.friendlyName || fn?.name || 'Function'}
-      titleOnMinimize="Function"
-      backgroundColor="rgba(0, 0, 0, 0.5)"
-    >
-      <LobbySubscriptionProvider gameTypeId={derivedGameTypeId}>
+    <>
+      {/* Login Modal - shown when entering game without being logged in */}
+      <LoginModal
+        showModal={showLoginModal}
+        setShowModal={setShowLoginModal}
+      />
+
+      <TerminalContainer title={fn?.friendlyName || fn?.name || 'Function'}
+        titleOnMinimize="Function"
+        backgroundColor="rgba(0, 0, 0, 0.5)"
+      >
+        <LobbySubscriptionProvider gameTypeId={derivedGameTypeId}>
         {isMobile && !isSinglePlayerContract && (
           <div style={{ marginBottom: '8px' }}>
             <Tabs
@@ -405,6 +556,7 @@ export default function StepGame({
         onBackToLeaderboard={() => setYugiView('lobby')}
       />
       </LobbySubscriptionProvider>
-    </TerminalContainer>
+      </TerminalContainer>
+    </>
   )
 }

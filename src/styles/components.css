@@ -95,6 +95,22 @@ select {
   text-shadow: none;
 }
 
+.neon-icon-btn {
+  font-family: var(--font-family-base);
+}
+
+.neon-icon-btn:hover:not(:disabled),
+.neon-icon-btn:focus-visible {
+  border: 1px solid var(--color-primary-darker) !important;
+  color: var(--color-primary-lightest);
+  background: var(--color-primary-darkest);
+}
+
+.neon-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .neon-btn-simple {
   background: #000;
   color: var(--color-primary);

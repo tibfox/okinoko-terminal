@@ -3,9 +3,11 @@ import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faVoteYea, faCalculator, faPlay, faLink } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
+import CopyUrlButton from '../common/CopyUrlButton.jsx'
 import { formatUTC } from '../../lib/friendlyDates.js'
 import Avatar from '../common/Avatar.jsx'
 import PollPie from './PollPie.jsx'
+import { DEEP_LINK_TYPES } from '../../hooks/useDeepLink.js'
 
 const PROPOSAL_DETAIL_QUERY = gql`
   query ProposalDetail($proposalId: numeric!) {
@@ -288,6 +290,12 @@ export default function ProposalDetailPopup({ proposal, isMember, onVote, onTall
                 <span>{executionReady ? 'Execute' : 'Execute (wait)'}</span>
               </NeonButton>
             )}
+            <CopyUrlButton
+              type={DEEP_LINK_TYPES.PROPOSAL}
+              id={detail.proposal_id}
+              iconOnly
+              style={popupButtonStyle}
+            />
           </div>
         </div>
         <div

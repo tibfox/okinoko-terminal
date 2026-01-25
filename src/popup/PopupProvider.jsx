@@ -1,4 +1,4 @@
-import { useState, useEffect } from "preact/hooks";
+import { useState, useEffect, useCallback, useMemo, useRef } from "preact/hooks";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
 import { PopupContext } from "./context.js";
@@ -10,8 +10,12 @@ export function PopupProvider({ children }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const isMobile = useDeviceBreakpoint();
+  const popupRef = useRef(null);
 
-  const openPopup = ({ title, body, width, onClose }) => {
+  // Keep a ref to the current popup for closePopup to access without re-creating the callback
+  popupRef.current = popup;
+
+  const openPopup = useCallback(({ title, body, width, onClose }) => {
     setPopup({
       title,
       body,
@@ -20,12 +24,13 @@ export function PopupProvider({ children }) {
       onClose,
     })
     setPosition({ x: 0, y: 0 }); // Reset position when opening new popup
-  }
-  const closePopup = () => {
+  }, [])
+
+  const closePopup = useCallback(() => {
     // Call the onClose callback if provided
-    popup?.onClose?.()
+    popupRef.current?.onClose?.()
     setPopup(null)
-  };
+  }, []);
 // 🔁 Re-render the overlay every second while a popup is open
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -65,8 +70,11 @@ export function PopupProvider({ children }) {
     };
   }, [isDragging, dragStart]);
 
+  // Memoize the context value to prevent unnecessary re-renders of consumers
+  const contextValue = useMemo(() => ({ openPopup, closePopup }), [openPopup, closePopup]);
+
   return (
-    <PopupContext.Provider value={{ openPopup, closePopup }}>
+    <PopupContext.Provider value={contextValue}>
       {children}
 
       {popup && (

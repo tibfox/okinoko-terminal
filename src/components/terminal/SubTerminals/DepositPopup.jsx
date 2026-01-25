@@ -1,20 +1,26 @@
 import { useState, useMemo } from 'preact/hooks'
 import { KeyTypes } from '@aioha/aioha'
 import FloatingLabelInput from '../../common/FloatingLabelInput.jsx'
+import NeonListDropdown from '../../common/NeonListDropdown.jsx'
 
 export default function DepositPopup({ onClose, aioha, user }) {
   const [amount, setAmount] = useState('')
   const [asset, setAsset] = useState('HIVE')
+  const [receiver, setReceiver] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showHiveAuthMessage, setShowHiveAuthMessage] = useState(false)
 
   const normalizedUser = useMemo(() => {
-    console.log('DepositPopup - user prop:', user)
     if (!user) return 'unknown'
     const normalized = user.startsWith('hive:') ? user.slice(5) : user
-    console.log('DepositPopup - normalized user:', normalized)
     return normalized
   }, [user])
+
+  // The receiver for the deposit (defaults to the connected user)
+  const effectiveReceiver = useMemo(() => {
+    const trimmed = receiver.trim().toLowerCase().replace(/^@/, '')
+    return trimmed || normalizedUser
+  }, [receiver, normalizedUser])
 
   const isValidAmount = useMemo(() => {
     if (!amount) return false
@@ -42,7 +48,7 @@ export default function DepositPopup({ onClose, aioha, user }) {
 
     try {
       const formattedAmount = parseFloat(amount).toFixed(3)
-      const memo = `to=${normalizedUser}`
+      const memo = `to=${effectiveReceiver}`
 
       // Construct the transaction operations
       const ops = [
@@ -91,8 +97,7 @@ export default function DepositPopup({ onClose, aioha, user }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ fontSize: 'var(--font-size-base)', lineHeight: '1.5', color: 'var(--color-primary-lighter)' }}>
-        Please set the amount you want to deposit from the Hive wallet @{normalizedUser} to the Magi wallet @
-        {normalizedUser}.
+        Deposit from Hive L1 wallet @{normalizedUser} to Magi.
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
@@ -109,29 +114,32 @@ export default function DepositPopup({ onClose, aioha, user }) {
           }}
         />
 
-        <select
-          className="vsc-input"
+        <NeonListDropdown
+          options={[
+            { value: 'HIVE', label: 'HIVE' },
+            { value: 'HBD', label: 'HBD' },
+          ]}
           value={asset}
-          onChange={(e) => setAsset(e.target.value)}
-          style={{
-            flex: '0 0 120px',
+          onChange={(val) => setAsset(val)}
+          style={{ flex: '0 0 auto', width: 'auto', minWidth: '100px' }}
+          buttonStyle={{
             height: '50px',
-            appearance: 'none',
-            backgroundColor: 'black',
-            padding: '0 20px 0 12px',
-            backgroundImage:
-              'linear-gradient(45deg, transparent 50%, var(--color-primary-lighter) 50%), linear-gradient(135deg, var(--color-primary-lighter) 50%, transparent 50%)',
-            backgroundPosition: 'calc(100% - 12px) center, calc(100% - 7px) center',
-            backgroundSize: '5px 5px, 5px 5px',
-            backgroundRepeat: 'no-repeat',
-            color: 'var(--color-primary-lighter)',
-            border: '1px solid var(--color-primary-darkest)',
+            padding: '0 32px 0 12px',
+            fontSize: 'var(--font-size-base)',
+            fontFamily: 'var(--font-family-base)',
           }}
-        >
-          <option value="HIVE">HIVE</option>
-          <option value="HBD">HBD</option>
-        </select>
+          menuOffsetY="4px"
+        />
       </div>
+
+      <FloatingLabelInput
+        type="text"
+        placeholder={normalizedUser}
+        label="Receiver (optional)"
+        value={receiver}
+        onChange={(e) => setReceiver(e.target.value.replace(/@/g, ''))}
+        style={{ width: '100%' }}
+      />
 
       <button
         type="button"

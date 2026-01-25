@@ -3,16 +3,18 @@ import { useAioha } from '@aioha/providers/react'
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
 import InfoIcon from '../../common/InfoIcon.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faRotateLeft, faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons'
+import { faRotateLeft, faArrowRightToBracket, faArrowRightFromBracket, faLink } from '@fortawesome/free-solid-svg-icons'
 import { PopupContext } from '../../../popup/context.js'
 import DepositPopup from './DepositPopup.jsx'
 import WithdrawPopup from './WithdrawPopup.jsx'
+import LoginModal from '../../common/LoginModal.jsx'
+import Avatar from '../../common/Avatar.jsx'
 
 const panelStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '1rem',
-  padding: '0.5rem',
+  padding: '0 0.5rem 0.5rem 0.5rem',
   fontSize: 'var(--font-size-base)',
   color: 'var(--color-primary-lighter)',
   flex: 1,
@@ -107,6 +109,7 @@ export default function AccountDataPanel() {
   const { openPopup, closePopup } = useContext(PopupContext)
   const [compactButtons, setCompactButtons] = useState(false)
   const buttonContainerRef = useRef(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
 
   const showSkeleton = loading && (!balances || !rc)
   const normalizedUser = useMemo(() => {
@@ -220,11 +223,35 @@ export default function AccountDataPanel() {
 
   if (!normalizedUser) {
     return (
-      <div style={panelStyle}>
-        <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)' }}>
-          Sign in to view account data.
+      <>
+        <LoginModal
+          showModal={showLoginModal}
+          setShowModal={setShowLoginModal}
+        />
+        <div style={panelStyle}>
+          <div style={{ color: 'var(--color-primary-lighter)', fontSize: 'var(--font-size-base)', marginBottom: '0.75rem' }}>
+            Sign in to view account data.
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowLoginModal(true)}
+            style={{
+              border: '1px solid var(--color-primary-darker)',
+              background: 'rgba(0, 0, 0, 0.6)',
+              color: 'var(--color-primary-lighter)',
+              padding: '0.5rem 1rem',
+              cursor: 'pointer',
+              fontSize: 'calc(var(--font-size-base) / 1.5)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <FontAwesomeIcon icon={faLink} style={{ fontSize: '0.6rem', marginRight: '0.5rem' }} />
+            Connect Wallet
+          </button>
         </div>
-      </div>
+      </>
     )
   }
 
@@ -257,40 +284,45 @@ export default function AccountDataPanel() {
   }
 
   return (
-    <div style={panelStyle}>
-      <div className="neon-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem' }}>
-        <div
-          style={{
-            // position: 'sticky',
-            top: 0,
-            zIndex: 1,
-            background: 'transparent',
-            paddingBottom: '1rem',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: 'var(--font-size-base)' }}>
-              {normalizedUser}
+    <>
+      <LoginModal
+        showModal={showLoginModal}
+        setShowModal={setShowLoginModal}
+      />
+      <div style={panelStyle}>
+        <div className="neon-scroll" style={{ flex: 1, overflowY: 'auto', paddingRight: '0.35rem' }}>
+          <div
+            style={{
+              // position: 'sticky',
+              top: 0,
+              zIndex: 1,
+              background: 'transparent',
+              paddingBottom: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(true)}
+                aria-label="Change wallet"
+                title="Change wallet"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Avatar username={normalizedUser} size={40} />
+              </button>
+              <div style={{ textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: 'var(--font-size-base)' }}>
+                {normalizedUser}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              aria-label="Refresh balances"
-              title="Refresh balances"
-              style={{
-                border: '1px solid var(--color-primary-dark)',
-                background: 'transparent',
-                color: 'var(--color-primary-lighter)',
-                padding: '0.25rem 0.75rem',
-
-                cursor: 'pointer',
-                fontSize: 'var(--font-size-base)',
-                letterSpacing: '0.1em',
-              }}
-            >
-              <FontAwesomeIcon icon={faRotateLeft}    style={{ fontSize: '0.9rem' }} />
-            </button>
-          </div>
 
           <div ref={buttonContainerRef} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
             <button
@@ -306,15 +338,11 @@ export default function AccountDataPanel() {
                 padding: '0.5rem 1rem',
                 cursor: 'pointer',
                 fontSize: 'calc(var(--font-size-base) / 1.5)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
                 flex: 1,
                 transition: 'all 0.2s ease',
-                overflow: 'hidden',
               }}
             >
-              <FontAwesomeIcon icon={faArrowUp}   style={{ fontSize: '0.6rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
-              <span className="button-text">Deposit</span>
+              <FontAwesomeIcon icon={faArrowRightToBracket} style={{ fontSize: '0.6rem' }} />
             </button>
             <button
               type="button"
@@ -329,15 +357,30 @@ export default function AccountDataPanel() {
                 padding: '0.5rem 1rem',
                 cursor: 'pointer',
                 fontSize: 'calc(var(--font-size-base) / 1.5)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
                 flex: 1,
                 transition: 'all 0.2s ease',
-                overflow: 'hidden',
               }}
             >
-              <FontAwesomeIcon icon={faArrowDown}  style={{ fontSize: '0.6rem',marginRight: compactButtons ? 0 : '0.5rem' }} />
-              <span className="button-text">Withdraw</span>
+              <FontAwesomeIcon icon={faArrowRightFromBracket} style={{ fontSize: '0.6rem' }} />
+            </button>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              aria-label="Refresh Balances"
+              title="Refresh Balances"
+              className="account-action-btn"
+              style={{
+                border: '1px solid var(--color-primary-darker)',
+                background: 'rgba(0, 0, 0, 0.6)',
+                color: 'var(--color-primary-lighter)',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontSize: 'calc(var(--font-size-base) / 1.5)',
+                flex: 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.6rem' }} />
             </button>
           </div>
 
@@ -385,5 +428,6 @@ export default function AccountDataPanel() {
         </div>
       </div>
     </div>
+    </>
   )
 }

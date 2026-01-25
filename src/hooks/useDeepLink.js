@@ -4,12 +4,16 @@ import { useState, useEffect, useCallback } from 'preact/hooks'
 export const DEEP_LINK_TYPES = {
   LOTTERY: 'lottery',
   DAO: 'dao',
+  GAME: 'game',
+  PROPOSAL: 'proposal',
 }
 
 // Contract IDs for each deep link type
 export const DEEP_LINK_CONTRACT_IDS = {
   [DEEP_LINK_TYPES.LOTTERY]: 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7',
   [DEEP_LINK_TYPES.DAO]: 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb',
+  [DEEP_LINK_TYPES.GAME]: 'vsc1BVLuXCWC1UShtDBenWJ2B6NWpnyV2T637n',
+  [DEEP_LINK_TYPES.PROPOSAL]: 'vsc1Ba9AyyUcMnYVoDVsjoJztnPFHNxQwWBPsb',
 }
 
 /**
@@ -24,7 +28,7 @@ export function parseDeepLink(hash) {
   const cleanHash = hash.replace(/^#/, '')
 
   // Try to match deep link pattern: type/id
-  const match = cleanHash.match(/^(lottery|dao)\/(.+)$/)
+  const match = cleanHash.match(/^(lottery|dao|game|proposal)\/(.+)$/)
   if (!match) return null
 
   const [, type, id] = match

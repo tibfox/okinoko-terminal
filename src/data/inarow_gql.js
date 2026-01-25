@@ -263,3 +263,35 @@ export const COMPLETED_GAMES_HISTORY_QUERY = gql`
     }
   }
 `;
+
+// Query to fetch a single game by ID (checks both lobby and active views)
+export const GAME_BY_ID_QUERY = gql`
+  query GameById($gameId: numeric!) {
+    lobby: okinoko_iarv2_waiting_for_join(where: { id: { _eq: $gameId } }) {
+      id
+      name
+      creator
+      betamount
+      betasset
+      fmcosts
+      type
+      created_block
+    }
+    active: okinoko_iarv2_active_with_turn(where: { id: { _eq: $gameId } }) {
+      id
+      type
+      creator
+      joiner
+      x_player
+      o_player
+      last_move_by
+      next_turn_player
+      movetype
+      betamount
+      betasset
+      fmc
+      name
+      indexer_ts
+    }
+  }
+`;
