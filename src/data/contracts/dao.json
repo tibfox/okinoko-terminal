@@ -40,7 +40,7 @@
           "title": "NFT Gate",
           "description": "Optional NFT-gated access (advanced)",
           "disabled": true,
-          "disabledMessage": "NFT gated membership will get activated in near future"
+          "disabledMessage": "NFT gated membership will get activated in near future and you can enable it afterwards."
         },
         {
           "id": "review",
@@ -155,7 +155,7 @@
           "name": "Minimum Stake Amount",
           "payloadName": "stakeMin",
           "type": "number",
-          "mandatory": true,
+          "mandatory": false,
           "hintText": "This is the minimum amount of stake required to participate in the DAO. For democratic DAOs, this is the exact member fee.",
           "sortIndex": 10,
           "wizardStep": "economics"
@@ -223,7 +223,7 @@
           "name": "Initial deposit (stake + treasury)",
           "payloadName": "vscIntent",
           "type": "vscIntent",
-          "mandatory": true,
+          "mandatory": false,
           "hintText": "This is the initial deposit for the project. Excess funds beyond the minimum stake amount will go to the treasury.",
           "sortIndex": 17,
           "wizardStep": "economics"

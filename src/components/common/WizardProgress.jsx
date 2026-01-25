@@ -17,32 +17,9 @@ export default function WizardProgress({
 }) {
   if (steps.length === 0) return null
 
-  // Mobile: compact progress view
-  if (isMobile) {
-    const progress = ((currentIndex + 1) / steps.length) * 100
-    return (
-      <div className="wizard-progress wizard-progress--mobile">
-        <div className="wizard-progress__mobile-header">
-          <span className="wizard-progress__mobile-label">
-            Step {currentIndex + 1} of {steps.length}
-          </span>
-          <span className="wizard-progress__mobile-title">
-            {steps[currentIndex]?.title}
-          </span>
-        </div>
-        <div className="wizard-progress__mobile-bar">
-          <div
-            className="wizard-progress__mobile-fill"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // Desktop: full stepper
+  // Render stepper (used for both mobile and desktop)
   return (
-    <div className="wizard-progress">
+    <div className={`wizard-progress ${isMobile ? 'wizard-progress--mobile-stepper' : ''}`}>
       {steps.map((step, index) => {
         const isActive = index === currentIndex
         const isCompleted = visitedSteps.has(index) && isStepValid?.(step.id)
@@ -84,10 +61,12 @@ export default function WizardProgress({
               )}
             </button>
 
-            {/* Step label */}
-            <span className="wizard-progress__label">
-              {step.title}
-            </span>
+            {/* Step label - hidden on mobile */}
+            {!isMobile && (
+              <span className="wizard-progress__label">
+                {step.title}
+              </span>
+            )}
           </div>
         )
       })}

@@ -629,40 +629,130 @@ select {
   overflow: hidden;
 }
 
-/* Progress Indicator - Desktop */
-.wizard-progress {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 4px 0 8px;
-  position: relative;
+/* Desktop: horizontal layout with vertical stepper on left */
+.wizard-container--desktop {
+  flex-direction: row;
+  gap: 24px;
 }
 
-.wizard-progress__step {
+.wizard-container--desktop .wizard-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  flex: 1;
-  position: relative;
-  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
-/* Connector line between steps */
-.wizard-progress__connector {
+/* Mobile: vertical layout (stepper on top) */
+.wizard-container--mobile {
+  flex-direction: column;
+  gap: 0;
+}
+
+.wizard-container--mobile .wizard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Progress Indicator - Desktop (Vertical) */
+.wizard-container--desktop .wizard-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 0;
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.wizard-container--desktop .wizard-progress__step {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 8px 0;
+}
+
+/* Vertical connector line between steps */
+.wizard-container--desktop .wizard-progress__connector {
   position: absolute;
-  top: 16px;
-  left: calc(50% + 20px);
-  right: calc(-50% + 20px);
+  top: calc(50% + 16px);
+  bottom: calc(-50% + 16px);
+  left: 15px;
+  width: 2px;
+  height: auto;
+  background: var(--color-primary-darkest);
+  z-index: 0;
+}
+
+.wizard-container--desktop .wizard-progress__step:last-child .wizard-progress__connector {
+  display: none;
+}
+
+.wizard-container--desktop .wizard-progress__label {
+  margin-top: 0;
+  margin-left: 12px;
+  text-align: left;
+  max-width: none;
+}
+
+/* Progress Indicator - Mobile (Horizontal stepper without labels) */
+.wizard-container--mobile .wizard-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 16px;
+  position: relative;
+  gap: 0;
+  width: 100%;
+}
+
+.wizard-container--mobile .wizard-progress__step {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+.wizard-container--mobile .wizard-progress__step:last-child {
+  flex: 0;
+}
+
+/* Reorder: indicator first (order 1), then connector (order 2) */
+.wizard-container--mobile .wizard-progress__indicator {
+  order: 1;
+  width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+/* Horizontal connector line between steps on mobile */
+.wizard-container--mobile .wizard-progress__connector {
+  order: 2;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  flex: 1;
   height: 2px;
   background: var(--color-primary-darkest);
   z-index: 0;
+  margin: 0 8px;
 }
 
 .wizard-progress__connector--completed {
   background: var(--color-primary-darker);
 }
 
-.wizard-progress__step:last-child .wizard-progress__connector {
+.wizard-container--mobile .wizard-progress__step:last-child .wizard-progress__connector {
   display: none;
 }
 
@@ -887,22 +977,6 @@ select {
 
 /* Mobile Adjustments */
 @media (max-width: 900px) {
-  .wizard-progress__label {
-    display: none;
-  }
-
-  .wizard-progress__connector {
-    top: 12px;
-    left: calc(50% + 14px);
-    right: calc(-50% + 14px);
-  }
-
-  .wizard-progress__indicator {
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
-  }
-
   .wizard-step__header h3 {
     font-size: 1rem;
   }

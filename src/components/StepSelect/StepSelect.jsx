@@ -51,6 +51,8 @@ export default function StepSelect({
   setFnName,
   setParams,
   setStep,
+  deepLink,
+  clearDeepLink,
 }) {
   const contracts = useMemo(() => {
     const isDev = import.meta.env.DEV
@@ -318,6 +320,8 @@ export default function StepSelect({
             onCreateDao={handleCreateDao}
             onCreateProposal={handleCreateProposal}
             setBackOverride={setBackOverride}
+            deepLink={deepLink}
+            clearDeepLink={clearDeepLink}
           />
         </div>
       </div>
@@ -343,8 +347,8 @@ export default function StepSelect({
           <FontAwesomeIcon icon={faChevronLeft} style={{  fontSize: '0.9rem', marginRight: '10px' }} />
           Back
         </NeonButton>
-        {/* Hide Next button when viewing DAO overview list (no function selected) */}
-        {!(isDaoContract && !selectedFunction) && (
+        {/* Hide Next button when viewing DAO overview list (no function selected), except on mobile */}
+        {!(isDaoContract && !selectedFunction && !isMobile) && (
           <div className="next-button-glitter-wrapper">
 
             <NeonButton

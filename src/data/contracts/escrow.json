@@ -13,7 +13,7 @@
     {
       "name": "e_create",
       "friendlyName": "Create Escrow",
-      "description": "Set up a new escrow by choosing who will receive the funds, how much to send, and who will act as arbitrator.\n! Don’t forget: You’ll get an escrow ID after creation. You’ll need it later to manage the escrow.",
+      "description": "Set up a new escrow by choosing who will receive the funds, how much to send, and who will act as arbitrator.\n! Don't forget: You'll get an escrow ID after creation. You'll need it later to manage the escrow.",
       "parse": "csv",
       "delimiter": "|",
       "excludeKeys": true,
@@ -57,7 +57,7 @@
     {
       "name": "e_decide",
       "friendlyName": "Add Decision",
-      "description": "If you’re part of the escrow, you can send in your decision. Don’t worry: you can change it anytime before the escrow is finalized.",
+      "description": "If you're part of the escrow, you can send in your decision. Don't worry: you can change it anytime before the escrow is finalized.",
       "parse": "csv",
       "delimiter": "|",
       "excludeKeys": true,

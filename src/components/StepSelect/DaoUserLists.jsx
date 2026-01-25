@@ -1,4 +1,4 @@
-import { useMemo, useState, useContext, useCallback, useEffect } from 'preact/hooks'
+import { useMemo, useState, useContext, useCallback, useEffect, useRef } from 'preact/hooks'
 import { useQuery, useClient } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -13,6 +13,7 @@ import {
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
+import LoginModal from '../common/LoginModal.jsx'
 import Avatar from '../common/Avatar.jsx'
 import contractsCfg from '../../data/contracts'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
@@ -31,6 +32,7 @@ import {
   isClosedProposal,
   formatNumber,
 } from './daoHelpers.js'
+import { DEEP_LINK_TYPES, updateUrlToDeepLink, resetUrlFromDeepLink } from '../../hooks/useDeepLink.js'
 
 export default function DaoUserLists({
   user,
@@ -42,20 +44,37 @@ export default function DaoUserLists({
   setStep,
   setContractId,
   setBackOverride,
+  deepLink,
+  clearDeepLink,
 }) {
   const [joiningDaoId, setJoiningDaoId] = useState(null)
   const [groupCollapse, setGroupCollapse] = useState(getDaoGroupCollapseFromCookie)
   const [selectedDaoId, setSelectedDaoId] = useState(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const deepLinkHandledRef = useRef(false)
+
+  // Wrapper to select a DAO and update the URL
+  const selectDao = useCallback((projectId, { updateUrl = true } = {}) => {
+    setSelectedDaoId(projectId)
+    if (updateUrl && projectId !== null) {
+      updateUrlToDeepLink(DEEP_LINK_TYPES.DAO, projectId)
+    }
+  }, [])
+
+  // Wrapper to deselect DAO and reset URL
+  const deselectDao = useCallback(() => {
+    setSelectedDaoId(null)
+    resetUrlFromDeepLink(1)
+  }, [])
 
   // Notify parent when we have an internal back action (viewing DAO detail)
   useEffect(() => {
     if (selectedDaoId !== null) {
-      const clearSelection = () => setSelectedDaoId(null)
-      setBackOverride?.(() => clearSelection)
+      setBackOverride?.(() => deselectDao)
     } else {
       setBackOverride?.(null)
     }
-  }, [selectedDaoId, setBackOverride])
+  }, [selectedDaoId, setBackOverride, deselectDao])
 
   // Save group collapse state to cookie
   useEffect(() => {
@@ -95,12 +114,45 @@ export default function DaoUserLists({
     requestPolicy: 'network-only',
   })
 
-  const { handleSend, pending: joinPending } = useExecuteHandler({
+  // Handle deep link - auto-select DAO when deep link is detected
+  useEffect(() => {
+    if (!deepLink || deepLink.type !== DEEP_LINK_TYPES.DAO) return
+    if (deepLinkHandledRef.current) return
+    if (fetching) return
+
+    const daoId = Number(deepLink.id)
+    if (!Number.isFinite(daoId)) {
+      clearDeepLink?.(1)
+      return
+    }
+
+    // Select the DAO without updating URL (it's already showing the deep link)
+    deepLinkHandledRef.current = true
+    selectDao(daoId, { updateUrl: false })
+    clearDeepLink?.(1)
+  }, [deepLink, fetching, selectDao, clearDeepLink])
+
+  const { handleSend, pending: joinPending, loginRequired, clearPendingTransaction } = useExecuteHandler({
     contract: daoContract,
     fn: joinFn,
     params: {},
     disablePreview: true,
   })
+
+  // Sync loginRequired with showLoginModal
+  useEffect(() => {
+    if (loginRequired) {
+      setShowLoginModal(true)
+    }
+  }, [loginRequired])
+
+  // Handle modal close - cleanup pending transaction
+  const handleLoginModalClose = useCallback((val) => {
+    setShowLoginModal(typeof val === 'boolean' ? val : false)
+    if (!val) {
+      clearPendingTransaction()
+    }
+  }, [clearPendingTransaction])
 
   const projects = data?.projects ?? []
   const memberships = data?.memberships ?? []
@@ -245,7 +297,7 @@ export default function DaoUserLists({
           activeProposalCount={activeProposalCount}
           treasuryStr={treasuryStr}
           isMobile={isMobile}
-          onClick={() => setSelectedDaoId(dao.project_id)}
+          onClick={() => selectDao(dao.project_id)}
         />
       )
     }
@@ -337,13 +389,7 @@ export default function DaoUserLists({
 
   const handleJoinDao = useCallback(
     async (dao) => {
-      if (!user) {
-        popup?.openPopup?.({
-          title: 'Login required',
-          body: 'Please connect your account to join a DAO.',
-        })
-        return
-      }
+      // User login check is handled by useExecuteHandler - it will show login modal if needed
       if (!daoContract || !joinFn) {
         popup?.openPopup?.({
           title: 'DAO join unavailable',
@@ -377,7 +423,7 @@ export default function DaoUserLists({
         setJoiningDaoId(null)
       }
     },
-    [user, daoContract, joinFn, popup, handleSend]
+    [daoContract, joinFn, popup, handleSend]
   )
 
   const openJoinPopup = () => {
@@ -389,7 +435,7 @@ export default function DaoUserLists({
       return
     }
     popup?.openPopup?.({
-      title: 'Join a DAO',
+      title: 'Join DAO',
       width: '900px',
       body: () => (
         <div style={{
@@ -640,9 +686,22 @@ export default function DaoUserLists({
     )
   }
 
+  // Login modal for join DAO
+  const loginModal = (
+    <LoginModal
+      showModal={showLoginModal}
+      setShowModal={handleLoginModalClose}
+    />
+  )
+
   // Show detail view if a DAO is selected
   if (selectedDaoId !== null) {
-    return renderDaoDetailView()
+    return (
+      <>
+        {loginModal}
+        {renderDaoDetailView()}
+      </>
+    )
   }
 
   return (
@@ -653,24 +712,25 @@ export default function DaoUserLists({
         gap: '10px',
       }}
     >
+      {loginModal}
       <div style={{ display: 'flex', gap: '8px' }}>
         <button
           className="dao-header-cta"
           onClick={() => openJoinPopup()}
           style={baseButtonStyle(false)}
-          title="Join a DAO"
+          title="Join DAO"
         >
           <FontAwesomeIcon icon={faUserPlus} style={{ fontSize: '0.9rem' }} />
-          <span>Join a DAO</span>
+          <span>Join DAO</span>
         </button>
         <button
           className="dao-header-cta"
           onClick={() => onCreateDao?.()}
           style={baseButtonStyle(false)}
-          title="Create a new DAO"
+          title="Create DAO"
         >
           <FontAwesomeIcon icon={faPlusCircle} style={{ fontSize: '0.9rem' }} />
-          <span>Create a new DAO</span>
+          <span>Create DAO</span>
         </button>
       </div>
       {renderDaoList()}

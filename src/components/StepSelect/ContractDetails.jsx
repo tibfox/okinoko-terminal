@@ -22,6 +22,8 @@ export default function ContractDetails({
   setStep,
   setContractId,
   setBackOverride,
+  deepLink,
+  clearDeepLink,
 }) {
   if (!selectedContract) {
     return <p>Select a contract to view details.</p>
@@ -135,6 +137,8 @@ export default function ContractDetails({
           setStep={setStep}
           setContractId={setContractId}
           setBackOverride={setBackOverride}
+          deepLink={deepLink}
+          clearDeepLink={clearDeepLink}
         />
       )}
 
@@ -151,6 +155,8 @@ export default function ContractDetails({
           setFnName={setFnName}
           setStep={setStep}
           setContractId={setContractId}
+          deepLink={deepLink}
+          clearDeepLink={clearDeepLink}
         />
       )}
     </div>

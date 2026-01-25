@@ -51,7 +51,7 @@ const attachRcLimit = (payload, rcLimit) => {
 }
 
 export default function useExecuteHandler({ contract, fn, params, disablePreview = false, onTransactionSigned }) {
-  const { openPopup } = useContext(PopupContext)
+  const { openPopup, closePopup } = useContext(PopupContext)
 
   const { aioha, user } = useAioha()
   const { runQuery } = useVscQuery()
@@ -62,6 +62,9 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
   const [waitingDots, setWaitingDots] = useState('')
   const intervalRef = useRef(null)
   const [balances, setBalances] = useState({ hive: 0, hbd: 0, hbd_savings: 0 })
+
+  // Ref to store pending transaction params when login is required
+  const pendingTxRef = useRef(null)
 
   const [logs, setLogs] = useState(() => {
     const saved = sessionStorage.getItem('terminalLogs')
@@ -730,11 +733,44 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     [fn, balances, params]
   )
 
+  // State to track if login is required for a pending transaction
+  const [loginRequired, setLoginRequired] = useState(false)
+
   /**
-   * Executes the contract function
+   * Called when user successfully logs in - executes the pending transaction
    */
-  async function handleSend(overrideParams = null) {
-    const effectiveParams = overrideParams ? { ...params, ...overrideParams } : params
+  const executePendingTransaction = useCallback(() => {
+    const storedParams = pendingTxRef.current
+    if (storedParams) {
+      pendingTxRef.current = null
+      setLoginRequired(false)
+      // Use setTimeout to ensure state is updated before executing
+      setTimeout(() => {
+        executeTransaction(storedParams)
+      }, 100)
+    }
+  }, [])
+
+  // Watch for user login and execute pending transaction
+  useEffect(() => {
+    if (user && pendingTxRef.current && loginRequired) {
+      executePendingTransaction()
+    }
+  }, [user, loginRequired, executePendingTransaction])
+
+  /**
+   * Shows a login required state and stores the pending transaction
+   */
+  const showLoginRequired = useCallback((effectiveParams) => {
+    // Store the pending transaction params
+    pendingTxRef.current = effectiveParams
+    setLoginRequired(true)
+  }, [])
+
+  /**
+   * Internal function to execute the transaction (called after login check passes)
+   */
+  async function executeTransaction(effectiveParams) {
     const mandatoryOk = areMandatoryFilled(effectiveParams)
 
     if (!contract || !fn || !mandatoryOk) {
@@ -859,6 +895,30 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     return success
   }
 
+  /**
+   * Clears the pending transaction and login required state
+   */
+  const clearPendingTransaction = useCallback(() => {
+    pendingTxRef.current = null
+    setLoginRequired(false)
+  }, [])
+
+  /**
+   * Executes the contract function (checks login first)
+   */
+  async function handleSend(overrideParams = null) {
+    const effectiveParams = overrideParams ? { ...params, ...overrideParams } : params
+
+    // Check if user is logged in
+    if (!user) {
+      console.log('[useExecuteHandler] User not logged in, setting login required state')
+      showLoginRequired(effectiveParams)
+      return false
+    }
+
+    return executeTransaction(effectiveParams)
+  }
+
   const jsonPreview = useMemo(() => {
     if (disablePreview || !fn || !contract) return '{}'
     const { payload, intents } = buildPayload(fn, params)
@@ -884,5 +944,7 @@ export default function useExecuteHandler({ contract, fn, params, disablePreview
     allMandatoryFilled,
     describeMissing,
     balances,
+    loginRequired,
+    clearPendingTransaction,
   }
 }

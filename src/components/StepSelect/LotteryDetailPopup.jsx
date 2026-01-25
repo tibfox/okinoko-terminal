@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'preact/hooks'
+import { useState, useEffect, useCallback } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowUpRightFromSquare, faTicket, faTrophy, faChevronDown, faChevronUp, faInfoCircle, faTable, faChartPie } from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpRightFromSquare, faTicket, faTrophy, faChevronDown, faChevronUp, faInfoCircle, faTable, faChartPie, faLink, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { faStar } from '@fortawesome/free-regular-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import PollPie from './PollPie.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import Avatar from '../common/Avatar.jsx'
+import { copyDeepLinkToClipboard, DEEP_LINK_TYPES } from '../../hooks/useDeepLink.js'
 
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
@@ -129,6 +130,15 @@ export default function LotteryDetailPopup({
   const [headerCollapsed, setHeaderCollapsed] = useState(false)
   const [detailsCollapsed, setDetailsCollapsed] = useState(false)
   const [chartsCollapsed, setChartsCollapsed] = useState(true)
+  const [urlCopied, setUrlCopied] = useState(false)
+
+  const handleCopyUrl = useCallback(async () => {
+    const success = await copyDeepLinkToClipboard(DEEP_LINK_TYPES.LOTTERY, lottery.id)
+    if (success) {
+      setUrlCopied(true)
+      setTimeout(() => setUrlCopied(false), 2000)
+    }
+  }, [lottery.id])
   const countdown = useCountdown(lottery.deadline)
   const totalPot = (lottery.total_tickets_sold || 0) * (lottery.ticket_price || 0)
   const burnPercent = Number(lottery.burn_percent) || 0
@@ -270,6 +280,17 @@ export default function LotteryDetailPopup({
             </div>
           )}
           <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+            <NeonButton
+              onClick={handleCopyUrl}
+              style={popupButtonStyle}
+              title="Copy shareable link"
+            >
+              <FontAwesomeIcon
+                icon={urlCopied ? faCheck : faLink}
+                style={{ fontSize:'0.9rem' }}
+              />
+              <span>{urlCopied ? 'Copied!' : 'Copy URL'}</span>
+            </NeonButton>
             {lotteryPostUrl && (
               <NeonButton
                 as="a"
@@ -279,7 +300,7 @@ export default function LotteryDetailPopup({
                 style={popupButtonStyle}
                 title="Open lottery post"
               >
-                <FontAwesomeIcon icon={faArrowUpRightFromSquare} 
+                <FontAwesomeIcon icon={faArrowUpRightFromSquare}
                   style={{ fontSize:'0.9rem' }}
                   />
                 <span>Open Post</span>

@@ -1,4 +1,4 @@
-import { useMemo, useState, useContext, useCallback, useEffect } from 'preact/hooks'
+import { useMemo, useState, useContext, useCallback, useEffect, useRef } from 'preact/hooks'
 import { gql, useQuery } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { PopupContext } from '../../popup/context.js'
 import LotteryDetailPopup from './LotteryDetailPopup.jsx'
+import { DEEP_LINK_TYPES, updateUrlToDeepLink, resetUrlFromDeepLink } from '../../hooks/useDeepLink.js'
 
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 
@@ -199,12 +200,15 @@ export default function LotteryUserLists({
   setFnName,
   setStep,
   setContractId,
+  deepLink,
+  clearDeepLink,
 }) {
   const [lotteriesCollapsed, setLotteriesCollapsed] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [lotteryStatusFilter, setLotteryStatusFilter] = useState('active')
   const [groupCollapse, setGroupCollapse] = useState(getLotteryGroupCollapseFromCookie)
   const popup = useContext(PopupContext)
+  const deepLinkHandledRef = useRef(false)
 
   // Save group collapse state to cookie
   useEffect(() => {
@@ -271,16 +275,30 @@ export default function LotteryUserLists({
     return deadline * 1000 < Date.now()
   }
 
+  // All lotteries combined for deep link lookup
+  const allLotteries = useMemo(() => {
+    return [...activeLotteriesWithMetadata, ...closedLotteriesWithMetadata]
+  }, [activeLotteriesWithMetadata, closedLotteriesWithMetadata])
+
   const openLotteryDetail = useCallback(
-    (lottery) => {
+    (lottery, { updateUrl = true } = {}) => {
       if (!lottery) return
+      // Update URL to show the lottery deep link
+      if (updateUrl) {
+        updateUrlToDeepLink(DEEP_LINK_TYPES.LOTTERY, lottery.id)
+      }
       popup?.openPopup?.({
         title: `Lottery #${lottery.id}`,
+        onClose: () => {
+          // Reset URL when popup is closed
+          resetUrlFromDeepLink(1)
+        },
         body: () => (
           <LotteryDetailPopup
             lottery={lottery}
             userTickets={userTicketsByLottery.get(lottery.id) || 0}
             onBuyTickets={() => {
+              resetUrlFromDeepLink(1)
               popup?.closePopup?.()
               setContractId?.(LOTTERY_VSC_ID)
               setFnName?.('join_lottery')
@@ -292,6 +310,7 @@ export default function LotteryUserLists({
               setStep?.(2)
             }}
             onExecute={() => {
+              resetUrlFromDeepLink(1)
               popup?.closePopup?.()
               setContractId?.(LOTTERY_VSC_ID)
               setFnName?.('execute_lottery')
@@ -309,6 +328,30 @@ export default function LotteryUserLists({
     },
     [popup, userTicketsByLottery, setContractId, setFnName, setParams, setStep]
   )
+
+  // Handle deep link - auto-open lottery popup when deep link is detected
+  useEffect(() => {
+    if (!deepLink || deepLink.type !== DEEP_LINK_TYPES.LOTTERY) return
+    if (deepLinkHandledRef.current) return
+    if (fetching || !data) return
+
+    const lotteryId = Number(deepLink.id)
+    if (!Number.isFinite(lotteryId)) {
+      clearDeepLink?.(1)
+      return
+    }
+
+    const lottery = allLotteries.find((l) => Number(l.id) === lotteryId)
+    if (lottery) {
+      deepLinkHandledRef.current = true
+      // Open the popup without updating URL (it's already showing the deep link)
+      openLotteryDetail(lottery, { updateUrl: false })
+      clearDeepLink?.(1)
+    } else {
+      // Lottery not found, clear the deep link
+      clearDeepLink?.(1)
+    }
+  }, [deepLink, fetching, data, allLotteries, openLotteryDetail, clearDeepLink])
 
   const handleBuyTickets = useCallback(
     (lotteryId) => {

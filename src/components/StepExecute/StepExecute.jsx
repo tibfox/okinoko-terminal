@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faChevronRight, faBolt } from '@fortawesome/free-solid-svg-icons'
 import MobileTabs from '../common/MobileTabs.jsx'
 import ResumedTransactionBanner from '../common/ResumedTransactionBanner.jsx'
+import LoginModal from '../common/LoginModal.jsx'
 import { useDeviceBreakpoint } from '../../hooks/useDeviceBreakpoint.js'
 import ResizableDivider from '../common/ResizableDivider.jsx'
 import { getCookie, setCookie } from '../../lib/cookies.js'
@@ -63,6 +64,17 @@ export default function StepExecute({
   const [draggingDivider, setDraggingDivider] = useState(false)
   const [assetSharesValid, setAssetSharesValid] = useState(true)
   const layoutRef = useRef(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const loginSuccessRef = useRef(false)
+
+  // Show login modal if user is not logged in when the component mounts
+  useEffect(() => {
+    if (!user) {
+      setShowLoginModal(true)
+    } else {
+      setShowLoginModal(false)
+    }
+  }, [user])
 
   // ✅ load pending tx only after everything mounts
   useEffect(() => {
@@ -248,7 +260,38 @@ export default function StepExecute({
     handleSend,
     allMandatoryFilled,
     describeMissing,
+    loginRequired,
+    clearPendingTransaction,
   } = useExecuteHandler({ contract, fn, params, setParams, resumedTx })
+
+  // Reset success tracking when modal opens (must be after useExecuteHandler)
+  useEffect(() => {
+    if (showLoginModal || loginRequired) {
+      loginSuccessRef.current = false
+    }
+  }, [showLoginModal, loginRequired])
+
+  // Show login modal when transaction requires login
+  useEffect(() => {
+    if (loginRequired) {
+      setShowLoginModal(true)
+    }
+  }, [loginRequired])
+
+  // Track if modal was shown to handle close properly
+  const modalWasShownRef = useRef(false)
+  useEffect(() => {
+    if (showLoginModal) {
+      modalWasShownRef.current = true
+    } else if (modalWasShownRef.current) {
+      // Modal was closed - cleanup if login wasn't successful
+      modalWasShownRef.current = false
+      if (!loginSuccessRef.current && !user) {
+        clearPendingTransaction()
+        setStep(1)
+      }
+    }
+  }, [showLoginModal, user, clearPendingTransaction, setStep])
 
   const sharesValid =
     winnerSharesSum === null ||
@@ -336,11 +379,21 @@ export default function StepExecute({
         : `${leftFraction}fr ${SPLITTER_WIDTH_PX}px ${rightFraction}fr`
 
   return (
-    <TerminalContainer title="Input & Execute Function"
-    titleOnMinimize="Execute"
-    backgroundColor="rgba(0, 0, 0, 0.5)"
-    >
-      <MobileTabs
+    <>
+      {/* Login Modal - shown when entering form without login or transaction attempted without login */}
+      <LoginModal
+        showModal={showLoginModal}
+        setShowModal={setShowLoginModal}
+        onLoginSuccess={() => {
+          loginSuccessRef.current = true
+        }}
+      />
+
+      <TerminalContainer title="Input & Execute Function"
+      titleOnMinimize="Execute"
+      backgroundColor="rgba(0, 0, 0, 0.5)"
+      >
+        <MobileTabs
         visible={isMobile}
         tabs={mobileTabs}
         activeTab={activePage}
@@ -457,6 +510,7 @@ export default function StepExecute({
           </NeonButton>
         </div>
       </div>
-    </TerminalContainer>
+      </TerminalContainer>
+    </>
   )
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useContext, useMemo, useCallback } from 'p
 import { useQuery } from '@urql/preact'
 import { gql } from '@urql/preact'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLink, faChevronDown, faChevronUp, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faLink, faChevronDown, faChevronUp, faPlus, faCheck, faShare } from '@fortawesome/free-solid-svg-icons'
 import NeonButton from '../buttons/NeonButton.jsx'
 import Avatar from '../common/Avatar.jsx'
 import NeonSwitch from '../common/NeonSwitch.jsx'
@@ -12,6 +12,7 @@ import { PopupContext } from '../../popup/context.js'
 import contractsCfg from '../../data/contracts'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import { DAO_VSC_ID } from './daoQueries.js'
+import { copyDeepLinkToClipboard, DEEP_LINK_TYPES } from '../../hooks/useDeepLink.js'
 
 // Cookie helpers for collapse state persistence
 const COOKIE_NAME = 'daoDetailCollapse'
@@ -241,7 +242,16 @@ export default function DaoDetail({
   const isNarrow = isContainerNarrow || isMobileProp
   const [collapseState, setCollapseState] = useState(() => getCollapseStateFromCookie())
   const [proposalFilter, setProposalFilter] = useState('active') // 'active' or 'closed'
+  const [urlCopied, setUrlCopied] = useState(false)
   const popup = useContext(PopupContext)
+
+  const handleCopyUrl = useCallback(async () => {
+    const success = await copyDeepLinkToClipboard(DEEP_LINK_TYPES.DAO, projectId)
+    if (success) {
+      setUrlCopied(true)
+      setTimeout(() => setUrlCopied(false), 2000)
+    }
+  }, [projectId])
 
   // Setup for project_funds transaction
   const daoContract = useMemo(
@@ -405,6 +415,17 @@ export default function DaoDetail({
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9 }}>by {base.created_by || 'n/a'}</div>
                   <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <NeonButton
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCopyUrl()
+                      }}
+                      style={popupButtonStyle}
+                      title="Copy shareable link"
+                    >
+                      <FontAwesomeIcon icon={urlCopied ? faCheck : faShare} style={{ fontSize: '0.9rem' }} />
+                      <span>{urlCopied ? 'Copied!' : 'Copy URL'}</span>
+                    </NeonButton>
                     {daoUrl && (
                       <NeonButton
                         onClick={(e) => {
@@ -454,6 +475,17 @@ export default function DaoDetail({
               <>
                 <div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <NeonButton
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCopyUrl()
+                      }}
+                      style={popupButtonStyle}
+                      title="Copy shareable link"
+                    >
+                      <FontAwesomeIcon icon={urlCopied ? faCheck : faShare} style={{ fontSize: '0.9rem' }} />
+                      <span>{urlCopied ? 'Copied!' : 'Copy URL'}</span>
+                    </NeonButton>
                     {daoUrl && (
                       <NeonButton
                         onClick={(e) => {

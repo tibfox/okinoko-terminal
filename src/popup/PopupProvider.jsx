@@ -11,16 +11,21 @@ export function PopupProvider({ children }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const isMobile = useDeviceBreakpoint();
 
-  const openPopup = ({ title, body, width }) => {
+  const openPopup = ({ title, body, width, onClose }) => {
     setPopup({
       title,
       body,
       width,
       showCloseButton: true,
+      onClose,
     })
     setPosition({ x: 0, y: 0 }); // Reset position when opening new popup
   }
-  const closePopup = () => setPopup(null);
+  const closePopup = () => {
+    // Call the onClose callback if provided
+    popup?.onClose?.()
+    setPopup(null)
+  };
 // 🔁 Re-render the overlay every second while a popup is open
   const [tick, setTick] = useState(0);
   useEffect(() => {

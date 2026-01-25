@@ -1,6 +1,7 @@
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import './index.css'
+import '@aioha/react-ui/dist/build.css'
 import { App } from './app.jsx'
 
 import './styles/base.css'

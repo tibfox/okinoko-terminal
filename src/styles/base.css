@@ -146,7 +146,8 @@ body {
   border-color: var(--color-primary-darker);
 }
 
-/* src/styles/aioha-modal.css */
+/* src/styles/aioha-modal.css - Styles for AiohaModal */
+/* Use .aioha-modal-theme wrapper for consistent styling */
 .aioha-modal-theme .text-gray-900,
 .aioha-modal-theme .dark\:text-white {
   color: var(--color-primary-lighter) !important;
@@ -158,26 +159,28 @@ body {
   border: 1px solid var(--color-primary-darkest) !important;
   background-color: black !important;
 }
-tr.hover\:bg-gray-50:hover {
+
+.aioha-modal-theme tr.hover\:bg-gray-50:hover {
   background-color: black !important;
   border: none !important;
   box-shadow: inset 0 0 0 3px var(--color-primary-darkest);
 }
-tr.hover\:bg-gray-50 td div {
+
+.aioha-modal-theme tr.hover\:bg-gray-50 td div {
   font-size: var(--font-size-base) !important;
 }
 
 /* Aioha modal font size increase */
-[class*="aioha"] {
+.aioha-modal-theme {
   font-size: 1.5rem !important;
 }
-[class*="aioha"] button,
-[class*="aioha"] input,
-[class*="aioha"] label,
-[class*="aioha"] span,
-[class*="aioha"] p,
-[class*="aioha"] td,
-[class*="aioha"] th {
+.aioha-modal-theme button,
+.aioha-modal-theme input,
+.aioha-modal-theme label,
+.aioha-modal-theme span,
+.aioha-modal-theme p,
+.aioha-modal-theme td,
+.aioha-modal-theme th {
   font-size: 1.5rem !important;
 }
 

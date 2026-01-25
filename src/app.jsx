@@ -17,6 +17,7 @@ import MonitorTerminal from './components/terminal/SubTerminals/MonitorTerminal.
 import TransactionsTerminal from './components/terminal/SubTerminals/TransactionsTerminal.jsx'
 import AccountDataTerminal from './components/terminal/SubTerminals/AccountDataTerminal.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
+import { useDeepLink, parseDeepLink, DEEP_LINK_CONTRACT_IDS } from './hooks/useDeepLink.js'
 
 const MAX_PAGE_INDEX = 3
 const clampPageIndex = (value) => Math.min(Math.max(value, 0), MAX_PAGE_INDEX)
@@ -24,14 +25,23 @@ const getInitialPageIndex = () => {
   if (typeof window === 'undefined') {
     return 0
   }
+  // Check for deep link first - if present, go to page 1 (StepSelect)
+  const deepLink = parseDeepLink(window.location.hash)
+  if (deepLink) {
+    return 1
+  }
   const statePage = window.history.state?.page
   if (typeof statePage === 'number') {
-    return clampPageIndex(statePage)
+    const clamped = clampPageIndex(statePage)
+    // Redirect page 2 (execute form) to page 1 (select) on refresh - form state is lost
+    return clamped === 2 ? 1 : clamped
   }
   const hashMatch = window.location.hash.match(/^#p(\d)$/)
   if (hashMatch) {
     const candidate = clampPageIndex(Number(hashMatch[1]))
-    return Number.isFinite(candidate) ? candidate : 0
+    if (!Number.isFinite(candidate)) return 0
+    // Redirect page 2 (execute form) to page 1 (select) on refresh - form state is lost
+    return candidate === 2 ? 1 : candidate
   }
   return 0
 }
@@ -47,7 +57,15 @@ const aioha = initAioha({
 
 export function App() {
   const [page, setPage] = useState(() => getInitialPageIndex())
-  const [contractId, setContractId] = useState('')
+  const [contractId, setContractId] = useState(() => {
+    // Auto-select contract based on deep link
+    if (typeof window === 'undefined') return ''
+    const deepLink = parseDeepLink(window.location.hash)
+    if (deepLink && DEEP_LINK_CONTRACT_IDS[deepLink.type]) {
+      return DEEP_LINK_CONTRACT_IDS[deepLink.type]
+    }
+    return ''
+  })
     const [fnName, setFnName] = useState('')
     const [params, setParams] = useState({})
   const isMobile = useDeviceBreakpoint()
@@ -55,6 +73,7 @@ export function App() {
   const showFooterCredit = isMobile === false
   const popNavigationRef = useRef(false)
   const [invalidHash, setInvalidHash] = useState(false)
+  const { deepLink, clearDeepLink } = useDeepLink()
 
     if (import.meta.env.VITE_EXPOSE_ERUDA === 'true') {
   import('eruda').then((eruda) => {
@@ -118,6 +137,8 @@ export function App() {
                         setFnName={setFnName}
                         setParams={setParams}
                         setStep={setPage}
+                        deepLink={deepLink}
+                        clearDeepLink={clearDeepLink}
                       />
         )
       case 2:

@@ -85,7 +85,7 @@ export default function WizardContainer({
   }
 
   return (
-    <div className="wizard-container">
+    <div className={`wizard-container ${isMobile ? 'wizard-container--mobile' : 'wizard-container--desktop'}`}>
       <WizardProgress
         steps={steps}
         currentIndex={wizard.currentStepIndex}
@@ -95,27 +95,30 @@ export default function WizardContainer({
         isMobile={isMobile}
       />
 
-      <WizardStep
-        step={wizard.currentStep}
-        parameters={currentStepParameters}
-        params={params}
-        renderField={renderField}
-        isReviewStep={wizard.currentStep.id === 'review'}
-        showValidationErrors={wizard.showValidationErrors}
-        renderHeader={renderStepHeader}
-      />
+      <div className="wizard-main">
+        <WizardStep
+          step={wizard.currentStep}
+          parameters={currentStepParameters}
+          params={params}
+          renderField={renderField}
+          isReviewStep={wizard.currentStep.id === 'review'}
+          showValidationErrors={wizard.showValidationErrors}
+          renderHeader={renderStepHeader}
+          isMobile={isMobile}
+        />
 
-      <WizardNavigation
-        onPrev={handlePrev}
-        onNext={handleNext}
-        canGoBack={!wizard.isFirstStep}
-        canGoForward={wizard.canProceed || wizard.isLastStep}
-        isFirstStep={wizard.isFirstStep}
-        isLastStep={wizard.isLastStep}
-        submitLabel={submitLabel}
-        isSubmitting={isSubmitting}
-        validationIssues={wizard.canProceed ? [] : wizard.getStepValidationIssues(wizard.currentStep.id)}
-      />
+        <WizardNavigation
+          onPrev={handlePrev}
+          onNext={handleNext}
+          canGoBack={!wizard.isFirstStep}
+          canGoForward={wizard.canProceed || wizard.isLastStep}
+          isFirstStep={wizard.isFirstStep}
+          isLastStep={wizard.isLastStep}
+          submitLabel={submitLabel}
+          isSubmitting={isSubmitting}
+          validationIssues={wizard.canProceed ? [] : wizard.getStepValidationIssues(wizard.currentStep.id)}
+        />
+      </div>
     </div>
   )
 }

@@ -9,6 +9,7 @@ export default function WizardStep({
   isReviewStep = false,
   showValidationErrors = false,
   renderHeader,
+  isMobile = false,
 }) {
   if (!step) return null
 
@@ -22,7 +23,7 @@ export default function WizardStep({
       <div className="wizard-step wizard-step--review">
         <div className="wizard-step__header">
           <h3>{step.title}</h3>
-          {step.description && <p>{step.description}</p>}
+          {step.description && !isMobile && <p>{step.description}</p>}
         </div>
         <div className="wizard-step__content wizard-step__review-content neon-scroll">
           {parameters.length === 0 ? (
@@ -74,7 +75,7 @@ export default function WizardStep({
           {step.disabledMessage}
         </div>
       )}
-      {step.description && !step.disabled && (
+      {step.description && !step.disabled && !isMobile && (
         <p className="wizard-step__description">{step.description}</p>
       )}
       {renderHeader && !step.disabled && (
