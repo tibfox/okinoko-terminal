@@ -46,6 +46,8 @@ const TerminalWindowContext = createContext({
   applyLayoutPreset: () => false,
   saveCustomLayout: () => null,
   deleteCustomLayout: () => {},
+  focusMode: false,
+  toggleFocusMode: () => {},
 })
 
 const readCookieState = () => {
@@ -229,6 +231,15 @@ const scaleWindowMap = (windows, ratioX, ratioY) => {
   return hasChanges ? nextWindows : windows
 }
 
+const SECONDARY_WINDOW_IDS = ['aux-monitor', 'tx-monitor', 'account-data']
+const MINIMIZED_WIDTH = 230
+const MINIMIZED_HEIGHT = 65
+const FOCUS_PRIMARY_MARGIN = 20 // Margin for primary terminal (bottom, left)
+const FOCUS_PRIMARY_TOP = 60 // Top margin for primary terminal (below menu)
+const FOCUS_RIGHT_MARGIN = 20 // Right edge margin for minimized column
+const MINIMIZED_COLUMN_TOP = 100 // Top margin for minimized column
+const MINIMIZED_COLUMN_GAP = 48 // Gap between minimized terminals
+
 export function TerminalWindowProvider({ children }) {
   const [windows, setWindows] = useState({})
   const layerCounterRef = useRef(1)
@@ -236,6 +247,8 @@ export function TerminalWindowProvider({ children }) {
   const [layoutResetToken, setLayoutResetToken] = useState(0)
   const [layoutTransitionToken, setLayoutTransitionToken] = useState(0)
   const [customLayouts, setCustomLayouts] = useState(() => readCustomLayouts())
+  const [focusMode, setFocusMode] = useState(false)
+  const preFocusLayoutRef = useRef(null)
 
   useEffect(() => {
     const saved = readCookieState()
@@ -327,6 +340,13 @@ export function TerminalWindowProvider({ children }) {
   }, [])
 
   const updateWindow = useCallback((id, updater) => {
+    // Exit focus mode when user manually changes layout
+    setFocusMode((currentFocusMode) => {
+      if (currentFocusMode) {
+        preFocusLayoutRef.current = null
+      }
+      return false
+    })
     setWindows((prev) => {
       const prevState = prev[id] ?? createDefaultState()
       const nextState =
@@ -398,6 +418,10 @@ export function TerminalWindowProvider({ children }) {
         return false
       }
 
+      // Exit focus mode when applying a preset
+      setFocusMode(false)
+      preFocusLayoutRef.current = null
+
       let nextZ = 1
       const nextWindows = entries.reduce((acc, [id, value]) => {
         acc[id] = createDefaultState({
@@ -418,6 +442,104 @@ export function TerminalWindowProvider({ children }) {
     [customLayouts],
   )
 
+  const toggleFocusMode = useCallback(() => {
+    // Always get fresh viewport dimensions
+    const viewport = getViewportSize()
+    const vw = viewport.width
+    const vh = viewport.height
+
+    if (!focusMode) {
+      // Entering focus mode - save current layout
+      preFocusLayoutRef.current = cloneWindowStateMap(windows)
+
+      // Calculate minimized column position (right side, close to edge)
+      const minimizedColumnX = vw - MINIMIZED_WIDTH - FOCUS_RIGHT_MARGIN
+
+      // Calculate primary terminal size (fill remaining space, with 10px gap to minimized column)
+      const primaryWidth = minimizedColumnX - FOCUS_PRIMARY_MARGIN - 10
+      const primaryHeight = vh - FOCUS_PRIMARY_TOP * 2
+
+      // Build focus mode layout
+      let nextZ = 1
+      const focusLayout = {
+        primary: {
+          isMinimized: false,
+          dimensions: { width: primaryWidth, height: primaryHeight },
+          position: { x: FOCUS_PRIMARY_MARGIN, y: FOCUS_PRIMARY_TOP },
+          zIndex: nextZ++,
+        },
+      }
+
+      // Stack secondary terminals in a column on the right
+      // Preserve original dimensions so they restore properly when un-minimized
+
+      // Ensure x position doesn't go off screen
+      const safeMinimizedX = Math.max(FOCUS_PRIMARY_MARGIN, vw - MINIMIZED_WIDTH - FOCUS_RIGHT_MARGIN)
+
+      // Calculate positions for minimized windows
+      const numSecondary = SECONDARY_WINDOW_IDS.length
+      const minGap = 4
+      const totalHeightNeeded = numSecondary * MINIMIZED_HEIGHT + (numSecondary - 1) * MINIMIZED_COLUMN_GAP
+      const maxBottomY = vh - FOCUS_RIGHT_MARGIN // Bottom edge with small margin
+      const topY = MINIMIZED_COLUMN_TOP // Start with top padding
+
+      // Calculate where the last container would end
+      const naturalEndY = topY + totalHeightNeeded
+
+      let startY = topY
+      let adjustedGap = MINIMIZED_COLUMN_GAP
+
+      if (naturalEndY > maxBottomY) {
+        // Containers would overflow, try to fit by reducing gap
+        const availableForGaps = maxBottomY - topY - (numSecondary * MINIMIZED_HEIGHT)
+        if (availableForGaps >= (numSecondary - 1) * minGap) {
+          // Can fit with reduced gap
+          adjustedGap = Math.floor(availableForGaps / (numSecondary - 1))
+        } else {
+          // Can't fit even with minimum gap, shift start up if possible
+          const totalWithMinGap = numSecondary * MINIMIZED_HEIGHT + (numSecondary - 1) * minGap
+          adjustedGap = minGap
+          // Calculate how much we need to shift up
+          const overflow = topY + totalWithMinGap - maxBottomY
+          if (overflow > 0) {
+            // Shift start up, but don't go above 0
+            startY = Math.max(0, topY - overflow)
+          }
+        }
+      }
+
+      let yOffset = startY
+      for (const windowId of SECONDARY_WINDOW_IDS) {
+        const existingWindow = windows[windowId]
+        focusLayout[windowId] = {
+          isMinimized: true,
+          dimensions: existingWindow?.dimensions ?? null,
+          position: { x: safeMinimizedX, y: yOffset },
+          zIndex: nextZ++,
+        }
+        yOffset += MINIMIZED_HEIGHT + adjustedGap
+      }
+
+      layerCounterRef.current = nextZ
+      setLayoutTransitionToken((token) => token + 1)
+      setWindows(focusLayout)
+      setFocusMode(true)
+    } else {
+      // Exiting focus mode - restore previous layout
+      if (preFocusLayoutRef.current) {
+        const maxZ = Object.values(preFocusLayoutRef.current).reduce(
+          (max, entry) => Math.max(max, entry.zIndex ?? 0),
+          0
+        )
+        layerCounterRef.current = Math.max(1, maxZ)
+        setLayoutTransitionToken((token) => token + 1)
+        setWindows(preFocusLayoutRef.current)
+        preFocusLayoutRef.current = null
+      }
+      setFocusMode(false)
+    }
+  }, [focusMode, windows])
+
   const contextValue = useMemo(
     () => ({
       windows,
@@ -432,6 +554,8 @@ export function TerminalWindowProvider({ children }) {
       applyLayoutPreset,
       saveCustomLayout,
       deleteCustomLayout,
+      focusMode,
+      toggleFocusMode,
     }),
     [
       windows,
@@ -445,6 +569,8 @@ export function TerminalWindowProvider({ children }) {
       applyLayoutPreset,
       saveCustomLayout,
       deleteCustomLayout,
+      focusMode,
+      toggleFocusMode,
     ],
   )
 
@@ -469,6 +595,8 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     customLayouts,
     saveCustomLayout,
     deleteCustomLayout,
+    focusMode,
+    toggleFocusMode,
   } = useContext(TerminalWindowContext)
   const defaultsKey = useMemo(() => JSON.stringify(defaults), [defaults])
   const parsedDefaults = useMemo(() => (defaultsKey ? JSON.parse(defaultsKey) : {}), [defaultsKey])
@@ -533,6 +661,8 @@ export const useTerminalWindow = (windowId = 'primary', defaults = {}) => {
     customLayouts,
     saveCustomLayout,
     deleteCustomLayout,
+    focusMode,
+    toggleFocusMode,
   }
 }
 

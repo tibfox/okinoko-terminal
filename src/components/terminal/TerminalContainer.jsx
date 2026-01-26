@@ -15,8 +15,10 @@ import {
   faTrash,
   faTornado,
   faCircleQuestion,
-  faBars,
-  faXmark,
+  faChevronLeft,
+  faChevronRight,
+  faExpand,
+  faCompress,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
 import { getWindowDefaults } from './windowDefaults.js'
@@ -93,6 +95,8 @@ export default function TerminalContainer({
     customLayouts = [],
     saveCustomLayout,
     deleteCustomLayout,
+    focusMode,
+    toggleFocusMode,
   } = useTerminalWindow(windowId, resolvedInitialState)
   const [renderMinimized, setRenderMinimized] = useState(isMinimized)
   const { effects: backgroundEffects = [], activeEffectId, setActiveEffectId } = useBackgroundEffects()
@@ -222,11 +226,13 @@ export default function TerminalContainer({
   })
 
   const getDesktopBounds = () => {
+    // Primary terminal uses viewport as max, secondary terminals use DESKTOP_MAX constants
+    const isPrimary = windowId === 'primary'
     const baseBounds = {
       minWidth: desktopBoundsProp.minWidth ?? DESKTOP_MIN_WIDTH,
-      maxWidth: desktopBoundsProp.maxWidth ?? DESKTOP_MAX_WIDTH,
+      maxWidth: isPrimary ? Infinity : (desktopBoundsProp.maxWidth ?? DESKTOP_MAX_WIDTH),
       minHeight: desktopBoundsProp.minHeight ?? DESKTOP_MIN_HEIGHT,
-      maxHeight: desktopBoundsProp.maxHeight ?? DESKTOP_MAX_HEIGHT,
+      maxHeight: isPrimary ? Infinity : (desktopBoundsProp.maxHeight ?? DESKTOP_MAX_HEIGHT),
     }
 
     if (!canUseWindow) {
@@ -316,8 +322,23 @@ export default function TerminalContainer({
       }
       const snappedPosition = snapPositionToGrid(rawPosition)
 
-      positionRef.current = snappedPosition
-      setPosition(snappedPosition)
+      // Clamp position to keep window within viewport
+      // Use minimized dimensions when minimized
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const minimizedWidth = Math.round(DESKTOP_MIN_WIDTH * 0.5)
+      const minimizedHeight = 65
+      const winWidth = isMinimized ? minimizedWidth : (dimensions?.width ?? 400)
+      const winHeight = isMinimized ? minimizedHeight : (dimensions?.height ?? 300)
+      const margin = 20
+
+      const clampedPosition = {
+        x: Math.max(margin, Math.min(snappedPosition.x, vw - winWidth - margin)),
+        y: Math.max(margin, Math.min(snappedPosition.y, vh - winHeight - margin)),
+      }
+
+      positionRef.current = clampedPosition
+      setPosition(clampedPosition)
     }
 
     const handlePointerUp = () => setIsDragging(false)
@@ -329,7 +350,7 @@ export default function TerminalContainer({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [isDragging, gridCellSize])
+  }, [isDragging, gridCellSize, dimensions, isMinimized])
 
   const handleDragStart = (event) => {
     if (isMobile || isResizing || event.button !== 0) {
@@ -579,6 +600,32 @@ export default function TerminalContainer({
       setIsPixelating(true)
       setTimeout(() => setIsPixelating(false), LAYOUT_ANIMATION_DURATION)
     }
+
+    // When un-minimizing, check if the window would be off-screen and adjust position
+    if (isMinimized && dimensions && position) {
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const margin = 20
+
+      let newX = position.x
+      let newY = position.y
+
+      // Check if right edge would be off screen
+      if (position.x + dimensions.width > vw - margin) {
+        newX = Math.max(margin, vw - dimensions.width - margin)
+      }
+
+      // Check if bottom edge would be off screen
+      if (position.y + dimensions.height > vh - margin) {
+        newY = Math.max(margin, vh - dimensions.height - margin)
+      }
+
+      // Update position if needed
+      if (newX !== position.x || newY !== position.y) {
+        setPosition({ x: newX, y: newY })
+      }
+    }
+
     setIsMinimized((prev) => !prev)
   }
 
@@ -1011,6 +1058,16 @@ export default function TerminalContainer({
               >
                 <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem'}} />
               </button>
+              <button
+                type="button"
+                onClick={toggleFocusMode}
+                onPointerDown={(event) => event.stopPropagation()}
+                aria-label={focusMode ? 'Exit focus mode' : 'Focus mode'}
+                title={focusMode ? 'Exit focus mode' : 'Focus mode'}
+                style={floatingButtonStyle}
+              >
+                <FontAwesomeIcon icon={focusMode ? faCompress : faExpand} style={{ fontSize: '0.9rem'}} />
+              </button>
               {/* <button
                 type="button"
                 onClick={triggerLayoutReset}
@@ -1042,7 +1099,7 @@ export default function TerminalContainer({
                 height: '2rem',
               }}
             >
-              <FontAwesomeIcon icon={isControlsOpen ? faXmark : faBars} style={{ fontSize: 'var(--font-size-base)' }} />
+              <FontAwesomeIcon icon={isControlsOpen ? faChevronRight : faChevronLeft} style={{ fontSize: '0.75rem' }} />
             </button>
           </div>,
           document.body,

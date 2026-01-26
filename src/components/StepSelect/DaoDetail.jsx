@@ -362,6 +362,7 @@ export default function DaoDetail({
     gap: '6px',
     textAlign: 'left',
     whiteSpace: 'nowrap',
+    marginTop: 0,
   }
 
   return (
@@ -406,7 +407,7 @@ export default function DaoDetail({
               <>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.4, opacity: 0.9 }}>by {base.created_by || 'n/a'}</div>
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                     {daoUrl && (
                       <NeonButton
                         onClick={(e) => {
@@ -461,7 +462,7 @@ export default function DaoDetail({
             ) : (
               <>
                 <div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                     {daoUrl && (
                       <NeonButton
                         onClick={(e) => {
