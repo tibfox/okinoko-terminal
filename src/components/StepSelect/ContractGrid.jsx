@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useState, useContext } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faFileContract,
@@ -7,7 +7,8 @@ import {
   faTicket,
   faPeopleGroup,
   faDharmachakra,
-  faFlask
+  faFlask,
+  faRocket
 } from '@fortawesome/free-solid-svg-icons'
 import { useAioha } from '@aioha/react-ui'
 import { KeyTypes, broadcastTx } from '@aioha/aioha'
@@ -16,6 +17,8 @@ import {
   recordTestButtonClick,
   recordTransactionSent
 } from '../../data/testButtonTracking.js'
+import { PopupContext } from '../../popup/context.js'
+import ContractDeployPopup from '../terminal/SubTerminals/ContractDeployPopup.jsx'
 
 const TEST_USERNAME = import.meta.env.VITE_TEST_HIVE_USERNAME
 const TEST_ACTIVE_KEY = import.meta.env.VITE_TEST_HIVE_ACTIVE_KEY
@@ -51,6 +54,33 @@ export default function ContractGrid({
 }) {
   const { aioha, user } = useAioha()
   const [isProcessing, setIsProcessing] = useState(false)
+  const { openPopup, closePopup } = useContext(PopupContext)
+
+  const handleDeployClick = () => {
+    if (!user) {
+      alert('Please connect your wallet first')
+      return
+    }
+    // Capture values in closure to prevent re-render issues
+    const capturedAioha = aioha
+    const capturedUser = user
+    const deployState = { isProcessing: false }
+    openPopup({
+      title: 'Deploy Contract',
+      body: () => (
+        <ContractDeployPopup
+          onClose={closePopup}
+          aioha={capturedAioha}
+          user={capturedUser}
+          onProcessingChange={(processing) => { deployState.isProcessing = processing }}
+        />
+      ),
+      width: '40vw',
+      confirmClose: () => deployState.isProcessing
+        ? 'Deployment is in progress. Are you sure you want to close?'
+        : false,
+    })
+  }
 
   const handleTestClick = async () => {
     if (!user) {
@@ -213,6 +243,51 @@ export default function ContractGrid({
           />
           <span style={{ textAlign: 'center', lineHeight: 1.3 }}>
             {isProcessing ? '...' : 'Test'}
+          </span>
+        </button>
+      )}
+
+      {/* Deploy Button - only shown in dev mode */}
+      {IS_DEV && (
+        <button
+          onClick={handleDeployClick}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            padding: '20px 16px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'var(--color-primary-lighter)',
+            border: '1px solid var(--color-primary-darkest)',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            fontSize: 'var(--font-size-base)',
+            letterSpacing: '0.05em',
+            fontWeight: 400,
+            transition: 'all 0.15s ease',
+            minHeight: '120px',
+            maxHeight: '160px',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+            e.currentTarget.style.borderColor = 'var(--color-primary)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'
+            e.currentTarget.style.borderColor = 'var(--color-primary-darkest)'
+          }}
+        >
+          <FontAwesomeIcon
+            icon={faRocket}
+            style={{
+              fontSize: '1.35rem',
+              color: 'var(--color-primary)',
+            }}
+          />
+          <span style={{ textAlign: 'center', lineHeight: 1.3 }}>
+            Deploy
           </span>
         </button>
       )}

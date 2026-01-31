@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from 'preact/hooks'
 import { gql, useQuery, useClient, createClient, cacheExchange, fetchExchange } from '@urql/preact'
 import NeonListDropdown from './NeonListDropdown.jsx'
+import { getNetworkConfigFromCookie } from '../terminal/providers/NetworkTypeProvider.jsx'
 
 const ESCROW_CONTRACT_ID = 'vsc1BgfucQVHwYBHuK2yMEv4AhYua9rtQ45Uoe'
-const VSC_ENDPOINT = import.meta.env.VITE_GRAPHQL_ENDPOINT || 'https://vscapi.okinoko.io/api/v1/graphql'
+const VSC_ENDPOINT = getNetworkConfigFromCookie().graphqlEndpoint
 
 // Create a separate client for VSC chain queries
 const vscClient = createClient({

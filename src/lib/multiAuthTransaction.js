@@ -1,8 +1,11 @@
-const HIVE_NODES = [
-  'https://api.hive.blog',
-  'https://api.deathwing.me',
-  'https://hive-api.arcange.eu',
-]
+import { getNetworkConfigFromCookie } from '../components/terminal/providers/NetworkTypeProvider.jsx'
+
+// Get Hive API nodes based on current network selection
+const getHiveNodes = () => {
+  const networkConfig = getNetworkConfigFromCookie()
+  // Use the network-specific Hive API as the primary node
+  return [networkConfig.hiveApi]
+}
 
 let dhiveModule = null
 let client = null
@@ -33,7 +36,7 @@ function readUInt32LE(bytes, offset) {
 async function getDhive() {
   if (!dhiveModule) {
     dhiveModule = await import('@hiveio/dhive')
-    client = new dhiveModule.Client(HIVE_NODES)
+    client = new dhiveModule.Client(getHiveNodes())
   }
   return { dhive: dhiveModule, client }
 }

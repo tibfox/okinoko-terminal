@@ -1,7 +1,8 @@
-const ENDPOINT = 'https://vscapi.okinoko.io/api/v1/graphql'
+import { getNetworkConfigFromCookie } from '../components/terminal/providers/NetworkTypeProvider.jsx'
 
 // returns { status: 'pending' | 'success' | 'error', result: object | string | null }
 export async function checkTxStatus(txid) {
+  const ENDPOINT = getNetworkConfigFromCookie().graphqlEndpoint
   const query = `
     query FindContractOutput($filterOptions: ContractOutputFilter) {
       findContractOutput(filterOptions: $filterOptions) {

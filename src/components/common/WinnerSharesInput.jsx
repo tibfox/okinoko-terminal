@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { useAssetSymbols } from '../terminal/providers/NetworkTypeProvider.jsx'
 // import NeonSwitch from './NeonSwitch.jsx' // Commented out - not needed in percentage-only mode
 
 /**
@@ -14,6 +15,7 @@ import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons'
  * @param {Number} winnerCount - Expected number of winners (for validation)
  */
 export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCount = 0 }) {
+  const assetSymbols = useAssetSymbols()
   const [newGroup, setNewGroup] = useState({
     asset: 'hive',
     // isFixed: false, // Commented out - always use percentage mode
@@ -175,8 +177,8 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
               border: '1px solid var(--color-primary-darkest)',
             }}
           >
-            <option value="hive" disabled={usedAssets.includes('hive')}>HIVE</option>
-            <option value="hbd" disabled={usedAssets.includes('hbd')}>HBD</option>
+            <option value="hive" disabled={usedAssets.includes('hive')}>{assetSymbols.HIVE}</option>
+            <option value="hbd" disabled={usedAssets.includes('hbd')}>{assetSymbols.HBD}</option>
           </select>
 
           {/* Commented out - always use percentage mode */}
@@ -337,8 +339,8 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
                 border: '1px solid var(--color-primary-darkest)',
               }}
             >
-              <option value="hive" disabled={usedAssets.includes('hive')}>HIVE</option>
-              <option value="hbd" disabled={usedAssets.includes('hbd')}>HBD</option>
+              <option value="hive" disabled={usedAssets.includes('hive')}>{assetSymbols.HIVE}</option>
+              <option value="hbd" disabled={usedAssets.includes('hbd')}>{assetSymbols.HBD}</option>
             </select>
 
             {/* Commented out - always use percentage mode */}
@@ -372,7 +374,7 @@ export default function WinnerSharesInput({ assetGroups = [], onChange, winnerCo
 
             {!canAddGroup && (
               <span style={{ color: 'var(--color-primary-lighter)', opacity: 0.7, fontSize: 'var(--font-size-base)' }}>
-                All assets (HIVE & HBD) already added
+                All assets ({assetSymbols.HIVE} & {assetSymbols.HBD}) already added
               </span>
             )}
           </div>

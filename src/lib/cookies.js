@@ -30,3 +30,18 @@ export function getColorCookie() {
 export function clearColorCookie() {
   document.cookie = "themeColor=; path=/; max-age=0";
 }
+
+// --- Network type cookie helpers ---
+const NETWORK_TYPE_COOKIE = 'okinoko_network_type'
+
+export function setNetworkTypeCookie(networkType) {
+  document.cookie = `${NETWORK_TYPE_COOKIE}=${encodeURIComponent(networkType)}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+}
+
+export function getNetworkTypeCookie() {
+  if (typeof document === 'undefined') {
+    return null
+  }
+  const row = document.cookie.split('; ').find(r => r.startsWith(`${NETWORK_TYPE_COOKIE}=`))
+  return row ? decodeURIComponent(row.split('=')[1]) : null
+}

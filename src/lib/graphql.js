@@ -1,8 +1,10 @@
 import { createClient, cacheExchange, fetchExchange, subscriptionExchange } from '@urql/preact';
 // import { createClient as createWSClient } from 'graphql-ws';
+import { getNetworkConfigFromCookie } from '../components/terminal/providers/NetworkTypeProvider.jsx'
 
-const HASURA_HTTP = import.meta.env.VITE_HASURA_HTTP || 'https://vscapi.okinoko.io/hasura/v1/graphql';
-const HASURA_WS   = import.meta.env.VITE_HASURA_WS   || 'wss://vscapi.okinoko.io/hasura/v1/graphql';
+const networkConfig = getNetworkConfigFromCookie()
+const HASURA_HTTP = networkConfig.hasuraHttp
+const HASURA_WS   = networkConfig.hasuraWs
 
 // // WebSocket client for subscriptions
 // const ws = createWSClient({

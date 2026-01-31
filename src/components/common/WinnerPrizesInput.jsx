@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons'
 import NeonSwitch from './NeonSwitch.jsx'
+import { useAssetSymbols } from '../terminal/providers/NetworkTypeProvider.jsx'
 
 /**
  * Winner prizes input component for split_prize_defined
@@ -13,6 +14,7 @@ import NeonSwitch from './NeonSwitch.jsx'
  * @param {Function} onChange - Callback when winners change
  */
 export default function WinnerPrizesInput({ winners = [], onChange }) {
+  const assetSymbols = useAssetSymbols()
   const [newWinnerAddress, setNewWinnerAddress] = useState('')
 
   const baseInputStyle = {
@@ -294,8 +296,8 @@ export default function WinnerPrizesInput({ winners = [], onChange }) {
                         backgroundRepeat: 'no-repeat',
                       }}
                     >
-                      <option value="hive">HIVE</option>
-                      <option value="hbd">HBD</option>
+                      <option value="hive">{assetSymbols.HIVE}</option>
+                      <option value="hbd">{assetSymbols.HBD}</option>
                     </select>
 
                     {/* Amount/Percentage switch */}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAioha, AiohaModal } from '@aioha/react-ui'
 import { KeyTypes } from '@aioha/aioha'
 import '@aioha/react-ui/dist/build.css'
@@ -8,7 +8,29 @@ import { faLink, faUserAstronaut } from '@fortawesome/free-solid-svg-icons';
 
 export const AiohaPage = () => {
   const [modalDisplayed, setModalDisplayed] = useState(false)
+  const [keyType, setKeyType] = useState(KeyTypes.Posting)
   const { user } = useAioha()
+
+  // Reset to posting key when modal opens
+  useEffect(() => {
+    if (modalDisplayed) {
+      setKeyType(KeyTypes.Posting)
+    }
+  }, [modalDisplayed])
+
+  const handleLogin = (r) => {
+    console.log(r)
+    if (r?.success && r?.username) {
+      setModalDisplayed(false)
+    } else if (!r?.success && keyType === KeyTypes.Posting) {
+      // If posting key validation failed, retry with active key
+      const errorMsg = r?.error || ''
+      if (errorMsg.includes('not associated') || errorMsg.includes('5901')) {
+        console.log('[AiohaPage] Posting key validation failed, retrying with Active key')
+        setKeyType(KeyTypes.Active)
+      }
+    }
+  }
 
   return (
     <>
@@ -38,13 +60,13 @@ export const AiohaPage = () => {
 <div className="aioha-modal-theme">
       <AiohaModal
         displayed={modalDisplayed}
-
         loginOptions={{
           msg: 'Login',
-          keyType: KeyTypes.Posting,
+          keyType: keyType,
+          metamask: { validateUser: true },
         }}
         arrangement="grid"
-        onLogin={console.log}
+        onLogin={handleLogin}
         onClose={() => setModalDisplayed(false)}
       />
       </div>

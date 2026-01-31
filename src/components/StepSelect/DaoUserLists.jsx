@@ -1,5 +1,6 @@
 import { useMemo, useState, useContext, useCallback, useEffect, useRef } from 'preact/hooks'
 import { useQuery, useClient } from '@urql/preact'
+import { useAioha } from '@aioha/react-ui'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faChevronDown,
@@ -7,6 +8,7 @@ import {
   faCircleInfo,
   faLink,
   faPlusCircle,
+  faRocket,
   faUserPlus,
   faUserShield,
   faUserAstronaut,
@@ -18,6 +20,7 @@ import Avatar from '../common/Avatar.jsx'
 import contractsCfg from '../../data/contracts'
 import useExecuteHandler from '../../lib/useExecuteHandler.js'
 import { PopupContext } from '../../popup/context.js'
+import ContractDeployPopup from '../terminal/SubTerminals/ContractDeployPopup.jsx'
 import ProposalDetailPopup from './ProposalDetailPopup.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
 import DaoDetail from './DaoDetail.jsx'
@@ -99,6 +102,38 @@ export default function DaoUserLists({
 
   const popup = useContext(PopupContext)
   const client = useClient()
+  const { aioha } = useAioha()
+
+  const handleDeployDaoClick = useCallback(() => {
+    if (!user) {
+      popup?.openPopup?.({
+        title: 'Login required',
+        body: 'Please connect your account to deploy a DAO contract.',
+      })
+      return
+    }
+    const capturedAioha = aioha
+    const capturedUser = user
+    // Mutable state object that the popup can update to track processing state
+    const deployState = { isProcessing: false }
+    popup?.openPopup?.({
+      title: 'Deploy DAO Contract',
+      body: () => (
+        <ContractDeployPopup
+          onClose={() => popup?.closePopup?.()}
+          aioha={capturedAioha}
+          user={capturedUser}
+          description="Deploy your own DAO smart contract to the VSC network. You can use a template or upload your custom WASM file."
+          filterTag="dao"
+          onProcessingChange={(processing) => { deployState.isProcessing = processing }}
+        />
+      ),
+      width: '40vw',
+      confirmClose: () => deployState.isProcessing
+        ? 'Deployment is in progress. Are you sure you want to close?'
+        : false,
+    })
+  }, [user, aioha, popup])
 
   const daoContract = useMemo(
     () => contractsCfg.contracts.find((c) => c.vscId === DAO_VSC_ID),
@@ -749,6 +784,15 @@ export default function DaoUserLists({
         >
           <FontAwesomeIcon icon={faPlusCircle} style={{ fontSize: '0.9rem' }} />
           <span>Create DAO</span>
+        </button>
+        <button
+          className="dao-header-cta"
+          onClick={handleDeployDaoClick}
+          style={baseButtonStyle(false)}
+          title="Deploy your own DAO contract"
+        >
+          <FontAwesomeIcon icon={faRocket} style={{ fontSize: '0.9rem' }} />
+          <span>Deploy Own DAO</span>
         </button>
       </div>
       {renderDaoList()}

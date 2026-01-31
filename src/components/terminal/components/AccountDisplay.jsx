@@ -3,6 +3,7 @@ import { useEffect, useState, useContext, useRef } from 'preact/hooks'
 import RcCircleGraph from './RcCircleGraph.jsx'
 import Menu from "../../buttons/MenuButton.jsx"
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
+import { useAssetSymbols } from '../providers/NetworkTypeProvider.jsx'
 import { useAioha } from '@aioha/providers/react'
 import { PopupContext } from '../../../popup/context.js'
 import DepositPopup from '../SubTerminals/DepositPopup.jsx'
@@ -11,6 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons'
 
 export default function BalanceDisplay({ account, fontMult = 1 }) {
+  const assetSymbols = useAssetSymbols()
   const { balances: bal, rc, loading, refresh } = useAccountBalances()
   const { user, aioha } = useAioha()
   const { openPopup, closePopup } = useContext(PopupContext)
@@ -157,7 +159,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
           </tr>
           <tr>
             <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
-              <b>HIVE:</b>
+              <b>{assetSymbols.HIVE}:</b>
             </td>
             <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
               {format(hiveBalance, true)}
@@ -167,7 +169,7 @@ export default function BalanceDisplay({ account, fontMult = 1 }) {
           <tr>
 
             <td style={{ textAlign: "left", paddingRight: "0.2rem" }}>
-              <b>HBD:</b>
+              <b>{assetSymbols.HBD}:</b>
             </td>
             <td style={{ textAlign: "left", paddingRight: "0.4rem" }}>
           {format(hbdBalance, true)}

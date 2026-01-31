@@ -9,6 +9,7 @@ import ListButton from '../buttons/ListButton.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { LOBBY_QUERY, ACTIVE_GAMES_FOR_PLAYER_QUERY } from '../../data/inarow_gql.js'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
+import { useAssetSymbols } from '../terminal/providers/NetworkTypeProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import { GAME_TYPE_IDS, typeNameFromId, deriveGameTypeId } from './gameTypes.js'
 import { Tabs } from '../common/Tabs.jsx'
@@ -28,6 +29,7 @@ const normalizeAmount = (value) => {
 }
 
 export default function GameSelect({ user, contract, fn, onGameSelected, params, setParams,isMobile }) {
+  const assetSymbols = useAssetSymbols()
 
   const [newGames, setNewGames] = useState([])
   const [continueGames, setContinueGames] = useState([])
@@ -676,8 +678,8 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
                 color: 'var(--color-primary-lighter)',
               }}
             >
-              <option value="HIVE">HIVE</option>
-              <option value="HBD">HBD</option>
+              <option value="HIVE">{assetSymbols.HIVE}</option>
+              <option value="HBD">{assetSymbols.HBD}</option>
             </select>
 
             <span
@@ -687,7 +689,7 @@ export default function GameSelect({ user, contract, fn, onGameSelected, params,
                 color: exceeds ? 'red' : 'var(--color-primary-lighter)',
               }}
             >
-              {available.toFixed(3)} {current.asset}
+              {available.toFixed(3)} {current.asset === 'HBD' ? assetSymbols.HBD : assetSymbols.HIVE}
             </span>
           </div>
           {betDefined && (

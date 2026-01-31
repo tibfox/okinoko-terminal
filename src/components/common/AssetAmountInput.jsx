@@ -1,6 +1,7 @@
 import { useMemo } from 'preact/hooks'
 import FloatingLabelInput from './FloatingLabelInput.jsx'
 import NeonListDropdown from './NeonListDropdown.jsx'
+import { useAssetSymbols } from '../terminal/providers/NetworkTypeProvider.jsx'
 
 /**
  * Asset amount input component with asset dropdown and balance display
@@ -24,17 +25,21 @@ export default function AssetAmountInput({
   hideAssetDropdown = false,
   style = {},
 }) {
+  const assetSymbols = useAssetSymbols()
+
   const currentBalance = useMemo(() => {
     if (asset === 'HIVE') return balances.hive || 0
-    if (asset === 'hbd_savings') return balances.hbd_savings || 0
+    if (asset === 'hbd_savings' || asset === 'tbd_savings') return balances.hbd_savings || 0
     return balances.hbd || 0
   }, [asset, balances])
 
-  // Display label for asset (hbd_savings -> "sHBD" for balance display)
+  // Display label for asset (hbd_savings -> "sHBD" or "sTBD" for balance display)
   const assetDisplayLabel = useMemo(() => {
-    if (asset === 'hbd_savings') return 'sHBD'
+    if (asset === 'hbd_savings' || asset === 'tbd_savings') return assetSymbols.sHBD
+    if (asset === 'HBD' || asset === 'TBD') return assetSymbols.HBD
+    if (asset === 'HIVE') return assetSymbols.HIVE
     return asset
-  }, [asset])
+  }, [asset, assetSymbols])
 
   const exceedsBalance = useMemo(() => {
     if (!amount) return false
@@ -115,9 +120,9 @@ export default function AssetAmountInput({
         ) : (
           <NeonListDropdown
             options={[
-              { value: 'HIVE', label: 'HIVE' },
-              { value: 'HBD', label: 'HBD' },
-              { value: 'hbd_savings', label: 'staked HBD' },
+              { value: 'HIVE', label: assetSymbols.HIVE },
+              { value: 'HBD', label: assetSymbols.HBD },
+              { value: 'hbd_savings', label: assetSymbols.stakedHBD },
             ]}
             value={asset}
             onChange={(val) => onAssetChange?.(val)}

@@ -53,7 +53,6 @@ select {
   transition: all 0.3s ease;
 }
 
-#log.hidden { display: none; }
 #log.processing { border-color:#00aaff; color:#00ccff; }
 #log.success { border-color:#00ff00; color:#00ff00; }
 #log.error { border-color:#ff0033; color:#ff4444; }

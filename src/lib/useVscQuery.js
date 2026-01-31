@@ -1,4 +1,6 @@
-const ENDPOINT = import.meta.env.VITE_GRAPHQL_ENDPOINT
+import { getNetworkConfigFromCookie } from '../components/terminal/providers/NetworkTypeProvider.jsx'
+
+const ENDPOINT = getNetworkConfigFromCookie().graphqlEndpoint
 /**
  * useVscQuery()
  *  - Minimal GraphQL helper for one-time queries or mutations.

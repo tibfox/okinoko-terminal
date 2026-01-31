@@ -2,10 +2,13 @@ import { useState, useMemo } from 'preact/hooks'
 import { KeyTypes } from '@aioha/aioha'
 import FloatingLabelInput from '../../common/FloatingLabelInput.jsx'
 import NeonListDropdown from '../../common/NeonListDropdown.jsx'
+import { useAssetSymbols, useNetworkType } from '../providers/NetworkTypeProvider.jsx'
 
 export default function WithdrawPopup({ onClose, aioha, user }) {
+  const assetSymbols = useAssetSymbols()
+  const { networkConfig } = useNetworkType()
   const [amount, setAmount] = useState('')
-  const [asset, setAsset] = useState('HIVE')
+  const [asset, setAsset] = useState(assetSymbols.HIVE)
   const [receiver, setReceiver] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showHiveAuthMessage, setShowHiveAuthMessage] = useState(false)
@@ -59,7 +62,7 @@ export default function WithdrawPopup({ onClose, aioha, user }) {
         from: hiveUser,
         to: `hive:${effectiveReceiver}`,
         asset: assetLowerCase,
-        net_id: 'vsc-mainnet',
+        net_id: networkConfig.vscNetworkId,
         amount: formattedAmount,
       }
 
@@ -128,8 +131,8 @@ export default function WithdrawPopup({ onClose, aioha, user }) {
 
         <NeonListDropdown
           options={[
-            { value: 'HIVE', label: 'HIVE' },
-            { value: 'HBD', label: 'HBD' },
+            { value: assetSymbols.HIVE, label: assetSymbols.HIVE },
+            { value: assetSymbols.HBD, label: assetSymbols.HBD },
           ]}
           value={asset}
           onChange={(val) => setAsset(val)}

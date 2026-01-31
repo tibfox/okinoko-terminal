@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'preact/hooks'
 import NeonSwitch from '../common/NeonSwitch.jsx'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
+import { useAssetSymbols } from '../terminal/providers/NetworkTypeProvider.jsx'
 import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 
 export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
+  const assetSymbols = useAssetSymbols()
   const [pfm, setPfm] = useState(false)
   const [insufficient, setInsufficient] = useState(false)
   const { balances: accountBalances } = useAccountBalances()
@@ -29,8 +31,9 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
     ? parseFloat(game?.bet ?? 0) + parseFloat(game?.firstMovePurchase ?? 0)
     : parseFloat(game?.bet ?? 0)
 
-  const asset = (game?.asset || 'HIVE').toUpperCase() // HIVE or HBD
-  const available = asset === 'HIVE' ? balances.hive : balances.hbd
+  const assetRaw = (game?.asset || 'HIVE').toUpperCase() // HIVE or HBD
+  const asset = assetRaw === 'HBD' ? assetSymbols.HBD : assetSymbols.HIVE
+  const available = assetRaw === 'HIVE' ? balances.hive : balances.hbd
 
   // ✅ Recheck insufficient funds whenever toggle changes or balance loads
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
       <div style={{ marginTop: '50px' }}>
         {game?.firstMovePurchase > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            The creator defined a <b>FMP cost of {game.firstMovePurchase} {game.asset}</b>. If you pay this amount to the creator, you will get the first move in the game.
+            The creator defined a <b>FMP cost of {game.firstMovePurchase} {asset}</b>. If you pay this amount to the creator, you will get the first move in the game.
             <br /><br />
             <NeonSwitch
               name="Send First Move Payment (FMP) to Creator?"
@@ -111,7 +114,7 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
         </span>
       </td>
       <td style={{ paddingLeft: 24 }}>
-        {(game?.bet ?? 0).toFixed(3)} {(game?.asset || 'HIVE').toUpperCase()}
+        {(game?.bet ?? 0).toFixed(3)} {asset}
       </td>
     </tr>
 
@@ -119,7 +122,7 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
       <tr>
         <td><strong>+ First Move Purchase:</strong></td>
         <td style={{ paddingLeft: 24 }}>
-          {(game?.firstMovePurchase ?? 0).toFixed(3)} {(game?.asset || 'HIVE').toUpperCase()}
+          {(game?.firstMovePurchase ?? 0).toFixed(3)} {asset}
         </td>
       </tr>
     )}
@@ -151,7 +154,7 @@ export default function GameJoin({ game, user, setParams, onBalanceCheck }) {
     <tr>
       <td><strong>You can win:</strong></td>
       <td style={{ paddingLeft: 24 }}>
-        {((game?.bet ?? 0) * 2).toFixed(3)} {(game?.asset || 'HIVE').toUpperCase()}
+        {((game?.bet ?? 0) * 2).toFixed(3)} {asset}
       </td>
     </tr>
   </tbody>

@@ -68,6 +68,7 @@ if (typeof window !== 'undefined') {
 import { TransactionProvider } from './transactions/provider';
 import { PopupProvider } from "./popup/PopupProvider.jsx";
 import { TerminalWindowProvider } from './components/terminal/providers/TerminalWindowProvider.jsx';
+import { NetworkTypeProvider, getNetworkConfigFromCookie } from './components/terminal/providers/NetworkTypeProvider.jsx';
 import { BackgroundEffectsProvider } from './components/backgrounds/BackgroundEffectsProvider.jsx';
 import { MaintenanceOverlay } from './components/MaintenanceOverlay.jsx';
 import {
@@ -78,7 +79,7 @@ import {
   BLOCKISSUE_FORCE_STALE,
 } from './lib/maintenanceConfig.js';
 
-const BLOCKS_API_BASE_URL = import.meta.env.VITE_BLOCKS_BACKEND
+const BLOCKS_API_BASE_URL = getNetworkConfigFromCookie().blocksBackend
 const BLOCK_ISSUE_THRESHOLD_MS = 15 * 60 * 1000
 const BLOCK_ISSUE_POLL_INTERVAL_MS = 15000
 
@@ -346,15 +347,17 @@ render(
     ) : (
       <BlockIssueOverlay />
     )}
-    <TerminalWindowProvider>
-      <Provider value={client}>
-        <TransactionProvider>
-          <PopupProvider>
-            <App />
-          </PopupProvider>
-        </TransactionProvider>
-      </Provider>
-    </TerminalWindowProvider>
+    <NetworkTypeProvider>
+      <TerminalWindowProvider>
+        <Provider value={client}>
+          <TransactionProvider>
+            <PopupProvider>
+              <App />
+            </PopupProvider>
+          </TransactionProvider>
+        </Provider>
+      </TerminalWindowProvider>
+    </NetworkTypeProvider>
   </BackgroundEffectsProvider>,
   document.getElementById('app'),
 )

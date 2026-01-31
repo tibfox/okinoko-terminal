@@ -19,6 +19,7 @@ import {
   faChevronRight,
   faExpand,
   faCompress,
+  faNetworkWired,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
 import { getWindowDefaults } from './windowDefaults.js'
@@ -26,6 +27,7 @@ import { useBackgroundEffects } from '../backgrounds/BackgroundEffectsProvider.j
 import ColorPickerButton from './headers/ColorPickerButton.jsx'
 import SoundToggleButton from './components/SoundToggleButton.jsx'
 import { AboutPopupContent } from './components/SettingsMenu.jsx'
+import { useNetworkType, NETWORK_TYPES, NETWORK_TYPE_LABELS } from './providers/NetworkTypeProvider.jsx'
 
 const DESKTOP_MIN_WIDTH = 460
 const DESKTOP_MAX_WIDTH = 1400
@@ -61,6 +63,7 @@ export default function TerminalContainer({
   const [selectedLayoutId, setSelectedLayoutId] = useState('')
   const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false)
   const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false)
+  const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false)
   const [isControlsOpen, setIsControlsOpen] = useState(false)
   const [contentOpacity, setContentOpacity] = useState(1)
   const [isPixelating, setIsPixelating] = useState(false)
@@ -100,6 +103,7 @@ export default function TerminalContainer({
   } = useTerminalWindow(windowId, resolvedInitialState)
   const [renderMinimized, setRenderMinimized] = useState(isMinimized)
   const { effects: backgroundEffects = [], activeEffectId, setActiveEffectId } = useBackgroundEffects()
+  const { networkType, setNetworkType } = useNetworkType()
   const popup = useContext(PopupContext)
 
   const canUseWindow = typeof window !== 'undefined'
@@ -111,6 +115,8 @@ export default function TerminalContainer({
   const layoutMenuRef = useRef(null)
   const backgroundButtonRef = useRef(null)
   const backgroundMenuRef = useRef(null)
+  const networkButtonRef = useRef(null)
+  const networkMenuRef = useRef(null)
   const resetTokenRef = useRef(layoutResetToken)
   const initialStateRef = useRef(resolvedInitialState)
   const controlsMenuRef = useRef(null)
@@ -171,6 +177,21 @@ export default function TerminalContainer({
   }, [isBackgroundMenuOpen])
 
   useEffect(() => {
+    if (!isNetworkMenuOpen) {
+      return
+    }
+    const handlePointerDown = (event) => {
+      const target = event.target
+      if (networkButtonRef.current?.contains(target) || networkMenuRef.current?.contains(target)) {
+        return
+      }
+      setIsNetworkMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown, true)
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true)
+  }, [isNetworkMenuOpen])
+
+  useEffect(() => {
     if (!isControlsOpen) {
       return
     }
@@ -182,6 +203,7 @@ export default function TerminalContainer({
       setIsControlsOpen(false)
       setIsLayoutMenuOpen(false)
       setIsBackgroundMenuOpen(false)
+      setIsNetworkMenuOpen(false)
     }
 
     document.addEventListener('pointerdown', handlePointerDown, true)
@@ -751,6 +773,11 @@ export default function TerminalContainer({
     setIsBackgroundMenuOpen(false)
   }
 
+  const handleNetworkSelect = (type) => {
+    setNetworkType(type)
+    setIsNetworkMenuOpen(false)
+  }
+
   const handleAboutClick = () => {
     popup?.openPopup?.({
       title: 'About Ōkinoko',
@@ -803,10 +830,80 @@ export default function TerminalContainer({
             >
               <div style={{ position: 'relative' }}>
                 <button
+                  ref={networkButtonRef}
+                  type="button"
+                  onClick={() => {
+                    setIsLayoutMenuOpen(false)
+                    setIsBackgroundMenuOpen(false)
+                    setIsNetworkMenuOpen((prev) => !prev)
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  aria-label="Network type"
+                  title="Network type"
+                  style={floatingButtonStyle}
+                >
+                  <FontAwesomeIcon icon={faNetworkWired} style={{ fontSize: '0.9rem' }} />
+                </button>
+                {isNetworkMenuOpen && (
+                  <div
+                    ref={networkMenuRef}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      top: '2.5rem',
+                      right: 0,
+                      minWidth: '14rem',
+                      background: 'rgba(0, 0, 0, 0.95)',
+                      border: '2px solid var(--color-primary-darkest)',
+                      boxShadow: '0 0 18px var(--color-primary-darkest)',
+                      padding: '0.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem',
+                      zIndex: 10001,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: 'var(--color-primary-lightest)',
+                        fontSize: 'var(--font-size-base)',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Network
+                    </span>
+                    {Object.values(NETWORK_TYPES).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => handleNetworkSelect(type)}
+                        style={{
+                          textAlign: 'left',
+                          border: '1px solid var(--color-primary-darkest)',
+                          padding: '0.4rem 0.5rem',
+                          background:
+                            networkType === type
+                              ? 'var(--color-primary-darkest)'
+                              : 'rgba(6, 6, 6, 0.9)',
+                          color: 'var(--color-primary-lighter)',
+                          fontSize: 'var(--font-size-base)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>{NETWORK_TYPE_LABELS[type]}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
+                <button
                   ref={layoutGalleryButtonRef}
                   type="button"
                   onClick={() => {
                     setIsBackgroundMenuOpen(false)
+                    setIsNetworkMenuOpen(false)
                     setIsLayoutMenuOpen((prev) => !prev)
                   }}
                   onPointerDown={(event) => event.stopPropagation()}
@@ -974,6 +1071,7 @@ export default function TerminalContainer({
                     type="button"
                     onClick={() => {
                       setIsLayoutMenuOpen(false)
+                      setIsNetworkMenuOpen(false)
                       setIsBackgroundMenuOpen((prev) => !prev)
                     }}
                     onPointerDown={(event) => event.stopPropagation()}
@@ -1086,6 +1184,7 @@ export default function TerminalContainer({
                   if (prev) {
                     setIsLayoutMenuOpen(false)
                     setIsBackgroundMenuOpen(false)
+                    setIsNetworkMenuOpen(false)
                   }
                   return !prev
                 })

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState, useContext, useRef } from 'preact/hooks'
 import { useAioha } from '@aioha/providers/react'
 import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
+import { useAssetSymbols } from '../providers/NetworkTypeProvider.jsx'
 import InfoIcon from '../../common/InfoIcon.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faRotateLeft, faArrowRightToBracket, faArrowRightFromBracket, faLink } from '@fortawesome/free-solid-svg-icons'
+import { faRotateLeft, faArrowRightToBracket, faArrowRightFromBracket, faLink, faFileCode } from '@fortawesome/free-solid-svg-icons'
 import { PopupContext } from '../../../popup/context.js'
 import DepositPopup from './DepositPopup.jsx'
 import WithdrawPopup from './WithdrawPopup.jsx'
+import ContractDeployPopup from './ContractDeployPopup.jsx'
 import LoginModal from '../../common/LoginModal.jsx'
 import Avatar from '../../common/Avatar.jsx'
 
@@ -105,6 +107,7 @@ const formatNumber = (value, forceDecimals = false) => {
 export default function AccountDataPanel() {
   const { user, aioha } = useAioha()
   const { balances, rc, loading, refresh } = useAccountBalances()
+  const assetSymbols = useAssetSymbols()
   const [fakePercent, setFakePercent] = useState(0)
   const { openPopup, closePopup } = useContext(PopupContext)
   const [compactButtons, setCompactButtons] = useState(false)
@@ -182,24 +185,24 @@ export default function AccountDataPanel() {
     () => [
       {
         label: 'RC',
-        tooltip: 'Ressource Credits on the Magi Network. These refill automatically based on your HBD (unstaked).',
+        tooltip: `Ressource Credits on the Magi Network. These refill automatically based on your ${assetSymbols.HBD} (unstaked).`,
         value: rc
           ? `${formatNumber(Math.floor(rc.amount / 1000))} / ${formatNumber(Math.floor(rc.max_rcs / 1000))}`
           : '—',
       },
       {
-        label: 'HIVE',
-        tooltip: 'The amount of unstaked HIVE in your wallet.',
+        label: assetSymbols.HIVE,
+        tooltip: `The amount of unstaked ${assetSymbols.HIVE} in your wallet.`,
         value: balances ? formatNumber(Number(balances.hive) / 1000, true) : '—',
       },
       {
-        label: 'HBD',
-        tooltip: 'The amount of unstaked HBD in your account. These are reposible of the the amount of RC you have available.',
+        label: assetSymbols.HBD,
+        tooltip: `The amount of unstaked ${assetSymbols.HBD} in your account. These are reposible of the the amount of RC you have available.`,
         value: balances ? formatNumber(Number(balances.hbd) / 1000, true) : '—',
       },
       {
-        label: 'sHBD',
-        tooltip: 'Staked HBD give you 15% APR while still being transferrable',
+        label: assetSymbols.sHBD,
+        tooltip: `Staked ${assetSymbols.HBD} give you 15% APR while still being transferrable`,
         value: balances ? formatNumber(Number(balances.hbd_savings) / 1000, true) : '—',
       },
       {
@@ -213,12 +216,12 @@ export default function AccountDataPanel() {
         value: balances ? formatNumber(Number(balances.consensus_unstaking) / 1000, true) : '—',
       },
       {
-        label: 'sHBD unst.',
-        tooltip: 'currently unstaking HBD. Unstaked coins will be made available after about three days.',
+        label: `${assetSymbols.sHBD} unst.`,
+        tooltip: `currently unstaking ${assetSymbols.HBD}. Unstaked coins will be made available after about three days.`,
         value: balances ? formatNumber(Number(balances.pending_hbd_unstaking) / 1000, true) : '—',
       },
     ],
-    [balances, rc, rcPercent],
+    [balances, rc, rcPercent, assetSymbols],
   )
 
   if (!normalizedUser) {
@@ -280,6 +283,28 @@ export default function AccountDataPanel() {
       title: 'Withdraw',
       body: () => <WithdrawPopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} />,
       width: '33vw',
+    })
+  }
+
+  const handleContractDeploy = () => {
+    // Capture values in closure to prevent re-render issues
+    const capturedAioha = aioha
+    const capturedUser = user
+    const deployState = { isProcessing: false }
+    openPopup({
+      title: 'Deploy Contract',
+      body: () => (
+        <ContractDeployPopup
+          onClose={closePopup}
+          aioha={capturedAioha}
+          user={capturedUser}
+          onProcessingChange={(processing) => { deployState.isProcessing = processing }}
+        />
+      ),
+      width: '40vw',
+      confirmClose: () => deployState.isProcessing
+        ? 'Deployment is in progress. Are you sure you want to close?'
+        : false,
     })
   }
 
@@ -381,6 +406,25 @@ export default function AccountDataPanel() {
               }}
             >
               <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '0.6rem' }} />
+            </button>
+            <button
+              type="button"
+              onClick={handleContractDeploy}
+              aria-label="Deploy Contract"
+              title="Deploy Contract"
+              className="account-action-btn"
+              style={{
+                border: '1px solid var(--color-primary-darker)',
+                background: 'rgba(0, 0, 0, 0.6)',
+                color: 'var(--color-primary-lighter)',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontSize: 'calc(var(--font-size-base) / 1.5)',
+                flex: 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FontAwesomeIcon icon={faFileCode} style={{ fontSize: '0.6rem' }} />
             </button>
           </div>
 

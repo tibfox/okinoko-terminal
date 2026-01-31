@@ -9,6 +9,7 @@ import GamblingInfoIcon from '../common/GamblingInfoIcon.jsx'
 import Avatar from '../common/Avatar.jsx'
 import CopyUrlButton from '../common/CopyUrlButton.jsx'
 import { DEEP_LINK_TYPES } from '../../hooks/useDeepLink.js'
+import { getAssetSymbolsFromCookie } from '../terminal/providers/NetworkTypeProvider.jsx'
 
 const PIE_COLORS = ['#4fd1c5', '#ed64a6', '#63b3ed', '#f6ad55', '#9f7aea', '#68d391', '#f56565']
 
@@ -75,7 +76,10 @@ const useCountdown = (unixTimestamp) => {
 }
 
 const formatAsset = (asset) => {
-  return (asset || 'HIVE').toUpperCase()
+  const assetSymbols = getAssetSymbolsFromCookie()
+  const normalized = (asset || 'HIVE').toUpperCase()
+  if (normalized === 'HBD' || normalized === 'TBD') return assetSymbols.HBD
+  return assetSymbols.HIVE
 }
 
 const parseLotteryMeta = (raw) => {

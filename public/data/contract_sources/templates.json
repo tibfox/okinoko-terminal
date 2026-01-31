@@ -1,0 +1,12 @@
+{
+  "templates": [
+    {
+      "name": "lottery test.wasm",
+      "label": "Lottery Test Contract"
+    },
+    {
+      "name": "sdk test functions.wasm",
+      "label": "SDK Test Functions"
+    }
+  ]
+}

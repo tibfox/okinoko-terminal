@@ -16,6 +16,7 @@ import {
 import { PopupContext } from '../../popup/context.js'
 import LotteryDetailPopup from './LotteryDetailPopup.jsx'
 import { DEEP_LINK_TYPES, updateUrlToDeepLink, resetUrlFromDeepLink } from '../../hooks/useDeepLink.js'
+import { getAssetSymbolsFromCookie } from '../terminal/providers/NetworkTypeProvider.jsx'
 
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 
@@ -142,7 +143,10 @@ const useCountdown = (unixTimestamp) => {
 }
 
 const formatAsset = (asset) => {
-  return (asset || 'HIVE').toUpperCase()
+  const assetSymbols = getAssetSymbolsFromCookie()
+  const normalized = (asset || 'HIVE').toUpperCase()
+  if (normalized === 'HBD' || normalized === 'TBD') return assetSymbols.HBD
+  return assetSymbols.HIVE
 }
 
 const parseLotteryMeta = (raw) => {

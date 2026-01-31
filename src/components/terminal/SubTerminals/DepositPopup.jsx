@@ -2,10 +2,12 @@ import { useState, useMemo } from 'preact/hooks'
 import { KeyTypes } from '@aioha/aioha'
 import FloatingLabelInput from '../../common/FloatingLabelInput.jsx'
 import NeonListDropdown from '../../common/NeonListDropdown.jsx'
+import { useAssetSymbols } from '../providers/NetworkTypeProvider.jsx'
 
 export default function DepositPopup({ onClose, aioha, user }) {
+  const assetSymbols = useAssetSymbols()
   const [amount, setAmount] = useState('')
-  const [asset, setAsset] = useState('HIVE')
+  const [asset, setAsset] = useState(assetSymbols.HIVE)
   const [receiver, setReceiver] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showHiveAuthMessage, setShowHiveAuthMessage] = useState(false)
@@ -116,8 +118,8 @@ export default function DepositPopup({ onClose, aioha, user }) {
 
         <NeonListDropdown
           options={[
-            { value: 'HIVE', label: 'HIVE' },
-            { value: 'HBD', label: 'HBD' },
+            { value: assetSymbols.HIVE, label: assetSymbols.HIVE },
+            { value: assetSymbols.HBD, label: assetSymbols.HBD },
           ]}
           value={asset}
           onChange={(val) => setAsset(val)}

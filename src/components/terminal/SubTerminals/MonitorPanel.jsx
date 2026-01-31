@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheckCircle, faHourglass } from '@fortawesome/free-solid-svg-icons'
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons'
 import { TRANSACTION_API_HTTP } from '../../../lib/graphqlEndpoints.js'
+import { getNetworkConfigFromCookie, getAssetSymbolsFromCookie } from '../providers/NetworkTypeProvider.jsx'
 import { Tabs } from '../../common/Tabs.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
 
@@ -74,7 +75,7 @@ const TX_PAGE_SIZE = 20
 const WITNESS_PAGE_SIZE = 20
 const BLOCK_PAGE_SIZE = 20
 const BLOCK_FETCH_COUNT = 200
-const BLOCKS_API_BASE_URL = import.meta.env.VITE_BLOCKS_BACKEND
+const BLOCKS_API_BASE_URL = getNetworkConfigFromCookie().blocksBackend
 
 
 const formatWeight = (value) => {
@@ -174,9 +175,16 @@ const getAccountLabel = (tx) => {
 
 const formatAssetName = (asset) => {
   if (!asset) return ''
+  const assetSymbols = getAssetSymbolsFromCookie()
   const normalized = String(asset).toLowerCase()
-  if (normalized === 'hbd_savings') {
-    return 'sHBD'
+  if (normalized === 'hbd_savings' || normalized === 'tbd_savings') {
+    return assetSymbols.sHBD
+  }
+  if (normalized === 'hbd' || normalized === 'tbd') {
+    return assetSymbols.HBD
+  }
+  if (normalized === 'hive') {
+    return assetSymbols.HIVE
   }
   return String(asset).toUpperCase()
 }

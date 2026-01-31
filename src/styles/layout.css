@@ -91,10 +91,6 @@
   transform: translateY(0);
 }
 
-.step.hidden {
-  display: none;
-}
-
 /* Flicker overlay */
 #flicker-overlay {
   position: fixed;

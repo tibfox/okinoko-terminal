@@ -11,6 +11,7 @@ import MetaInputField from '../common/MetaInputField.jsx'
 import FloatingLabelInput from '../common/FloatingLabelInput.jsx'
 import { CyberContainer } from '../common/CyberContainer.jsx'
 import { useAccountBalances } from '../terminal/providers/AccountBalanceProvider.jsx'
+import { useAssetSymbols } from '../terminal/providers/NetworkTypeProvider.jsx'
 import { PopupContext } from '../../popup/context.js'
 import { useQuery } from '@urql/preact'
 import NeonListDropdown from '../common/NeonListDropdown.jsx'
@@ -75,6 +76,7 @@ export default function ExecuteForm({
   const [insufficient, setInsufficient] = useState(false)
   const { openPopup } = useContext(PopupContext)
   const { balances: accountBalances } = useAccountBalances()
+  const assetSymbols = useAssetSymbols()
   const [daoProjects, setDaoProjects] = useState([])
   const [showNewOptionInput, setShowNewOptionInput] = useState(false)
   const [newOptionText, setNewOptionText] = useState('')
@@ -1163,7 +1165,7 @@ export default function ExecuteForm({
               fontStyle: 'italic',
             }}
           >
-            Each winner can have HIVE and/or HBD prizes. Each asset must use the same mode (percentage or fixed) across all winners.
+            Each winner can have {assetSymbols.HIVE} and/or {assetSymbols.HBD} prizes. Each asset must use the same mode (percentage or fixed) across all winners.
           </div>
         </div>
       )
@@ -2734,14 +2736,16 @@ export default function ExecuteForm({
       }
 
       const assetOptions = [
-        { value: 'HIVE', label: 'HIVE' },
-        { value: 'HBD', label: 'HBD' },
-        { value: 'hbd_savings', label: 'staked HBD' },
+        { value: 'HIVE', label: assetSymbols.HIVE },
+        { value: 'HBD', label: assetSymbols.HBD },
+        { value: 'hbd_savings', label: assetSymbols.stakedHBD },
       ]
 
-      // Get display label for asset (hbd_savings -> "sHBD")
+      // Get display label for asset (hbd_savings -> "sHBD" or "sTBD")
       const getAssetDisplayLabel = (asset) => {
-        if (asset === 'hbd_savings') return 'sHBD'
+        if (asset === 'hbd_savings' || asset === 'tbd_savings') return assetSymbols.sHBD
+        if (asset === 'HBD' || asset === 'TBD') return assetSymbols.HBD
+        if (asset === 'HIVE') return assetSymbols.HIVE
         return asset
       }
 
@@ -3199,9 +3203,9 @@ export default function ExecuteForm({
                 />
                 <NeonListDropdown
                   options={[
-                    { value: 'HIVE', label: 'HIVE' },
-                    { value: 'HBD', label: 'HBD' },
-                    { value: 'hbd_savings', label: 'staked HBD' },
+                    { value: 'HIVE', label: assetSymbols.HIVE },
+                    { value: 'HBD', label: assetSymbols.HBD },
+                    { value: 'hbd_savings', label: assetSymbols.stakedHBD },
                   ]}
                   value={item.asset}
                   onChange={(val) => handleAmountChange(index, 'asset', val)}

@@ -15,20 +15,34 @@ export function PopupProvider({ children }) {
   // Keep a ref to the current popup for closePopup to access without re-creating the callback
   popupRef.current = popup;
 
-  const openPopup = useCallback(({ title, body, width, onClose }) => {
+  const openPopup = useCallback(({ title, body, width, onClose, confirmClose }) => {
     setPopup({
       title,
       body,
       width,
       showCloseButton: true,
       onClose,
+      confirmClose, // Function that returns true if close should be confirmed, or a string message
     })
     setPosition({ x: 0, y: 0 }); // Reset position when opening new popup
   }, [])
 
   const closePopup = useCallback(() => {
+    const currentPopup = popupRef.current
+    // Check if we need to confirm before closing
+    if (currentPopup?.confirmClose) {
+      const confirmResult = currentPopup.confirmClose()
+      if (confirmResult) {
+        const message = typeof confirmResult === 'string'
+          ? confirmResult
+          : 'Are you sure you want to close? The current operation is still in progress.'
+        if (!window.confirm(message)) {
+          return // Don't close if user cancels
+        }
+      }
+    }
     // Call the onClose callback if provided
-    popupRef.current?.onClose?.()
+    currentPopup?.onClose?.()
     setPopup(null)
   }, []);
 // 🔁 Re-render the overlay every second while a popup is open

@@ -3,7 +3,7 @@ import eruda from 'eruda';
 
 import { useState, useEffect, useRef } from 'preact/hooks'
 
-import { initAioha } from '@aioha/aioha'
+import { Aioha } from '@aioha/aioha'
 import { AiohaProvider } from '@aioha/react-ui'
 
 
@@ -18,6 +18,8 @@ import TransactionsTerminal from './components/terminal/SubTerminals/Transaction
 import AccountDataTerminal from './components/terminal/SubTerminals/AccountDataTerminal.jsx'
 import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 import { useDeepLink, parseDeepLink, DEEP_LINK_CONTRACT_IDS, DEEP_LINK_TYPES } from './hooks/useDeepLink.js'
+import { useNetworkType, NETWORK_TYPES, NETWORK_CONFIGS } from './components/terminal/providers/NetworkTypeProvider.jsx'
+import { getNetworkTypeCookie } from './lib/cookies.js'
 
 const MAX_PAGE_INDEX = 3
 const clampPageIndex = (value) => Math.min(Math.max(value, 0), MAX_PAGE_INDEX)
@@ -47,13 +49,31 @@ const getInitialPageIndex = () => {
   return 0
 }
 
-const aioha = initAioha({
+// Get initial network type from cookie to configure aioha
+const getInitialNetworkConfig = () => {
+  const savedNetwork = getNetworkTypeCookie()
+  const networkType = savedNetwork && Object.values(NETWORK_TYPES).includes(savedNetwork)
+    ? savedNetwork
+    : NETWORK_TYPES.MAIN_NET
+  return NETWORK_CONFIGS[networkType]
+}
+
+const initialNetworkConfig = getInitialNetworkConfig()
+
+// Create Aioha with the correct API endpoint for the network
+const aioha = new Aioha(initialNetworkConfig.hiveApi)
+aioha.setup({
   hiveauth: {
     name: 'Okinoko Terminal',
     description: 'Okinoko Terminal App'
   },
-  
 })
+// Set VSC network ID
+aioha.vscSetNetId(initialNetworkConfig.vscNetworkId)
+// Set chain ID for testnet (required for MetaMask snap to sign correctly)
+if (initialNetworkConfig.chainId) {
+  aioha.setChainId(initialNetworkConfig.chainId)
+}
 
 
 export function App() {
@@ -75,6 +95,22 @@ export function App() {
   const popNavigationRef = useRef(false)
   const [invalidHash, setInvalidHash] = useState(false)
   const { deepLink, clearDeepLink } = useDeepLink()
+  const { isTestNet, networkType, registerAioha } = useNetworkType()
+  const previousNetworkRef = useRef(networkType)
+
+  // Register aioha instance with the network provider
+  useEffect(() => {
+    registerAioha(aioha)
+  }, [registerAioha])
+
+  // Handle network type changes - reload page to reinitialize aioha with correct config
+  useEffect(() => {
+    if (previousNetworkRef.current !== networkType) {
+      previousNetworkRef.current = networkType
+      // Reload the page to reinitialize aioha with the new network config
+      window.location.reload()
+    }
+  }, [networkType])
 
     if (import.meta.env.VITE_EXPOSE_ERUDA === 'true') {
   import('eruda').then((eruda) => {
@@ -181,6 +217,24 @@ export function App() {
               <span className="app-corner-logo__accent">ŌKINOKO</span>
               <span className="app-corner-logo__muted">TERMINAL</span>
             </div>
+            {isTestNet && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: '0.75rem',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: '2rem',
+                  fontWeight: 'bold',
+                  color: 'var(--color-primary-lighter)',
+                  textAlign: 'center',
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                }}
+              >
+                You are currently connected to the Magi Test Net
+              </div>
+            )}
             {showFooterCredit && (
               <div className="app-footer-credit" aria-hidden="true">
                 <span className="app-footer-credit__accent">Created by</span>

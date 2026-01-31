@@ -1,3 +1,5 @@
+import { getAssetSymbolsFromCookie } from '../terminal/providers/NetworkTypeProvider.jsx'
+
 /**
  * Renders the fields for a single wizard step
  */
@@ -167,9 +169,12 @@ function formatReviewValue(param, value, allParams = {}) {
   if (param.payloadName === 'payoutInstructions' || param.payloadName === 'payouts') {
     const strValue = String(value ?? '')
 
-    // Get display label for asset (hbd_savings -> "sHBD")
+    // Get display label for asset (hbd_savings -> "sHBD" or "sTBD")
     const getAssetDisplayLabel = (asset) => {
-      if (asset === 'hbd_savings') return 'sHBD'
+      const assetSymbols = getAssetSymbolsFromCookie()
+      if (asset === 'hbd_savings' || asset === 'tbd_savings') return assetSymbols.sHBD
+      if (asset === 'HBD' || asset === 'hbd' || asset === 'TBD' || asset === 'tbd') return assetSymbols.HBD
+      if (asset === 'HIVE' || asset === 'hive') return assetSymbols.HIVE
       return asset.toUpperCase()
     }
 
@@ -257,9 +262,12 @@ function formatReviewValue(param, value, allParams = {}) {
         }).filter(a => a.asset && a.amount)
       : []
 
-    // Get display label for asset (hbd_savings -> "sHBD")
+    // Get display label for asset (hbd_savings -> "sHBD" or "sTBD")
     const getAssetDisplayLabel = (asset) => {
-      if (asset === 'hbd_savings') return 'sHBD'
+      const assetSymbols = getAssetSymbolsFromCookie()
+      if (asset === 'hbd_savings' || asset === 'tbd_savings') return assetSymbols.sHBD
+      if (asset === 'HBD' || asset === 'hbd' || asset === 'TBD' || asset === 'tbd') return assetSymbols.HBD
+      if (asset === 'HIVE' || asset === 'hive') return assetSymbols.HIVE
       return asset.toUpperCase()
     }
 
