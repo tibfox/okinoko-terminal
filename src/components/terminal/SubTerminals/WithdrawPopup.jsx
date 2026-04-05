@@ -55,13 +55,14 @@ export default function WithdrawPopup({ onClose, aioha, user }) {
 
     try {
       const formattedAmount = parseFloat(amount).toFixed(3)
-      const assetLowerCase = asset.toLowerCase()
+      // Always use canonical asset names (hive/hbd) in the payload, regardless of display symbol (e.g. TBD on testnet)
+      const canonicalAsset = asset === assetSymbols.HBD ? 'hbd' : 'hive'
 
       // Construct the custom_json operation for withdrawal
       const jsonData = {
         from: hiveUser,
         to: `hive:${effectiveReceiver}`,
-        asset: assetLowerCase,
+        asset: canonicalAsset,
         net_id: networkConfig.vscNetworkId,
         amount: formattedAmount,
       }

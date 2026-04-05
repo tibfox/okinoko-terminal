@@ -253,6 +253,27 @@ export function TerminalWindowProvider({ children }) {
   useEffect(() => {
     const saved = readCookieState()
     if (!saved) {
+      // Apply gaming layout as default for new visitors
+      const gamingPreset = getLayoutPresetById('gaming')
+      if (gamingPreset) {
+        const windowsSource = convertWindowMapToPixels(gamingPreset.windows ?? {})
+        const entries = Object.entries(windowsSource)
+        if (entries.length > 0) {
+          let nextZ = 1
+          const nextWindows = entries.reduce((acc, [id, value]) => {
+            acc[id] = createDefaultState({
+              ...value,
+              dimensions: value?.dimensions ? { ...value.dimensions } : null,
+              position: value?.position ? { ...value.position } : null,
+              zIndex: nextZ,
+            })
+            nextZ += 1
+            return acc
+          }, {})
+          layerCounterRef.current = nextZ
+          setWindows(nextWindows)
+        }
+      }
       return
     }
 

@@ -5,6 +5,8 @@ import sdkTests from './sdk-tests.json'
 import lottery from './lottery.json'
 import gamesGoraku from './games-goraku.json'
 import prizes from './prizes.json'
+import tokens from './tokens.json'
+import nfts from './nfts.json'
 import { getNetworkConfigFromCookie } from '../../components/terminal/providers/NetworkTypeProvider.jsx'
 
 const rawContracts = [
@@ -15,6 +17,8 @@ const rawContracts = [
   lottery,
   gamesGoraku,
   prizes,
+  tokens,
+  nfts,
 ]
 
 // Swap vscId with testnetVscId when on testnet

@@ -1,3 +1,6 @@
+// Initialize debug console log capture before anything else
+import './lib/debugConsole.js'
+
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import './index.css'

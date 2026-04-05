@@ -4,11 +4,12 @@ import { useAccountBalances } from '../providers/AccountBalanceProvider.jsx'
 import { useAssetSymbols } from '../providers/NetworkTypeProvider.jsx'
 import InfoIcon from '../../common/InfoIcon.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faRotateLeft, faArrowRightToBracket, faArrowRightFromBracket, faLink, faFileCode } from '@fortawesome/free-solid-svg-icons'
+import { faRotateLeft, faArrowRightToBracket, faArrowRightFromBracket, faLink, faFileCode, faCoins } from '@fortawesome/free-solid-svg-icons'
 import { PopupContext } from '../../../popup/context.js'
 import DepositPopup from './DepositPopup.jsx'
 import WithdrawPopup from './WithdrawPopup.jsx'
 import ContractDeployPopup from './ContractDeployPopup.jsx'
+import ConsensusStakePopup from './ConsensusStakePopup.jsx'
 import LoginModal from '../../common/LoginModal.jsx'
 import Avatar from '../../common/Avatar.jsx'
 
@@ -308,6 +309,17 @@ export default function AccountDataPanel() {
     })
   }
 
+  const handleConsensusStake = () => {
+    const capturedAioha = aioha
+    const capturedUser = user
+    const capturedBalances = balances
+    openPopup({
+      title: 'Consensus Stake',
+      body: () => <ConsensusStakePopup onClose={closePopup} aioha={capturedAioha} user={capturedUser} balances={capturedBalances} refresh={refresh} />,
+      width: '33vw',
+    })
+  }
+
   return (
     <>
       <LoginModal
@@ -425,6 +437,25 @@ export default function AccountDataPanel() {
               }}
             >
               <FontAwesomeIcon icon={faFileCode} style={{ fontSize: '0.6rem' }} />
+            </button>
+            <button
+              type="button"
+              onClick={handleConsensusStake}
+              aria-label="Consensus Stake"
+              title="Consensus Stake"
+              className="account-action-btn"
+              style={{
+                border: '1px solid var(--color-primary-darker)',
+                background: 'rgba(0, 0, 0, 0.6)',
+                color: 'var(--color-primary-lighter)',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontSize: 'calc(var(--font-size-base) / 1.5)',
+                flex: 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FontAwesomeIcon icon={faCoins} style={{ fontSize: '0.6rem' }} />
             </button>
           </div>
 

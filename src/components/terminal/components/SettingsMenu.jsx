@@ -3,11 +3,12 @@ import { useContext, useRef } from "preact/hooks";
 import ColorPickerButton from "../headers/ColorPickerButton.jsx";
 import SoundToggleButton from "./SoundToggleButton.jsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBars, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faCircleQuestion, faTerminal } from "@fortawesome/free-solid-svg-icons";
 import Menu from "../../buttons/MenuButton.jsx";
 import { PopupContext } from "../../../popup/context.js";
 import { useDeviceBreakpoint } from "../../../hooks/useDeviceBreakpoint.js";
 import Avatar from "../../common/Avatar.jsx";
+import { DebugConsoleContent } from "../../DebugConsole.jsx";
 
 export const AboutPopupContent = ({ isMobile }) => {
   const creator = "tibfox";
@@ -68,6 +69,7 @@ export default function SettingsMenu() {
   const colorButtonRef = useRef(null);
   const soundButtonRef = useRef(null);
   const aboutButtonRef = useRef(null);
+  const logsButtonRef = useRef(null);
 
   return (
     <Menu
@@ -160,6 +162,38 @@ export default function SettingsMenu() {
                 </button>
               </td>
               <td style={{ padding: "4px 0" }}>About</td>
+            </tr>
+            <tr
+              onClick={() => logsButtonRef.current?.click()}
+              style={{ cursor: "pointer" }}
+            >
+              <td>
+                <button
+                  ref={logsButtonRef}
+                  type="button"
+                  onClick={() =>
+                    popup?.openPopup?.({
+                      title: "Debug Console",
+                      body: () => <DebugConsoleContent />,
+                      width: "80vw",
+                    })
+                  }
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--color-primary)",
+                    padding: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  aria-label="Debug Console"
+                >
+                  <FontAwesomeIcon icon={faTerminal} style={{ fontSize: '0.9rem'}}/>
+                </button>
+              </td>
+              <td style={{ padding: "4px 0" }}>Logs</td>
             </tr>
           </tbody>
         </table>

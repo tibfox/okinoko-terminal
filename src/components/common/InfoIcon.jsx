@@ -44,7 +44,9 @@ export default function InfoIcon({ tooltip, size = 16, style }) {
             pointerEvents: 'auto',
             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
             backdropFilter: 'blur(3px)',
-            whiteSpace: 'nowrap',
+            maxWidth: '22ch',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
           }}
           onMouseEnter={() => setHintOverlay(hintOverlay)}
           onMouseLeave={() => setHintOverlay(null)}

@@ -11,7 +11,9 @@ const DEFAULT_SERVICE_URL = import.meta.env.VITE_CONTRACT_DEPLOY_URL || 'http://
  * Start a new contract deployment and return deployment ID for log streaming
  *
  * @param {Object} params - Deployment parameters
- * @param {File} params.wasmFile - The WASM file to deploy
+ * @param {File} [params.wasmFile] - The WASM file to deploy (required if no repo)
+ * @param {string} [params.repo] - GitHub repo to build from (e.g. "tibfox/okinoko_dao")
+ * @param {string} [params.branch] - Git branch (defaults to "main")
  * @param {string} params.name - Contract name
  * @param {string} [params.description] - Contract description
  * @param {string} [params.owner] - Contract owner (defaults to deployer)
@@ -22,18 +24,28 @@ const DEFAULT_SERVICE_URL = import.meta.env.VITE_CONTRACT_DEPLOY_URL || 'http://
  */
 export async function startDeploy({
   wasmFile,
+  repo,
+  branch,
   name,
   description = '',
   owner = '',
+  tag = '',
   dryRun = false,
   network = 'vsc-mainnet',
   serviceUrl = DEFAULT_SERVICE_URL,
 }) {
   const formData = new FormData()
-  formData.append('wasm', wasmFile)
+  if (wasmFile) {
+    formData.append('wasm', wasmFile)
+  }
+  if (repo) {
+    formData.append('repo', repo)
+    formData.append('branch', branch || 'main')
+  }
   formData.append('name', name)
   formData.append('description', description)
   formData.append('owner', owner)
+  if (tag) formData.append('tag', tag)
   formData.append('dry_run', dryRun.toString())
   formData.append('network', network)
 

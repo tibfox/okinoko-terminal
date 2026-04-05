@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'preact/hooks'
+import { safeReplaceState } from '../lib/navigation.js'
 
 // Supported deep link types
 export const DEEP_LINK_TYPES = {
@@ -93,7 +94,7 @@ export function updateUrlToDeepLink(type, id) {
 
   const newHash = `#${type}/${id}`
   // Use replaceState to avoid adding to browser history
-  window.history.replaceState({ page: 1, deepLink: { type, id } }, '', newHash)
+  safeReplaceState({ page: 1, deepLink: { type, id } }, '', newHash)
 }
 
 /**
@@ -102,7 +103,7 @@ export function updateUrlToDeepLink(type, id) {
  */
 export function resetUrlFromDeepLink(pageIndex = 1) {
   if (typeof window === 'undefined') return
-  window.history.replaceState({ page: pageIndex }, '', `#p${pageIndex}`)
+  safeReplaceState({ page: pageIndex }, '', `#p${pageIndex}`)
 }
 
 /**
@@ -136,9 +137,7 @@ export function useDeepLink() {
   const clearDeepLink = useCallback((pageIndex = 1) => {
     setDeepLink(null)
     setHandled(true)
-    if (typeof window !== 'undefined') {
-      window.history.replaceState({ page: pageIndex }, '', `#p${pageIndex}`)
-    }
+    safeReplaceState({ page: pageIndex }, '', `#p${pageIndex}`)
   }, [])
 
   // Mark the deep link as handled (but don't clear from state yet)

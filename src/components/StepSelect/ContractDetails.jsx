@@ -3,10 +3,14 @@ import FunctionGrid from './FunctionGrid.jsx'
 import DaoUserLists from './DaoUserLists.jsx'
 import LotteryUserLists from './LotteryUserLists.jsx'
 import GorakuTokenPanel from './GorakuTokenPanel.jsx'
+import TokenPanel from './TokenPanel.jsx'
+import NftPanel from './NftPanel.jsx'
 import InfoIcon from '../common/InfoIcon.jsx'
 
 const LOTTERY_VSC_ID = 'vsc1BiM4NC1yeGPCjmq8FC3utX8dByizjcCBk7'
 const GORAKU_VSC_ID = 'vsc1PLACEHOLDER_GAMES2'
+const TOKEN_VSC_ID = 'vsc1PLACEHOLDER_TOKENS'
+const NFT_VSC_ID = 'vsc1PLACEHOLDER_NFTS'
 
 export default function ContractDetails({
   isMobile,
@@ -32,6 +36,8 @@ export default function ContractDetails({
   const isGameContract = selectedContract?.functions?.[0]?.parse === 'game'
   const isLotteryContract = selectedContract?.vscId === LOTTERY_VSC_ID
   const isGorakuContract = selectedContract?.vscId === GORAKU_VSC_ID
+  const isTokenContract = selectedContract?.vscId === TOKEN_VSC_ID
+  const isNftContract = selectedContract?.vscId === NFT_VSC_ID
 
   // Build contract details tooltip as a table
   const contractDetailsTooltip = (
@@ -107,7 +113,7 @@ export default function ContractDetails({
       )}
 
       {/* --- Functions/Games Section --- */}
-      {!isDaoContract && !isLotteryContract && (
+      {!isDaoContract && !isLotteryContract && !isTokenContract && !isNftContract && (
         <>
           {/* Goraku Token Panel (inside Games section, above game tiles) */}
           {isGorakuContract && (
@@ -140,6 +146,14 @@ export default function ContractDetails({
           deepLink={deepLink}
           clearDeepLink={clearDeepLink}
         />
+      )}
+
+      {isTokenContract && (
+        <TokenPanel user={user} isMobile={isMobile} />
+      )}
+
+      {isNftContract && (
+        <NftPanel user={user} isMobile={isMobile} />
       )}
 
       {isLotteryContract && (

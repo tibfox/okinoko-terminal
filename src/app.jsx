@@ -20,6 +20,8 @@ import { useDeviceBreakpoint } from './hooks/useDeviceBreakpoint.js'
 import { useDeepLink, parseDeepLink, DEEP_LINK_CONTRACT_IDS, DEEP_LINK_TYPES } from './hooks/useDeepLink.js'
 import { useNetworkType, NETWORK_TYPES, NETWORK_CONFIGS } from './components/terminal/providers/NetworkTypeProvider.jsx'
 import { getNetworkTypeCookie } from './lib/cookies.js'
+import { useDebugConsole } from './components/DebugConsole.jsx'
+import { safePushState, safeReplaceState } from './lib/navigation.js'
 
 const MAX_PAGE_INDEX = 3
 const clampPageIndex = (value) => Math.min(Math.max(value, 0), MAX_PAGE_INDEX)
@@ -77,6 +79,7 @@ if (initialNetworkConfig.chainId) {
 
 
 export function App() {
+  useDebugConsole()
   const [page, setPage] = useState(() => getInitialPageIndex())
   const [contractId, setContractId] = useState(() => {
     // Auto-select contract based on deep link
@@ -124,7 +127,7 @@ export function App() {
     }
     const hashMatch = window.location.hash.match(/^#p(\d)$/)
     if (!hashMatch || Number(hashMatch[1]) !== page) {
-      window.history.replaceState({ page }, '', `#p${page}`)
+      safeReplaceState({ page }, '', `#p${page}`)
     }
     const handlePopState = (event) => {
       const nextPage = typeof event.state?.page === 'number' ? event.state.page : null
@@ -149,7 +152,7 @@ export function App() {
       popNavigationRef.current = false
       return
     }
-    window.history.pushState({ page }, '', `#p${page}`)
+    safePushState({ page }, '', `#p${page}`)
   }, [page])
 
   // simple helper to move between pages safely

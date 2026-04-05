@@ -4,12 +4,12 @@ import FloatingLabelInput from '../../common/FloatingLabelInput.jsx'
 import NeonListDropdown from '../../common/NeonListDropdown.jsx'
 import { startDeploy, subscribeToLogs, checkHealth } from '../../../lib/contractDeployApi.js'
 import { useAssetSymbols, useNetworkType } from '../providers/NetworkTypeProvider.jsx'
-import { CONTRACT_TEMPLATES, getTemplateWasmUrl, filterTemplatesByTag } from '../../../config/contractTemplates.js'
+import { CONTRACT_TEMPLATES, filterTemplatesByTag } from '../../../lib/contractTemplates.js'
 
 // Prefix for DAO contracts to enable on-chain discovery
 const DAO_CONTRACT_PREFIX = 'shindao_'
 
-export default function ContractDeployPopup({ aioha, user, description, filterTag, onProcessingChange }) {
+export default function ContractDeployPopup({ aioha, user, description, filterTag, onProcessingChange, onDeploySuccess, hideSourceTabs, hideTemplateDropdown, nameLabel, deployButtonLabel }) {
   const assetSymbols = useAssetSymbols()
   const { networkConfig } = useNetworkType()
   const [name, setName] = useState('')
@@ -136,8 +136,16 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
     ])
 
     try {
-      // Get the WASM file (either from template or user upload)
-      let fileToUpload = wasmFile
+      // Build deploy params based on source type
+      const deployParams = {
+        name: fullContractName,
+        owner: normalizedUser,
+        tag: filterTag || '',
+        dryRun: false,
+        network: networkConfig.vscNetworkId,
+        serviceUrl: networkConfig.contractDeployUrl,
+      }
+
       if (wasmSource === 'template') {
         const template = templates.find(t => t.id === selectedTemplate)
         if (!template) {
@@ -145,32 +153,20 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
           setIsProcessing(false)
           return
         }
-        // Fetch the WASM from GitHub
-        const wasmUrl = getTemplateWasmUrl(template)
+        // Send repo+branch to backend — it will clone, build, and strip
+        deployParams.repo = template.repo
+        deployParams.branch = template.branch
         setLogs(prev => [...prev, {
           level: 'INFO',
           timestamp: new Date().toISOString(),
-          message: `Fetching template from GitHub: ${template.repo}`,
+          message: `Building contract from source: ${template.repo}@${template.branch}`,
         }])
-        const response = await fetch(wasmUrl)
-        if (!response.ok) {
-          setError(`Failed to load template from GitHub: ${response.status} ${response.statusText}`)
-          setIsProcessing(false)
-          return
-        }
-        const blob = await response.blob()
-        fileToUpload = new File([blob], `${template.id}.wasm`, { type: 'application/wasm' })
+      } else {
+        deployParams.wasmFile = wasmFile
       }
 
       // Step 1: Start the deployment and get deployment ID
-      const startResult = await startDeploy({
-        wasmFile: fileToUpload,
-        name: fullContractName,
-        owner: normalizedUser,
-        dryRun: false,
-        network: networkConfig.vscNetworkId,
-        serviceUrl: networkConfig.contractDeployUrl,
-      })
+      const startResult = await startDeploy(deployParams)
 
       if (startResult.error) {
         setError(startResult.error)
@@ -341,6 +337,7 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
           success: true,
           txId: txResponse.result,
         })
+        onDeploySuccess?.(txResponse.result)
       } else {
         setError(`Transaction failed: ${txResponse.error || 'Unknown error'}`)
       }
@@ -367,50 +364,52 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
           </div>
 
           {/* WASM Source Tabs */}
-          <div style={{ display: 'flex', gap: '0' }}>
-            <button
-              type="button"
-              onClick={() => setWasmSource('template')}
-              style={{
-                flex: 1,
-                border: '1px solid var(--color-primary-darker)',
-                borderRight: 'none',
-                background: wasmSource === 'template' ? 'var(--color-primary-darkest)' : 'transparent',
-                color: wasmSource === 'template' ? 'var(--color-primary)' : 'var(--color-primary-darker)',
-                padding: '0.5rem 1rem',
-                cursor: 'pointer',
-                fontSize: 'calc(var(--font-size-base) * 0.9)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                fontFamily: 'var(--font-family-base)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              Template WASM
-            </button>
-            <button
-              type="button"
-              onClick={() => setWasmSource('own')}
-              style={{
-                flex: 1,
-                border: '1px solid var(--color-primary-darker)',
-                background: wasmSource === 'own' ? 'var(--color-primary-darkest)' : 'transparent',
-                color: wasmSource === 'own' ? 'var(--color-primary)' : 'var(--color-primary-darker)',
-                padding: '0.5rem 1rem',
-                cursor: 'pointer',
-                fontSize: 'calc(var(--font-size-base) * 0.9)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                fontFamily: 'var(--font-family-base)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              Own WASM
-            </button>
-          </div>
+          {!hideSourceTabs && (
+            <div style={{ display: 'flex', gap: '0' }}>
+              <button
+                type="button"
+                onClick={() => setWasmSource('template')}
+                style={{
+                  flex: 1,
+                  border: '1px solid var(--color-primary-darker)',
+                  borderRight: 'none',
+                  background: wasmSource === 'template' ? 'var(--color-primary-darkest)' : 'transparent',
+                  color: wasmSource === 'template' ? 'var(--color-primary)' : 'var(--color-primary-darker)',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: 'calc(var(--font-size-base) * 0.9)',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--font-family-base)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Template WASM
+              </button>
+              <button
+                type="button"
+                onClick={() => setWasmSource('own')}
+                style={{
+                  flex: 1,
+                  border: '1px solid var(--color-primary-darker)',
+                  background: wasmSource === 'own' ? 'var(--color-primary-darkest)' : 'transparent',
+                  color: wasmSource === 'own' ? 'var(--color-primary)' : 'var(--color-primary-darker)',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: 'calc(var(--font-size-base) * 0.9)',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--font-family-base)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Own WASM
+              </button>
+            </div>
+          )}
 
           {/* Template Selector */}
-          {wasmSource === 'template' && (
+          {wasmSource === 'template' && !hideTemplateDropdown && (
             templatesLoading ? (
               <div style={{
                 padding: '0.75rem 1rem',
@@ -469,7 +468,7 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
             <FloatingLabelInput
               type="text"
               placeholder={isDaoDeployment ? 'shindao_my-dao' : 'my-contract'}
-              label={isDaoDeployment ? 'DAO Contract Name *' : 'Contract Name *'}
+              label={nameLabel ? `${nameLabel} *` : (isDaoDeployment ? 'DAO Contract Name *' : 'Contract Name *')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{ width: '100%' }}
@@ -506,7 +505,7 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
               opacity: isValidForm ? 1 : 0.4,
             }}
           >
-            Deploy Contract
+            {deployButtonLabel || 'Deploy Contract'}
           </button>
 
           {/* Deployment Fee Notice */}
@@ -547,23 +546,22 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
           {/* Contract Info Summary */}
           <div style={{
             padding: '0.5rem',
-            background: 'rgba(0, 0, 0, 0.3)',
-            border: '1px solid var(--color-primary-darkest)',
+            background: 'rgba(0, 0, 0, 0.6)',
+            border: '1px solid var(--color-primary)',
+            fontSize: 'var(--font-size-base)',
           }}>
             <div style={{
-              fontSize: 'var(--font-size-base)',
-              color: 'var(--color-primary)',
+              color: 'var(--color-primary-lightest)',
               fontWeight: 'bold',
               marginBottom: '0.25rem',
             }}>
               Contract: {fullContractName}
             </div>
             <div style={{
-              fontSize: 'calc(var(--font-size-base) * 0.85)',
-              color: 'var(--color-primary-darker)',
+              color: 'var(--color-primary-lightest)',
             }}>
-              File: {wasmSource === 'template'
-                ? templates.find(t => t.id === selectedTemplate)?.label || selectedTemplate
+              Source: {wasmSource === 'template'
+                ? `${templates.find(t => t.id === selectedTemplate)?.repo || selectedTemplate} (build from source)`
                 : `${wasmFile?.name} (${(wasmFile?.size / 1024).toFixed(1)} KB)`
               }
             </div>
@@ -665,12 +663,13 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
           {txResult && txResult.success && (
             <div style={{
               padding: '0.75rem',
-              background: 'rgba(0, 255, 0, 0.1)',
-              border: '1px solid #00ff00',
-              color: '#00ff00',
+              background: 'rgba(0, 0, 0, 0.6)',
+              border: '1px solid var(--color-primary)',
+              color: 'var(--color-primary-lightest)',
+              fontSize: 'var(--font-size-base)',
             }}>
               <div style={{ fontWeight: 'bold' }}>Transaction Broadcast!</div>
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+              <div style={{ marginTop: '0.25rem' }}>
                 TX ID: {txResult.txId}
               </div>
             </div>

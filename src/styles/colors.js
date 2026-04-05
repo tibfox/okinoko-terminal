@@ -11,7 +11,7 @@ export const COLORS = {
 };
 
 
-export const DEFAULT_COLOR = "#32CD32"; // limegreen
+export const DEFAULT_COLOR = "#2EC27E";
 
 export function setThemeColors({
   primary,

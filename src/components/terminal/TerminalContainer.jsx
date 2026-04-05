@@ -20,6 +20,7 @@ import {
   faExpand,
   faCompress,
   faNetworkWired,
+  faTerminal,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTerminalWindow } from './providers/TerminalWindowProvider.jsx'
 import { getWindowDefaults } from './windowDefaults.js'
@@ -27,6 +28,7 @@ import { useBackgroundEffects } from '../backgrounds/BackgroundEffectsProvider.j
 import ColorPickerButton from './headers/ColorPickerButton.jsx'
 import SoundToggleButton from './components/SoundToggleButton.jsx'
 import { AboutPopupContent } from './components/SettingsMenu.jsx'
+import { DebugConsoleContent } from '../DebugConsole.jsx'
 import { useNetworkType, NETWORK_TYPES, NETWORK_TYPE_LABELS } from './providers/NetworkTypeProvider.jsx'
 
 const DESKTOP_MIN_WIDTH = 460
@@ -1155,6 +1157,20 @@ export default function TerminalContainer({
                 style={floatingButtonStyle}
               >
                 <FontAwesomeIcon icon={faCircleQuestion} style={{ fontSize: '0.9rem'}} />
+              </button>
+              <button
+                type="button"
+                onClick={() => popup?.openPopup?.({
+                  title: 'Debug Console',
+                  body: () => <DebugConsoleContent />,
+                  width: '50vw',
+                })}
+                onPointerDown={(event) => event.stopPropagation()}
+                aria-label="Debug Console"
+                title="Debug Console"
+                style={floatingButtonStyle}
+              >
+                <FontAwesomeIcon icon={faTerminal} style={{ fontSize: '0.9rem'}} />
               </button>
               <button
                 type="button"

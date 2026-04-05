@@ -270,7 +270,8 @@ select {
 
 /* === Game Selection dev === */
 /* Container with border + visual style */
-.game-selection-table {
+.game-selection-table,
+.custom-table {
   background: black;
   border: 1px solid var(--color-primary-darkest);
 
@@ -290,12 +291,14 @@ select {
 }
 
 /* Table with sticky header */
-.game-selection-table table {
+.game-selection-table table,
+.custom-table table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.game-selection-table thead {
+.game-selection-table thead,
+.custom-table thead {
   position: sticky;
   top: 0;
   background: color-mix(in srgb, var(--color-primary-darkest) 50%, transparent);
@@ -304,11 +307,13 @@ select {
 }
 
 /* Alternating row colors */
-.game-selection-table tbody tr:nth-child(odd) {
+.game-selection-table tbody tr:nth-child(odd),
+.custom-table tbody tr:nth-child(odd) {
   background: black;
 }
 
-.game-selection-table tbody tr:nth-child(even) {
+.game-selection-table tbody tr:nth-child(even),
+.custom-table tbody tr:nth-child(even) {
   background: color-mix(in srgb, var(--color-primary-darkest) 50%, transparent);
 }
 
@@ -320,18 +325,25 @@ select {
 
 /* Column fix + wrapping */
 .game-selection-table td,
-.game-selection-table th {
+.game-selection-table th,
+.custom-table td,
+.custom-table th {
   padding: 4px 6px;   /* reduce padding */
   line-height: 1.2;   /* compact vertical spacing */
   white-space: normal !important;  /* allow wrapping */
   word-wrap: break-word;          /* old standard */
   overflow-wrap: anywhere;        /* modern, best for forcing breaks */
   hyphens: auto;                  /* optional: hyphenate nicely */
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-base);
 }
 
 .game-selection-table button,
 .game-selection-table .neon-button, /* depending on your button class */
-.game-selection-table .NeonButton {
+.game-selection-table .NeonButton,
+.custom-table button,
+.custom-table .neon-button,
+.custom-table .NeonButton {
   padding: 2px 6px !important; /* smaller button size */
   font-size: 1.05em;           /* slightly smaller text */
   line-height: 1;              /* avoid extra height coming from line height */

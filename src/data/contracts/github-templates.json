@@ -1,0 +1,26 @@
+[
+  {
+    "id": "okinoko-dao",
+    "label": "Okinoko DAO",
+    "description": "Decentralized autonomous organization contract",
+    "repo": "tibfox/okinoko_dao",
+    "branch": "main",
+    "tag": "dao"
+  },
+  {
+    "id": "magi-token",
+    "label": "Magi Token",
+    "description": "Deploy your own ERC-20 compliant token contract",
+    "repo": "vsc-eco/magi_token-contract",
+    "branch": "main",
+    "tag": "token"
+  },
+  {
+    "id": "magi-nft",
+    "label": "Magi NFT",
+    "description": "Deploy your own ERC-1155 compliant NFT contract",
+    "repo": "vsc-eco/magi_nft-contract",
+    "branch": "main",
+    "tag": "nft"
+  }
+]

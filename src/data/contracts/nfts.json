@@ -1,0 +1,927 @@
+{
+  "name": "Magi NFTs",
+  "id": 9,
+  "sortIndex": 1,
+  "vscId": "vsc1PLACEHOLDER_NFTS",
+  "owner": "",
+  "deployedOn": "",
+  "verifiedOn": "",
+  "description": "Deploy and manage your own NFT contracts on the Magi network",
+  "kanji": "印",
+  "icon": "faImage",
+  "devOnly": true,
+  "templateTag": "nft",
+  "functions": [
+    {
+      "name": "init",
+      "friendlyName": "Initialize NFT Contract",
+      "description": "Initialize a new NFT contract with name, symbol, and optional base URI.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Collection Name",
+          "payloadName": "name",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The name of your NFT collection (e.g. 'My NFTs').",
+          "sortIndex": 0
+        },
+        {
+          "name": "Symbol",
+          "payloadName": "symbol",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The ticker symbol for your collection (e.g. 'MNFT').",
+          "sortIndex": 1
+        },
+        {
+          "name": "Base URI",
+          "payloadName": "baseUri",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Base URI for token metadata. Token-specific URIs will be appended to this.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Track Minted",
+          "payloadName": "trackMinted",
+          "type": "bool",
+          "mandatory": false,
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "default": false,
+          "displayTrue": "Yes",
+          "displayFalse": "No",
+          "hintText": "Track total minted count per token ID. Enables the totalMinted query.",
+          "sortIndex": 3
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Setup"
+    },
+    {
+      "name": "mint",
+      "friendlyName": "Mint NFT",
+      "description": "Mint new NFT tokens. Only the contract owner can mint.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "To",
+          "payloadName": "to",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The recipient address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to mint.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Amount",
+          "payloadName": "amount",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "Number of tokens to mint for this ID.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Max Supply",
+          "payloadName": "maxSupply",
+          "type": "number",
+          "mandatory": false,
+          "hintText": "Maximum supply for this token ID. Only set on first mint.",
+          "sortIndex": 3
+        },
+        {
+          "name": "Soulbound",
+          "payloadName": "soulbound",
+          "type": "bool",
+          "mandatory": false,
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "default": false,
+          "displayTrue": "Yes",
+          "displayFalse": "No",
+          "hintText": "Make this token non-transferable (soulbound). Only set on first mint.",
+          "sortIndex": 4
+        },
+        {
+          "name": "Properties",
+          "payloadName": "properties",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Custom properties for this token (JSON string).",
+          "sortIndex": 5
+        },
+        {
+          "name": "Properties Template",
+          "payloadName": "propertiesTemplate",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Template for per-edition properties.",
+          "sortIndex": 6
+        },
+        {
+          "name": "Data",
+          "payloadName": "data",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Additional data passed to the receiver.",
+          "sortIndex": 7
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Minting"
+    },
+    {
+      "name": "mintBatch",
+      "friendlyName": "Mint Batch",
+      "description": "Mint multiple token IDs in a single transaction. Owner only.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "To",
+          "payloadName": "to",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The recipient address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token IDs (comma separated)",
+          "payloadName": "ids",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of token IDs to mint.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Amounts (comma separated)",
+          "payloadName": "amounts",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of amounts for each token ID.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Max Supplies (comma separated)",
+          "payloadName": "maxSupplies",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Comma-separated max supplies for each token ID.",
+          "sortIndex": 3
+        },
+        {
+          "name": "Data",
+          "payloadName": "data",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Additional data passed to the receiver.",
+          "sortIndex": 4
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Minting"
+    },
+    {
+      "name": "mintSeries",
+      "friendlyName": "Mint Series",
+      "description": "Mint a numbered series of tokens (e.g. card-1, card-2, ...) in a single transaction. Owner only.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "To",
+          "payloadName": "to",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The recipient address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "ID Prefix",
+          "payloadName": "idPrefix",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Prefix for generated token IDs (e.g. 'card-' produces card-1, card-2, ...).",
+          "sortIndex": 1
+        },
+        {
+          "name": "Start Number",
+          "payloadName": "startNumber",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "The first number in the series.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Count",
+          "payloadName": "count",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "How many tokens to create in the series.",
+          "sortIndex": 3
+        },
+        {
+          "name": "Amount",
+          "payloadName": "amount",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "Copies per token ID.",
+          "sortIndex": 4
+        },
+        {
+          "name": "Max Supply",
+          "payloadName": "maxSupply",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "Maximum supply per token ID (1 = unique, >1 = editioned).",
+          "sortIndex": 5
+        },
+        {
+          "name": "Soulbound",
+          "payloadName": "soulbound",
+          "type": "bool",
+          "mandatory": false,
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "default": false,
+          "displayTrue": "Yes",
+          "displayFalse": "No",
+          "hintText": "Make all tokens in the series non-transferable.",
+          "sortIndex": 6
+        },
+        {
+          "name": "Properties",
+          "payloadName": "properties",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Custom properties shared by all tokens (JSON string).",
+          "sortIndex": 7
+        },
+        {
+          "name": "Properties Template",
+          "payloadName": "propertiesTemplate",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "If set, the first token becomes the properties template for the rest.",
+          "sortIndex": 8
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Minting"
+    },
+    {
+      "name": "safeTransferFrom",
+      "friendlyName": "Transfer",
+      "description": "Transfer NFT tokens from one address to another.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "From",
+          "payloadName": "from",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The sender address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "To",
+          "payloadName": "to",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The recipient address.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to transfer.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Amount",
+          "payloadName": "amount",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "Number of tokens to transfer.",
+          "sortIndex": 3
+        },
+        {
+          "name": "Data",
+          "payloadName": "data",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Additional data passed to the receiver.",
+          "sortIndex": 4
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Transfers"
+    },
+    {
+      "name": "safeBatchTransferFrom",
+      "friendlyName": "Batch Transfer",
+      "description": "Transfer multiple token IDs in a single transaction.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "From",
+          "payloadName": "from",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The sender address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "To",
+          "payloadName": "to",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The recipient address.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Token IDs (comma separated)",
+          "payloadName": "ids",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of token IDs to transfer.",
+          "sortIndex": 2
+        },
+        {
+          "name": "Amounts (comma separated)",
+          "payloadName": "amounts",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of amounts for each token ID.",
+          "sortIndex": 3
+        },
+        {
+          "name": "Data",
+          "payloadName": "data",
+          "type": "string",
+          "mandatory": false,
+          "hintText": "Additional data passed to the receiver.",
+          "sortIndex": 4
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Transfers"
+    },
+    {
+      "name": "burn",
+      "friendlyName": "Burn NFT",
+      "description": "Burn NFT tokens, reducing the supply for that token ID.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "From",
+          "payloadName": "from",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The address to burn tokens from.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to burn.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Amount",
+          "payloadName": "amount",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "Number of tokens to burn.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Supply"
+    },
+    {
+      "name": "burnBatch",
+      "friendlyName": "Burn Batch",
+      "description": "Burn multiple token IDs in a single transaction.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "From",
+          "payloadName": "from",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The address to burn tokens from.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token IDs (comma separated)",
+          "payloadName": "ids",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of token IDs to burn.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Amounts (comma separated)",
+          "payloadName": "amounts",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of amounts for each token ID.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Supply"
+    },
+    {
+      "name": "setApprovalForAll",
+      "friendlyName": "Set Approval For All",
+      "description": "Grant or revoke an operator's permission to transfer all your tokens.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Operator",
+          "payloadName": "operator",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The operator address to approve or revoke.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Approved",
+          "payloadName": "approved",
+          "type": "bool",
+          "mandatory": true,
+          "boolTrue": "true",
+          "boolFalse": "false",
+          "displayTrue": "Approve",
+          "displayFalse": "Revoke",
+          "hintText": "Whether to approve or revoke the operator.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Approvals"
+    },
+    {
+      "name": "approve",
+      "friendlyName": "Approve Token (ERC-6909)",
+      "description": "Set a per-token allowance for a spender. Unlike setApprovalForAll, this approves a specific token ID and amount.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Spender",
+          "payloadName": "spender",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The address allowed to spend this token.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to approve.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Amount",
+          "payloadName": "amount",
+          "type": "number",
+          "mandatory": true,
+          "hintText": "Number of tokens the spender can transfer. Set to 0 to revoke.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Approvals"
+    },
+    {
+      "name": "setURI",
+      "friendlyName": "Set Token URI",
+      "description": "Set the metadata URI for a specific token ID. Owner only.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to set the URI for.",
+          "sortIndex": 0
+        },
+        {
+          "name": "URI",
+          "payloadName": "uri",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The metadata URI for this token.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Metadata"
+    },
+    {
+      "name": "setBaseURI",
+      "friendlyName": "Set Base URI",
+      "description": "Set the base URI for all token metadata. Owner only.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Base URI",
+          "payloadName": "baseUri",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The base URI prepended to all token URIs.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Metadata"
+    },
+    {
+      "name": "setProperties",
+      "friendlyName": "Set Properties",
+      "description": "Set custom properties for a specific token ID. Owner only.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to set properties for.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Properties",
+          "payloadName": "properties",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Custom properties as a JSON string.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Metadata"
+    },
+    {
+      "name": "setCollectionMetadata",
+      "friendlyName": "Set Collection Metadata",
+      "description": "Set collection-level metadata (JSON). Owner only.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Metadata",
+          "payloadName": "metadata",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Collection metadata as a JSON string.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Metadata"
+    },
+    {
+      "name": "changeOwner",
+      "friendlyName": "Change Owner",
+      "description": "Transfer contract ownership to a new address. Only the current owner can call this.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "New Owner",
+          "payloadName": "newOwner",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The address of the new contract owner.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Management"
+    },
+    {
+      "name": "pause",
+      "friendlyName": "Pause Contract",
+      "description": "Pause the contract, preventing all transfers and minting. Owner only.",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Management"
+    },
+    {
+      "name": "unpause",
+      "friendlyName": "Unpause Contract",
+      "description": "Unpause the contract, re-enabling transfers and minting. Owner only.",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Management"
+    },
+    {
+      "name": "balanceOf",
+      "friendlyName": "Balance Of",
+      "description": "Query the balance of a specific token ID for an account.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Account",
+          "payloadName": "account",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The address to check the balance of.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "balanceOfBatch",
+      "friendlyName": "Balance Of Batch",
+      "description": "Query balances for multiple account/token ID pairs.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Accounts (comma separated)",
+          "payloadName": "accounts",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of account addresses.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Token IDs (comma separated)",
+          "payloadName": "ids",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "Comma-separated list of token IDs (must match accounts length).",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "isApprovedForAll",
+      "friendlyName": "Is Approved For All",
+      "description": "Check if an operator is approved to manage all tokens of an account.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Account",
+          "payloadName": "account",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token owner address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Operator",
+          "payloadName": "operator",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The operator address to check.",
+          "sortIndex": 1
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "uri",
+      "friendlyName": "Get URI",
+      "description": "Query the metadata URI for a specific token ID.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "getOwner",
+      "friendlyName": "Get Owner",
+      "description": "Query the current owner of the contract.",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "getInfo",
+      "friendlyName": "Get Collection Info",
+      "description": "Query the collection metadata: name, symbol, base URI, and owner.",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "isPaused",
+      "friendlyName": "Is Paused",
+      "description": "Query whether the contract is currently paused.",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "totalSupply",
+      "friendlyName": "Total Supply",
+      "description": "Query the current total supply for a specific token ID.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "maxSupply",
+      "friendlyName": "Max Supply",
+      "description": "Query the maximum supply for a specific token ID.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "totalMinted",
+      "friendlyName": "Total Minted",
+      "description": "Query the total number of tokens ever minted for a token ID (requires trackMinted).",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "exists",
+      "friendlyName": "Exists",
+      "description": "Check if a specific token ID has been minted.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to check.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "isSoulbound",
+      "friendlyName": "Is Soulbound",
+      "description": "Check if a specific token ID is soulbound (non-transferable).",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to check.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "getProperties",
+      "friendlyName": "Get Properties",
+      "description": "Query the custom properties for a specific token ID.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "allowance",
+      "friendlyName": "Allowance (ERC-6909)",
+      "description": "Query the per-token allowance for a spender on a specific token ID.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Owner",
+          "payloadName": "owner",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token owner address.",
+          "sortIndex": 0
+        },
+        {
+          "name": "Spender",
+          "payloadName": "spender",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The approved spender address.",
+          "sortIndex": 1
+        },
+        {
+          "name": "Token ID",
+          "payloadName": "id",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The token ID to query.",
+          "sortIndex": 2
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "getCollectionMetadata",
+      "friendlyName": "Get Collection Metadata",
+      "description": "Query the collection-level metadata JSON.",
+      "parse": "raw",
+      "parameters": [],
+      "hintText": "",
+      "groupHeader": "Queries"
+    },
+    {
+      "name": "supportsInterface",
+      "friendlyName": "Supports Interface",
+      "description": "Check if the contract supports a specific ERC-165 interface.",
+      "parse": "raw",
+      "parameters": [
+        {
+          "name": "Interface ID",
+          "payloadName": "interfaceId",
+          "type": "string",
+          "mandatory": true,
+          "hintText": "The ERC-165 interface ID to check (e.g. '0xd9b67a26' for ERC-1155).",
+          "sortIndex": 0
+        }
+      ],
+      "hintText": "",
+      "groupHeader": "Queries"
+    }
+  ]
+}

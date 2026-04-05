@@ -7,6 +7,7 @@ import { TRANSACTION_API_HTTP } from '../../../lib/graphqlEndpoints.js'
 import { getNetworkConfigFromCookie, getAssetSymbolsFromCookie } from '../providers/NetworkTypeProvider.jsx'
 import { Tabs } from '../../common/Tabs.jsx'
 import { formatUTC } from '../../../lib/friendlyDates.js'
+import DataTable from '../../common/DataTable.jsx'
 
 
 
@@ -88,23 +89,6 @@ const formatWeight = (value) => {
   })
 }
 
-const cellStyle = {
-  padding: '0.35rem 0.5rem',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-  fontSize: 'var(--font-size-base)',
-  fontFamily: 'var(--font-family-base)',
-  textAlign: 'left',
-}
-
-const headerCellStyle = {
-  ...cellStyle,
-  fontWeight: 600,
-  position: 'sticky',
-  top: 0,
-  background: 'var(--color-primary-darkest)',
-
-  zIndex: 1,
-}
 
 const renderStatusIcon = (status) => {
   const normalized = status?.toUpperCase?.() ?? ''
@@ -530,66 +514,48 @@ export default function MonitorPanel() {
     const disablePrev = txPage <= 1 || fetching
     const disableNext = fetching || rows.length < TX_PAGE_SIZE
 
+    const renderAccountCell = (tx) => {
+      const accountLabel = getAccountLabel(tx)
+      if (!accountLabel) return '—'
+      const displayName = accountLabel.startsWith('hive:') ? accountLabel.slice(5) : accountLabel
+      const displayLabel = displayName.length > 23 ? `${displayName.slice(0, 23)}...` : displayName
+      return (
+        <a href={`https://vsc.techcoderx.com/address/${accountLabel}`} target="_blank" rel="noreferrer">
+          {displayLabel}
+        </a>
+      )
+    }
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={headerCellStyle}>Tx</th>
-              <th style={{ ...headerCellStyle, width: '2rem' }} aria-label="status" />
-              <th style={headerCellStyle}>Account</th>
-              <th style={headerCellStyle}>Operation</th>
-              <th style={{ ...headerCellStyle, minWidth: '9rem' }}>Amount</th>
-              <th style={headerCellStyle}>Anchored</th>
-              <th style={headerCellStyle}>Height</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((tx) => (
-              <tr key={tx.id}>
-                <td style={cellStyle}>
-                  {tx?.id ? (
-                    <a href={`https://vsc.techcoderx.com/tx/${tx.id}`} target="_blank" rel="noreferrer">
-                      {formatTxId(tx.id)}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td style={{ ...cellStyle, width: '2rem', textAlign: 'center' }}>{renderStatusIcon(tx.status)}</td>
-                <td style={cellStyle}>
-                  {(() => {
-                    const accountLabel = getAccountLabel(tx)
-                    if (!accountLabel) {
-                      return '—'
-                    }
-                    // Remove hive: prefix for display
-                    const displayName = accountLabel.startsWith('hive:')
-                      ? accountLabel.slice(5)
-                      : accountLabel
-                    const displayLabel =
-                      displayName.length > 23 ? `${displayName.slice(0, 23)}...` : displayName
-                    return (
-                      <a
-                        href={`https://vsc.techcoderx.com/address/${accountLabel}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {displayLabel}
-                      </a>
-                    )
-                  })()}
-                </td>
-                <td style={cellStyle}>{getOperationLabel(tx)}</td>
-                <td style={{ ...cellStyle, minWidth: '9rem' }}>{getAmountLabel(tx)}</td>
-                <td style={cellStyle}>{formatUTC(tx.anchr_ts)}</td>
-                <td style={cellStyle}>{tx.anchr_height ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+        <DataTable
+          headers={[
+            'Tx',
+            { label: '', style: { width: '2rem' } },
+            'Account',
+            'Operation',
+            { label: 'Amount', style: { minWidth: '9rem' } },
+            'Anchored',
+            'Height',
+          ]}
+          rows={pageRows.map((tx) => ({
+            key: tx.id,
+            cells: [
+              tx?.id ? (
+                <a href={`https://vsc.techcoderx.com/tx/${tx.id}`} target="_blank" rel="noreferrer">
+                  {formatTxId(tx.id)}
+                </a>
+              ) : '—',
+              { content: renderStatusIcon(tx.status), style: { width: '2rem', textAlign: 'center' } },
+              renderAccountCell(tx),
+              getOperationLabel(tx),
+              { content: getAmountLabel(tx), style: { minWidth: '9rem' } },
+              formatUTC(tx.anchr_ts),
+              tx.anchr_height ?? '—',
+            ],
+          }))}
+          style={{ flex: 1, minHeight: 0 }}
+        />
         {renderPaginationControls({
           disablePrev,
           disableNext,
@@ -687,36 +653,21 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={headerCellStyle}>Witness</th>
-              <th style={headerCellStyle}>Weight</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((witness) => (
-              <tr key={witness.account}>
-                <td style={cellStyle}>
-                  {witness?.account ? (
-                    <a
-                      href={`https://vsc.techcoderx.com/address/hive:${witness.account}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {witness.account}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td style={cellStyle}>{formatWeight(witness.weight)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+        <DataTable
+          headers={['Witness', 'Weight']}
+          rows={pageRows.map((witness) => ({
+            key: witness.account,
+            cells: [
+              witness?.account ? (
+                <a href={`https://vsc.techcoderx.com/address/hive:${witness.account}`} target="_blank" rel="noreferrer">
+                  {witness.account}
+                </a>
+              ) : '—',
+              formatWeight(witness.weight),
+            ],
+          }))}
+          style={{ flex: 1, minHeight: 0 }}
+        />
         {renderPaginationControls({
           disablePrev,
           disableNext,
@@ -750,65 +701,33 @@ const renderPaginationControls = ({ disablePrev, disableNext, onPrev, onNext }) 
     const disablePrev = blockPage <= 1
     const disableNext = blockPage >= totalPages
 
+    const blockRows = pageRows.map((block) => {
+      const blockId = parseNumeric(block?.be_info?.block_id) ?? '—'
+      const proposer = block?.proposer ?? '—'
+      const ts = block?.be_info?.ts ?? block?.ts
+      const cid = block?.block
+      const blockUrl = Number.isFinite(blockId) ? `https://vsc.techcoderx.com/block/${blockId}` : null
+      const proposerUrl = proposer && proposer !== '—'
+        ? `https://vsc.techcoderx.com/address/hive:${proposer}`
+        : null
+      return {
+        key: `${blockId}-${cid ?? Math.random()}`,
+        cells: [
+          blockUrl ? <a href={blockUrl} target="_blank" rel="noreferrer">{blockId}</a> : blockId,
+          proposerUrl ? <a href={proposerUrl} target="_blank" rel="noreferrer">{proposer}</a> : proposer,
+          formatUTC(ts),
+          blockUrl ? <a href={blockUrl} target="_blank" rel="noreferrer">{formatBlockCid(cid)}</a> : formatBlockCid(cid),
+        ],
+      }
+    })
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={headerCellStyle}>Block</th>
-              <th style={headerCellStyle}>Proposer</th>
-              <th style={headerCellStyle}>Timestamp</th>
-              <th style={headerCellStyle}>CID</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((block) => {
-              const blockId = parseNumeric(block?.be_info?.block_id) ?? '—'
-              const proposer = block?.proposer ?? '—'
-              const ts = block?.be_info?.ts ?? block?.ts
-              const cid = block?.block
-              const rowKey = `${blockId}-${cid ?? Math.random()}`
-              const blockUrl = Number.isFinite(blockId) ? `https://vsc.techcoderx.com/block/${blockId}` : null
-              const proposerUrl = proposer && proposer !== '—'
-                ? `https://vsc.techcoderx.com/address/hive:${proposer}`
-                : null
-              return (
-                <tr key={rowKey}>
-                  <td style={cellStyle}>
-                    {blockUrl ? (
-                      <a href={blockUrl} target="_blank" rel="noreferrer">
-                        {blockId}
-                      </a>
-                    ) : (
-                      blockId
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {proposerUrl ? (
-                      <a href={proposerUrl} target="_blank" rel="noreferrer">
-                        {proposer}
-                      </a>
-                    ) : (
-                      proposer
-                    )}
-                  </td>
-                  <td style={cellStyle}>{formatUTC(ts)}</td>
-                  <td style={cellStyle}>
-                    {blockUrl ? (
-                      <a href={blockUrl} target="_blank" rel="noreferrer">
-                        {formatBlockCid(cid)}
-                      </a>
-                    ) : (
-                      formatBlockCid(cid)
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        </div>
+        <DataTable
+          headers={['Block', 'Proposer', 'Timestamp', 'CID']}
+          rows={blockRows}
+          style={{ flex: 1, minHeight: 0 }}
+        />
         {renderPaginationControls({
           disablePrev,
           disableNext,

@@ -10,6 +10,8 @@ const FloatingLabelInput = ({
   prefix,
   step,
   min,
+  max,
+  maxLength,
   placeholder,
   className = "",
   style,
@@ -18,7 +20,15 @@ const FloatingLabelInput = ({
 }) => {
   const hasValue = value !== "" && value !== undefined && value !== null
 
-  const handleKeyDown = () => {
+  const handleKeyDown = (e) => {
+    if (type === "number") {
+      const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter']
+      if (allowed.includes(e.key)) { /* allow */ }
+      else if (e.key === '.' && !String(value).includes('.')) { /* allow single dot */ }
+      else if (e.key >= '0' && e.key <= '9') { /* allow digits */ }
+      else if (e.ctrlKey || e.metaKey) { /* allow copy/paste/select-all */ }
+      else { e.preventDefault(); return }
+    }
     if (!beep) return
     const freq = 700 + Math.random() * 400 // 900–1100 Hz
     playBeep(freq, 7, "sine")
@@ -46,6 +56,8 @@ const FloatingLabelInput = ({
         type={type}
         step={step}
         min={min}
+        max={max}
+        maxLength={maxLength}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
