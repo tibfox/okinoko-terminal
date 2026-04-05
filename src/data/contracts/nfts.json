@@ -9,7 +9,6 @@
   "description": "Deploy and manage your own NFT contracts on the Magi network",
   "kanji": "印",
   "icon": "faImage",
-  "devOnly": true,
   "templateTag": "nft",
   "functions": [
     {

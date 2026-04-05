@@ -299,6 +299,7 @@ export default function AccountDataPanel() {
           onClose={closePopup}
           aioha={capturedAioha}
           user={capturedUser}
+          hideSourceTabs
           onProcessingChange={(processing) => { deployState.isProcessing = processing }}
         />
       ),
