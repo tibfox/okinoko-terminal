@@ -786,17 +786,13 @@ export default function NftPanel({ user, isMobile }) {
     const allTokens = [...userNfts, ...mintedTokens]
     if (!allTokens.length || !networkConfig.graphqlEndpoint) return
 
-    // Group by contractId — include tokens with own properties AND template IDs
+    // Group by contractId — always fetch props from node (indexer has_properties
+    // flag is only set by standalone setProperties calls, not by mint-time props)
     const byContract = {}
     for (const n of allTokens) {
-      if (n.hasProperties) {
-        if (!byContract[n.contractId]) byContract[n.contractId] = new Set()
-        byContract[n.contractId].add(n.tokenId)
-      }
-      if (n.templateId) {
-        if (!byContract[n.contractId]) byContract[n.contractId] = new Set()
-        byContract[n.contractId].add(n.templateId)
-      }
+      if (!byContract[n.contractId]) byContract[n.contractId] = new Set()
+      byContract[n.contractId].add(n.tokenId)
+      if (n.templateId) byContract[n.contractId].add(n.templateId)
     }
     if (!Object.keys(byContract).length) return
 
