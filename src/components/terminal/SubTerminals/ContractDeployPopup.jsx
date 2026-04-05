@@ -13,7 +13,7 @@ export default function ContractDeployPopup({ aioha, user, description, filterTa
   const assetSymbols = useAssetSymbols()
   const { networkConfig } = useNetworkType()
   const [name, setName] = useState('')
-  const [wasmSource, setWasmSource] = useState(hideSourceTabs ? 'own' : 'template') // 'template' | 'own'
+  const [wasmSource, setWasmSource] = useState(hideSourceTabs && !hideTemplateDropdown ? 'own' : 'template') // 'template' | 'own'
   const [templates, setTemplates] = useState([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState('')
